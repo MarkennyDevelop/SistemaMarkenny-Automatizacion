@@ -13,3 +13,10 @@ Automatizacion de Negocio.
 5. Gestion de usuarios por roles
 6. Gestion de Personal Empleado (No incluye nomina por los momentos)
 7. 
+
+## Tecnologias para el desarrollo
+
+# BACKEND:
+
+1. Node.js
+2. 
