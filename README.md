@@ -12,11 +12,25 @@ Automatizacion de Negocio.
 4. Gestion Administrativa
 5. Gestion de usuarios por roles
 6. Gestion de Personal Empleado (No incluye nomina por los momentos)
-7. 
 
 ## Tecnologias para el desarrollo
 
 # BACKEND:
 
-1. Node.js
-2. 
+1. Node.js LTS
+2. Fastify como Framework web
+3. JavaScript como Lenguaje Base
+4. PostgreSQL para Base de Datos
+5. Zod para Validaciones y Seguridad
+
+# FRONTEND:
+
+1. React.js como Framework de la Interfaz
+2. TypeScript como Lenguaje Base
+3. Tailwind CSS como Framework de estilos
+4. Vite como servidor y empaquetador
+5. Shadcn UI para Sistema de componentes 
+
+
+
+
