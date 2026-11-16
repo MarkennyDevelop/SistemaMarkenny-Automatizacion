@@ -12,4 +12,11 @@ Automatizacion de Negocio.
 4. Gestion Administrativa
 5. Gestion de usuarios por roles
 6. Gestion de Personal Empleado (No incluye nomina por los momentos)
-7. 
+7.
+
+## Estructura del repositorio
+
+```
+apps/
+└── backend/   # Print MIS / ERP — Fastify + PostgreSQL + Zod (ver apps/backend/README.md)
+```

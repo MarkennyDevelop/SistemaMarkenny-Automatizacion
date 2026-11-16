@@ -1,0 +1,15 @@
+{
+  "name": "markenny-print-mis",
+  "private": true,
+  "description": "Print MIS / ERP para la imprenta Markenny C.A. (monorepo)",
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "test": "npm run test --workspace apps/backend",
+    "dev:backend": "npm run dev --workspace apps/backend"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
