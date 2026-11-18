@@ -1,4 +1,4 @@
-import type { FasePlanta, OrdenTrabajo } from "@/shared/domain";
+import type { ActorOrden, FasePlanta, OrdenTrabajo } from "@/shared/domain";
 import { mockDb } from "@/shared/mock/db";
 
 /**
@@ -8,6 +8,11 @@ import { mockDb } from "@/shared/mock/db";
  */
 export const plantaApi = {
   listarOrdenes: () => mockDb.listarOrdenes(),
-  actualizarFase: (ordenId: string, fase: FasePlanta): Promise<OrdenTrabajo> =>
-    mockDb.actualizarFaseOrden(ordenId, fase),
+  actualizarFase: (
+    ordenId: string,
+    fase: FasePlanta,
+    actor: ActorOrden,
+    nota?: string,
+  ): Promise<OrdenTrabajo> =>
+    mockDb.actualizarFaseOrden(ordenId, fase, actor, nota),
 };

@@ -13,6 +13,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { useAuth } from "@/features/auth";
 import {
   Select,
   SelectContent,
@@ -48,6 +49,8 @@ export function RegistrarMovimientoDialog({
   isSubmitting,
   onSubmit,
 }: RegistrarMovimientoDialogProps) {
+  const { usuario } = useAuth();
+  const responsable = usuario?.nombre ?? "";
   const form = useForm<MovimientoFormValues>({
     resolver: zodResolver(movimientoSchema),
     defaultValues: {
@@ -55,7 +58,7 @@ export function RegistrarMovimientoDialog({
       tipo: "ENTRADA",
       cantidad: 1,
       motivo: "",
-      usuario: "Kenny Hernández",
+      usuario: responsable,
     },
     mode: "onTouched",
   });
@@ -76,10 +79,10 @@ export function RegistrarMovimientoDialog({
         tipo: "ENTRADA",
         cantidad: 1,
         motivo: "",
-        usuario: "Kenny Hernández",
+        usuario: responsable,
       });
     }
-  }, [open, materialInicial, reset]);
+  }, [open, materialInicial, reset, responsable]);
 
   const materialId = watch("materialId");
   const tipo = watch("tipo");
@@ -196,8 +199,9 @@ export function RegistrarMovimientoDialog({
             htmlFor="mov-usuario"
             required
             error={errors.usuario?.message}
+            hint="Usuario de la sesión"
           >
-            <Input id="mov-usuario" {...register("usuario")} />
+            <Input id="mov-usuario" readOnly className="bg-muted/50" {...register("usuario")} />
           </FormField>
 
           {material && (

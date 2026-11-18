@@ -9,4 +9,7 @@ export const queryKeys = {
   inventario: ["inventario"] as const,
   movimientos: ["movimientos"] as const,
   dashboard: ["dashboard"] as const,
+  notificaciones: ["notificaciones"] as const,
+  empleados: ["empleados"] as const,
+  sesion: ["sesion"] as const,
 } as const;

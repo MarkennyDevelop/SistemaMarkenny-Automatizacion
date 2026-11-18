@@ -69,6 +69,200 @@ export const ORDEN_TRABAJO_DEFAULTS: Partial<OrdenTrabajoFormValues> = {
   observaciones: "",
 };
 
+/* ------------------------------------------------------------------ */
+/* Ficha técnica: papelería corporativa                                */
+/* ------------------------------------------------------------------ */
+
+export const papeleriaSchema = z
+  .object({
+    clienteId: z.string().min(1, "Selecciona el cliente"),
+    tipoPapeleria: z.enum([
+      "FACTURA",
+      "TALONARIO",
+      "RECIPE",
+      "NOTA",
+      "ORDEN_COMPRA",
+      "RECIBO",
+      "CARTA",
+      "OTRO",
+    ]),
+    producto: z
+      .string()
+      .trim()
+      .min(3, "Describe el producto (mínimo 3 caracteres)")
+      .max(120, "Máximo 120 caracteres"),
+    descripcion: z
+      .string()
+      .trim()
+      .max(280, "Máximo 280 caracteres")
+      .optional()
+      .or(z.literal("")),
+    cantidad: z
+      .number({ invalid_type_error: "Indica la cantidad" })
+      .int("Debe ser un número entero")
+      .min(1, "La cantidad debe ser mayor a cero")
+      .max(200_000, "Cantidad fuera de rango"),
+    partes: z
+      .number({ invalid_type_error: "Indica las partes" })
+      .int("Debe ser un número entero")
+      .min(1, "Mínimo 1 parte")
+      .max(6, "Máximo 6 partes"),
+    usaNumeracion: z.boolean(),
+    numeracionDesde: z
+      .number({ invalid_type_error: "Indica el número inicial" })
+      .int()
+      .min(0, "No puede ser negativo"),
+    numeracionHasta: z
+      .number({ invalid_type_error: "Indica el número final" })
+      .int()
+      .min(0, "No puede ser negativo"),
+    numeracionPrefijo: z
+      .string()
+      .trim()
+      .max(12, "Máximo 12 caracteres")
+      .optional()
+      .or(z.literal("")),
+    tecnologia: z.enum(["OFFSET", "DIGITAL"]),
+    prioridad: z.enum(["BAJA", "MEDIA", "ALTA", "URGENTE"]),
+    maquina: z.string().min(1, "Selecciona la máquina"),
+    anchoMm: z.number().min(40, "Mínimo 40 mm").max(1000, "Máximo 1000 mm"),
+    altoMm: z.number().min(40, "Mínimo 40 mm").max(1000, "Máximo 1000 mm"),
+    sustratoId: z.string().min(1, "Selecciona el papel"),
+    tintasTiro: z.number().int().min(0).max(6),
+    tintasPantone: z.array(z.string()).default([]),
+    acabados: z.array(z.string()).default([]),
+    fechaEntrega: z
+      .string()
+      .min(1, "Indica la fecha de entrega")
+      .refine((value) => !Number.isNaN(new Date(value).getTime()), {
+        message: "Fecha inválida",
+      }),
+    observaciones: z
+      .string()
+      .trim()
+      .max(500, "Máximo 500 caracteres")
+      .optional()
+      .or(z.literal("")),
+  })
+  .superRefine((values, ctx) => {
+    if (values.usaNumeracion && values.numeracionHasta < values.numeracionDesde) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["numeracionHasta"],
+        message: "El número final debe ser mayor o igual al inicial",
+      });
+    }
+  });
+
+export type PapeleriaFormValues = z.infer<typeof papeleriaSchema>;
+
+export const PAPELERIA_DEFAULTS: Partial<PapeleriaFormValues> = {
+  clienteId: "",
+  tipoPapeleria: "FACTURA",
+  producto: "",
+  descripcion: "",
+  cantidad: 1000,
+  partes: 2,
+  usaNumeracion: true,
+  numeracionDesde: 1,
+  numeracionHasta: 1000,
+  numeracionPrefijo: "",
+  tecnologia: "OFFSET",
+  prioridad: "MEDIA",
+  maquina: "Heidelberg SM 52",
+  anchoMm: 210,
+  altoMm: 140,
+  sustratoId: "bond-75",
+  tintasTiro: 2,
+  tintasPantone: [],
+  acabados: ["numerado", "engrapado", "perforado"],
+  fechaEntrega: "",
+  observaciones: "",
+};
+
+/* ------------------------------------------------------------------ */
+/* Ficha técnica: gran formato y adhesivos                             */
+/* ------------------------------------------------------------------ */
+
+export const granFormatoSchema = z.object({
+  clienteId: z.string().min(1, "Selecciona el cliente"),
+  tipoGranFormato: z.enum([
+    "PENDON",
+    "STICKER",
+    "VINIL",
+    "LONA",
+    "BACKING",
+    "ROTULO",
+    "OTRO",
+  ]),
+  producto: z
+    .string()
+    .trim()
+    .min(3, "Describe la pieza (mínimo 3 caracteres)")
+    .max(120, "Máximo 120 caracteres"),
+  descripcion: z
+    .string()
+    .trim()
+    .max(280, "Máximo 280 caracteres")
+    .optional()
+    .or(z.literal("")),
+  cantidad: z
+    .number({ invalid_type_error: "Indica la cantidad" })
+    .int("Debe ser un número entero")
+    .min(1, "La cantidad debe ser mayor a cero")
+    .max(10_000, "Cantidad fuera de rango"),
+  ancho: z
+    .number({ invalid_type_error: "Indica el ancho" })
+    .min(0.1, "Mínimo 0,1")
+    .max(100, "Máximo 100"),
+  alto: z
+    .number({ invalid_type_error: "Indica el alto" })
+    .min(0.1, "Mínimo 0,1")
+    .max(100, "Máximo 100"),
+  unidadDimension: z.enum(["cm", "m"]),
+  sustratoId: z.string().min(1, "Selecciona el sustrato"),
+  resolucionDpi: z
+    .number({ invalid_type_error: "Indica la resolución" })
+    .int()
+    .min(72, "Mínimo 72 dpi")
+    .max(1440, "Máximo 1440 dpi"),
+  prioridad: z.enum(["BAJA", "MEDIA", "ALTA", "URGENTE"]),
+  maquina: z.string().min(1, "Selecciona la máquina"),
+  acabados: z.array(z.string()).default([]),
+  fechaEntrega: z
+    .string()
+    .min(1, "Indica la fecha de entrega")
+    .refine((value) => !Number.isNaN(new Date(value).getTime()), {
+      message: "Fecha inválida",
+    }),
+  observaciones: z
+    .string()
+    .trim()
+    .max(500, "Máximo 500 caracteres")
+    .optional()
+    .or(z.literal("")),
+});
+
+export type GranFormatoFormValues = z.infer<typeof granFormatoSchema>;
+
+export const GRAN_FORMATO_DEFAULTS: Partial<GranFormatoFormValues> = {
+  clienteId: "",
+  tipoGranFormato: "PENDON",
+  producto: "",
+  descripcion: "",
+  cantidad: 10,
+  ancho: 1,
+  alto: 2,
+  unidadDimension: "m",
+  sustratoId: "lona-front",
+  resolucionDpi: 720,
+  prioridad: "MEDIA",
+  maquina: "Mimaki JV300",
+  acabados: ["ojales", "refuerzo"],
+  fechaEntrega: "",
+  observaciones: "",
+};
+
 export const cotizacionSchema = z.object({
   tecnologia: z.enum(["OFFSET", "DIGITAL", "GRAN_FORMATO"]),
   tiraje: z

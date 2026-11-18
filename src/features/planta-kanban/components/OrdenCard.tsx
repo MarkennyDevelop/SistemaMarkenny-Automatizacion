@@ -1,9 +1,10 @@
 import { useState } from "react";
 import {
   CalendarClock,
+  ClipboardCheck,
+  Eye,
   GripVertical,
   MoreHorizontal,
-  MoveRight,
   Printer,
   UserRound,
 } from "lucide-react";
@@ -21,6 +22,7 @@ import { Progress } from "@/components/ui/progress";
 import { cn, formatNumber, initials } from "@/lib/utils";
 import {
   FASES_PLANTA,
+  FASE_PLANTA,
   PRIORIDAD_LABEL,
   TECNOLOGIA_LABEL,
   type FasePlanta,
@@ -32,6 +34,7 @@ interface OrdenCardProps {
   orden: OrdenTrabajo;
   isMoving?: boolean;
   onMove: (fase: FasePlanta) => void;
+  onOpen?: () => void;
   onDragStart: () => void;
   onDragEnd: () => void;
 }
@@ -46,21 +49,32 @@ function entrega(fecha: string) {
   return { texto: `En ${dias} días`, urgente: dias <= 3 };
 }
 
+export function siguienteFaseDe(fase: FasePlanta): FasePlanta | null {
+  const indice = FASES_PLANTA.indexOf(fase);
+  return FASES_PLANTA[indice + 1] ?? null;
+}
+
 export function OrdenCard({
   orden,
   isMoving,
   onMove,
+  onOpen,
   onDragStart,
   onDragEnd,
 }: OrdenCardProps) {
   const [dragging, setDragging] = useState(false);
   const fecha = entrega(orden.fechaEntrega);
   const prioridadAlta = orden.prioridad === "URGENTE" || orden.prioridad === "ALTA";
+  const siguiente = siguienteFaseDe(orden.fase);
 
   return (
     <article
-      draggable
+      draggable={Boolean(siguiente)}
       onDragStart={(event) => {
+        if (!siguiente) {
+          event.preventDefault();
+          return;
+        }
         event.dataTransfer.setData("text/plain", orden.id);
         event.dataTransfer.effectAllowed = "move";
         setDragging(true);
@@ -71,14 +85,17 @@ export function OrdenCard({
         onDragEnd();
       }}
       className={cn(
-        "group relative cursor-grab rounded-lg border border-border bg-card p-3.5 shadow-card transition-all hover:border-primary/30 hover:shadow-raised active:cursor-grabbing",
+        "group relative rounded-lg border border-border bg-card p-3.5 shadow-card transition-all hover:border-primary/30 hover:shadow-raised",
+        siguiente ? "cursor-grab active:cursor-grabbing" : "cursor-default",
         (dragging || isMoving) && "opacity-50",
       )}
       aria-label={`${orden.codigo} · ${orden.producto}`}
     >
       <div className="flex items-start justify-between gap-2">
         <div className="flex min-w-0 items-center gap-1.5">
-          <GripVertical className="h-3 w-3 shrink-0 text-muted-foreground/50" />
+          {siguiente && (
+            <GripVertical className="h-3 w-3 shrink-0 text-muted-foreground/50" />
+          )}
           <span className="truncate font-mono text-[10px] font-semibold text-primary">
             {orden.codigo}
           </span>
@@ -96,45 +113,52 @@ export function OrdenCard({
                 variant="ghost"
                 size="icon"
                 className="h-6 w-6 text-muted-foreground opacity-60 transition-opacity group-hover:opacity-100"
-                aria-label={`Mover ${orden.codigo}`}
+                aria-label={`Acciones de ${orden.codigo}`}
               >
                 <MoreHorizontal className="h-3.5 w-3.5" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-52">
+            <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                Mover a fase
+                Control de calidad
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              {FASES_PLANTA.map((fase) => (
+              <DropdownMenuItem className="gap-2 text-xs" onSelect={() => onOpen?.()}>
+                <Eye className="h-3.5 w-3.5" />
+                Ver ficha y auditoría
+              </DropdownMenuItem>
+              {siguiente ? (
                 <DropdownMenuItem
-                  key={fase}
-                  disabled={fase === orden.fase}
-                  onSelect={() => onMove(fase)}
                   className="gap-2 text-xs"
+                  onSelect={() => onMove(siguiente)}
                 >
-                  <span
-                    className={cn("h-1.5 w-1.5 rounded-full", FASE_UI[fase].dot)}
-                  />
-                  {FASE_UI[fase].label}
-                  {fase === orden.fase && (
-                    <span className="ml-auto text-[9px] text-muted-foreground">actual</span>
-                  )}
+                  <ClipboardCheck className="h-3.5 w-3.5 text-primary" />
+                  Avanzar a {FASE_UI[siguiente].label}
                 </DropdownMenuItem>
-              ))}
+              ) : (
+                <DropdownMenuItem disabled className="gap-2 text-[11px]">
+                  <ClipboardCheck className="h-3.5 w-3.5" />
+                  Circuito completado
+                </DropdownMenuItem>
+              )}
               <DropdownMenuSeparator />
-              <DropdownMenuItem disabled className="gap-2 text-[11px]">
-                <MoveRight className="h-3 w-3" />
-                Las transiciones se validan en servidor
+              <DropdownMenuItem disabled className="gap-2 text-[10px] leading-snug">
+                Flujo secuencial: sin saltos ni retrocesos
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
       </div>
 
-      <h3 className="mt-2 line-clamp-2 text-[12.5px] font-semibold leading-snug">
-        {orden.producto}
-      </h3>
+      <button
+        type="button"
+        onClick={() => onOpen?.()}
+        className="mt-2 block w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+      >
+        <h3 className="line-clamp-2 text-[12.5px] font-semibold leading-snug hover:text-primary">
+          {orden.producto}
+        </h3>
+      </button>
       <p className="mt-0.5 truncate text-[10.5px] text-muted-foreground">
         {orden.clienteNombre}
       </p>
@@ -187,6 +211,17 @@ export function OrdenCard({
           <span>{fecha.texto}</span>
         </div>
       </footer>
+
+      {siguiente && (
+        <button
+          type="button"
+          onClick={() => onMove(siguiente)}
+          className="mt-2.5 flex w-full items-center justify-center gap-1.5 rounded-md border border-dashed border-primary/30 bg-primary/[0.04] py-1.5 text-[9.5px] font-semibold uppercase tracking-wide text-primary transition-colors hover:bg-primary/[0.08]"
+        >
+          <ClipboardCheck className="h-3 w-3" />
+          Marcar {FASE_PLANTA[siguiente].label}
+        </button>
+      )}
 
       {orden.prioridad === "URGENTE" && (
         <span className="absolute left-0 top-3 h-8 w-[2px] rounded-r bg-primary" />

@@ -20,6 +20,8 @@ import {
 export const CATEGORIA_LABEL: Record<CategoriaInventario, string> = {
   PAPEL: "Papel",
   TINTAS: "Tintas",
+  PLANCHAS: "Planchas CTP",
+  VINILOS: "Vinilos y lonas",
   SELLOS: "Sellos / PT",
   ALMACEN: "Almacén",
 };

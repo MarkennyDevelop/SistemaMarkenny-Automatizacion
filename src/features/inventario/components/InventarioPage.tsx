@@ -7,6 +7,7 @@ import {
   Search,
   Wallet,
 } from "lucide-react";
+import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Badge } from "@/components/ui/badge";
@@ -24,7 +25,15 @@ import type { MovimientoFormValues } from "../types/schema";
 
 type FiltroCategoria = CategoriaInventario | "TODAS";
 
-const CATEGORIAS: FiltroCategoria[] = ["TODAS", "PAPEL", "TINTAS", "SELLOS", "ALMACEN"];
+const CATEGORIAS: FiltroCategoria[] = [
+  "TODAS",
+  "PAPEL",
+  "TINTAS",
+  "PLANCHAS",
+  "VINILOS",
+  "SELLOS",
+  "ALMACEN",
+];
 
 export function InventarioPage() {
   const { materiales, porCategoria, criticos, valorInventario, isLoading, isError, refetch } =
@@ -90,9 +99,15 @@ export function InventarioPage() {
       <PageHeader
         eyebrow="Almacén · Existencias"
         title="Inventario"
-        description="Control de papel, tintas, almacén general y productos terminados pendientes de entrega."
+        description="Control de papel, tintas, planchas CTP, vinilos y lonas, además del producto terminado pendiente de entrega."
         actions={
           <>
+            <Button variant="outline" asChild>
+              <Link to="/inventario/sellos">
+                <PackageCheck className="h-4 w-4" />
+                Sellos y PT
+              </Link>
+            </Button>
             <Button variant="outline" onClick={() => void refetch()}>
               <Boxes className="h-4 w-4" />
               Actualizar
@@ -223,8 +238,8 @@ export function InventarioPage() {
             />
           )}
 
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            {(["PAPEL", "TINTAS", "SELLOS", "ALMACEN"] as CategoriaInventario[]).map(
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            {(["PAPEL", "TINTAS", "PLANCHAS", "VINILOS", "SELLOS", "ALMACEN"] as CategoriaInventario[]).map(
               (categoriaItem) => {
                 const items = materiales.filter(
                   (material) => material.categoria === categoriaItem,

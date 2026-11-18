@@ -47,6 +47,10 @@ export const ACABADOS = [
   { id: "numerado", nombre: "Numerado", precio: 0.05 },
   { id: "media-luna", nombre: "Media luna", precio: 0.03 },
   { id: "plastificado", nombre: "Plastificado", precio: 0.08 },
+  { id: "ojales", nombre: "Ojales metálicos", precio: 0.35 },
+  { id: "refuerzo", nombre: "Refuerzo perimetral", precio: 0.22 },
+  { id: "laminado-brillante", nombre: "Laminado brillante", precio: 0.1 },
+  { id: "doble-cara", nombre: "Impresión doble cara", precio: 0.14 },
 ] as const;
 
 export const TINTAS_PANTONE = [

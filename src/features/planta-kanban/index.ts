@@ -1,4 +1,6 @@
 export { PlantaKanbanPage } from "./components/PlantaKanbanPage";
+export { ProduccionDashboardPage } from "./components/ProduccionDashboardPage";
+export { OrdenDetalleDialog } from "./components/OrdenDetalleDialog";
 export { KanbanBoard } from "./components/KanbanBoard";
 export { OrdenCard } from "./components/OrdenCard";
 export { usePlantaBoard } from "./hooks/usePlantaBoard";

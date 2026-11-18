@@ -62,17 +62,60 @@ npm run typecheck # solo verificación de tipos
 
 > En Windows con PowerShell restringido, usar `npm.cmd` en lugar de `npm`.
 
+### Acceso, roles y primer arranque
+
+El sistema arranca **sin usuarios sembrados**. Al abrir la aplicación por primera
+vez, `/login` redirige a `/setup-admin`, donde se registra la cuenta maestra de
+Administrador. Esa pantalla se bloquea de forma permanente en cuanto existe un
+administrador activo.
+
+| Rol | Alcance | Aterrizaje |
+|---|---|---|
+| Administrador | Control total: ventas, producción, inventario y empleados | `/admin` |
+| Vendedor | Ventas, clientes, OT y seguimiento de sus trabajos | `/ventas/dashboard` |
+| Producción | Taller, control de calidad, empaque y almacén | `/produccion` |
+
+El alta de empleados es exclusiva del Administrador (`/admin/empleados`) y solo
+permite crear cuentas **Vendedor** o **Producción**; no se puede crear un segundo
+administrador desde la interfaz.
+
+La identidad se persiste en `localStorage` (`markenny.print-mis.auth.v1`) con
+SHA-256 + sal por usuario. Es un mock de desarrollo: al conectar Fastify se
+sustituye por sesiones/cookies del backend.
+
+**Credenciales de la demo validada:**
+
+| Rol | Correo | Contraseña |
+|---|---|---|
+| Administrador | `admin@markenny.com` | `Markenny2026` |
+| Vendedor | `valeria@markenny.com` | `Ventas2026` |
+| Producción | `luis@markenny.com` | `Planta2026` |
+
+Para reiniciar la demo por completo, borrar `markenny.print-mis.db.v1` y
+`markenny.print-mis.auth.v1` del `localStorage` y recargar.
+
 ### Rutas
 
-| Ruta | Pantalla |
-|---|---|
-| `/` | Dashboard (KPIs, carga de planta, alertas de inventario) |
-| `/planta` | Kanban de producción con 4 fases: En Proceso → En Revisión → Finalizado → Empaquetado |
-| `/ventas/ordenes` | Listado y filtros de órdenes de trabajo |
-| `/ventas/nueva-orden` | Formulario compuesto de nueva OT |
-| `/ventas/cotizador` | Cotizador con motor de estimación en vivo |
-| `/ventas/clientes` | Cartera de clientes y saldos |
-| `/inventario` | Existencias, movimientos auditados y alertas de reposición |
+| Ruta | Pantalla | Acceso |
+|---|---|---|
+| `/login` | Inicio de sesión | Público (sin sesión) |
+| `/setup-admin` | Registro único del administrador | Público, solo primer arranque |
+| `/` | Redirección al inicio del rol | Autenticado |
+| `/admin` | Dashboard general | Administrador |
+| `/admin/empleados` | Alta y gestión de empleados | Administrador |
+| `/ventas/dashboard` | Dashboard del vendedor | Administrador, Vendedor |
+| `/ventas/ordenes` | Listado y filtros de órdenes de trabajo | Administrador, Vendedor |
+| `/ventas/nueva-orden` | Ficha de papelería corporativa | Administrador, Vendedor |
+| `/ventas/nueva-orden/pendones` | Ficha de gran formato | Administrador, Vendedor |
+| `/ventas/nueva-orden/otros` | Ficha general de OT | Administrador |
+| `/ventas/seguimiento` | Seguimiento de las 4 fases e historial | Administrador, Vendedor |
+| `/ventas/cotizador` | Cotizador con motor de estimación en vivo | Administrador, Vendedor |
+| `/ventas/clientes` | Cartera de clientes y saldos | Administrador, Vendedor |
+| `/produccion` | Tablero Kanban de taller y QC | Administrador, Producción |
+| `/planta` | Redirección a `/produccion` | Administrador, Producción |
+| `/inventario` | Existencias, movimientos auditados y alertas | Administrador, Producción |
+| `/inventario/sellos` | Sellos y producto terminado pendiente de entrega | Administrador, Producción |
+| `*` | No encontrado | Autenticado |
 
 ### Estructura
 
@@ -86,13 +129,17 @@ src/
 │  ├─ theme/             # ThemeProvider (claro/oscuro) y ThemeToggle
 │  └─ ui/                # Primitivas shadcn/Radix
 ├─ features/
+│  ├─ auth/              # login, setup del admin, empleados y guardas por rol
 │  ├─ dashboard/         # components · hooks
-│  ├─ planta-kanban/     # components · hooks · api
-│  ├─ inventario/        # components · hooks · api · types
+│  ├─ notificaciones/    # campana, hooks y marcado de leídas
+│  ├─ planta-kanban/     # Kanban de producción, QC y detalle de OT
+│  ├─ inventario/        # components · hooks · api · types (incluye sellos/PT)
 │  └─ ventas/            # components · hooks · api · lib · types
 │     └─ components/
 │        ├─ cotizador/   # Compound Components del cotizador
-│        ├─ orden-trabajo/ # Compound Components de la OT
+│        ├─ papeleria/   # Compound Components de la ficha de papelería
+│        ├─ gran-formato/ # Compound Components de la ficha de gran formato
+│        ├─ orden-trabajo/ # Compound Components de la OT general
 │        ├─ ordenes/     # Tabla de OT
 │        └─ clientes/    # Tabla y diálogo de clientes
 ├─ lib/                  # utilidades (cn, formatCurrency, formatDate…)
@@ -108,8 +155,17 @@ importa rutas internas de otra feature.
   `api/` (acceso a datos), `lib/` (reglas de negocio), `types/` (Zod + tipos).
 - **Container / Presentational**: las páginas (`*Page.tsx`) orquestan datos y las
   vistas (`*View.tsx`, `*Table.tsx`, `KanbanBoard.tsx`) solo reciben props.
-- **Compound Components**: `OrdenTrabajoForm.Root/Section/Summary/Submit` y
-  `CotizadorForm.Root/Section/Summary/Submit` comparten contexto vía `context.ts`.
+- **Compound Components**: `OrdenTrabajoForm.*`, `CotizadorForm.*`,
+  `PapeleriaForm.*` y `GranFormatoForm.*` exponen `Root/Section/Summary/Submit` y
+  comparten contexto vía `context.ts`.
+- **Autenticación y permisos**: `RequireAuth`, `RequireRole` y `PublicOnly`
+  protegen el árbol de rutas; `homeForRol` decide el aterrizaje y el `Sidebar`
+  oculta los módulos fuera del alcance del rol.
+- **Control de calidad secuencial**: `usePlantaBoard` y `mockDb.actualizarFaseOrden`
+  solo permiten avanzar una fase (sin saltos ni retrocesos); cada cambio agrega un
+  `EventoOrden` con usuario, rol, fecha y nota.
+- **Notificaciones**: al marcar *Finalizado* o *Empaquetado* se genera una
+  `Notificacion` para Vendedor y Administrador, visible en la campana del `Topbar`.
 - **Estado del servidor**: TanStack Query con `queryKeys` centralizadas,
   mutaciones optimistas en Kanban e invalidación cruzada (una OT nueva refresca
   dashboard, listado y tablero).
@@ -118,8 +174,9 @@ importa rutas internas de otra feature.
 - **Diseño**: paleta rojo/negro/blanco definida en `tailwind.config.ts` e
   `src/index.css`; tipografías locales con `@fontsource` (Inter + Barlow Condensed).
 - **Datos mock**: `src/shared/mock/db.ts` simula una API con latencia y persiste en
-  `localStorage` (`markenny.print-mis.db.v1`). La capa `api/` ya está separada para
-  sustituirla por los endpoints Fastify sin tocar los componentes.
+  `localStorage` (`markenny.print-mis.db.v1`); la identidad vive aparte en
+  `markenny.print-mis.auth.v1`. La capa `api/` ya está separada para sustituirla
+  por los endpoints Fastify sin tocar los componentes.
 - **Motor de cotización**: patrón Strategy por tipo de impresión (offset, digital,
   gran formato) en `features/ventas/lib/cotizador.ts`; también estima el monto de
   una OT.

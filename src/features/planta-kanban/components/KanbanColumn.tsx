@@ -21,6 +21,7 @@ interface KanbanColumnProps {
   isLoading?: boolean;
   movingId?: string | null;
   onMoveOrden: (ordenId: string, fase: FasePlanta) => void;
+  onOpenOrden?: (orden: OrdenTrabajo) => void;
   onDragStart: (ordenId: string) => void;
   onDragEnd: () => void;
 }
@@ -32,6 +33,7 @@ export function KanbanColumn({
   isLoading,
   movingId,
   onMoveOrden,
+  onOpenOrden,
   onDragStart,
   onDragEnd,
 }: KanbanColumnProps) {
@@ -117,6 +119,7 @@ export function KanbanColumn({
               orden={orden}
               isMoving={movingId === orden.id}
               onMove={(nuevaFase) => onMoveOrden(orden.id, nuevaFase)}
+              onOpen={() => onOpenOrden?.(orden)}
               onDragStart={() => onDragStart(orden.id)}
               onDragEnd={onDragEnd}
             />

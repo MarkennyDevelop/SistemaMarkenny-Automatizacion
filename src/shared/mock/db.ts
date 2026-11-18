@@ -1,10 +1,16 @@
+import { FASE_PLANTA, FASES_PLANTA } from "@/shared/domain";
 import type {
+  ActorOrden,
+  CategoriaTrabajo,
   Cliente,
+  EventoOrden,
   FasePlanta,
   MaterialInventario,
   MovimientoInventario,
+  Notificacion,
   NuevaOrdenTrabajo,
   OrdenTrabajo,
+  Rol,
   TipoMovimiento,
 } from "@/shared/domain";
 
@@ -15,6 +21,70 @@ interface MockDatabase {
   ordenes: OrdenTrabajo[];
   inventario: MaterialInventario[];
   movimientos: MovimientoInventario[];
+  notificaciones: Notificacion[];
+}
+
+/** Fases que disparan aviso al vendedor cuando el pedido está listo. */
+const FASES_AVISO: FasePlanta[] = ["FINALIZADO", "EMPACADO"];
+
+/** Orden obligatorio del flujo de planta. */
+const FASES_FLUJO: FasePlanta[] = FASES_PLANTA;
+
+export type { ActorOrden };
+
+function inferirCategoria(orden: OrdenTrabajo): CategoriaTrabajo {
+  if (orden.categoriaTrabajo) return orden.categoriaTrabajo;
+  if (orden.tecnologia === "GRAN_FORMATO") return "GRAN_FORMATO";
+  const texto = `${orden.producto} ${orden.descripcion}`.toLowerCase();
+  if (
+    texto.includes("papeler") ||
+    texto.includes("talonar") ||
+    texto.includes("factura") ||
+    texto.includes("récip") ||
+    texto.includes("recip") ||
+    texto.includes("nota")
+  ) {
+    return "PAPELERIA";
+  }
+  return "GENERAL";
+}
+
+/** Completa campos agregados en la fase 2 sobre datos ya persistidos. */
+function normalizarOrden(orden: OrdenTrabajo): OrdenTrabajo {
+  const historial =
+    orden.historial && orden.historial.length > 0
+      ? orden.historial
+      : [
+          {
+            id: `evt-mig-${orden.id}`,
+            fase: orden.fase,
+            anterior: null,
+            usuario: orden.operador || "Sistema",
+            rol: "PRODUCCION" as const,
+            fecha: orden.fechaCreacion,
+            nota: "Fase registrada durante la migración al historial auditable.",
+          } satisfies EventoOrden,
+        ];
+
+  return {
+    ...orden,
+    categoriaTrabajo: inferirCategoria(orden),
+    historial,
+  };
+}
+
+/** Reclasifica materiales creados antes de existir PLANCHAS / VINILOS. */
+function normalizarMaterial(material: MaterialInventario): MaterialInventario {
+  if (material.categoria !== "ALMACEN" && material.categoria !== "PAPEL") {
+    return material;
+  }
+  if (material.sku.startsWith("ALM-CTP")) {
+    return { ...material, categoria: "PLANCHAS" };
+  }
+  if (material.sku.startsWith("PAP-VIN") || material.sku.startsWith("PAP-LON")) {
+    return { ...material, categoria: "VINILOS" };
+  }
+  return material;
 }
 
 const SEED_CLIENTES: Cliente[] = [
@@ -446,7 +516,7 @@ const SEED_INVENTARIO: MaterialInventario[] = [
     id: "inv-vinilo",
     sku: "PAP-VIN-BR",
     nombre: "Vinilo blanco brillante",
-    categoria: "PAPEL",
+    categoria: "VINILOS",
     unidad: "rollo",
     stock: 3,
     stockMinimo: 6,
@@ -460,7 +530,7 @@ const SEED_INVENTARIO: MaterialInventario[] = [
     id: "inv-lona",
     sku: "PAP-LON-13",
     nombre: "Lona front 13 oz",
-    categoria: "PAPEL",
+    categoria: "VINILOS",
     unidad: "rollo",
     stock: 12,
     stockMinimo: 8,
@@ -558,7 +628,7 @@ const SEED_INVENTARIO: MaterialInventario[] = [
     id: "inv-planchas",
     sku: "ALM-CTP",
     nombre: "Planchas CTP 52",
-    categoria: "ALMACEN",
+    categoria: "PLANCHAS",
     unidad: "unidad",
     stock: 24,
     stockMinimo: 30,
@@ -737,12 +807,54 @@ const SEED_MOVIMIENTOS: MovimientoInventario[] = [
   },
 ];
 
+const SEED_NOTIFICACIONES: Notificacion[] = [
+  {
+    id: "not-01",
+    tipo: "STOCK",
+    titulo: "Pantone 032 C bajo mínimo",
+    detalle: "Quedan 1,5 kg · mínimo 2 kg. Revisa la orden de compra.",
+    roles: ["ADMIN", "PRODUCCION"],
+    leidaPor: [],
+    creadaEn: "2026-11-16T09:45:00.000Z",
+  },
+  {
+    id: "not-02",
+    tipo: "PEDIDO_LISTO",
+    titulo: "Pedido listo para entrega",
+    detalle: "OT-2026-0178 · Pendones Movik C.A. · empaquetado",
+    ordenId: "ot-0178",
+    codigo: "OT-2026-0178",
+    roles: ["VENDEDOR", "ADMIN"],
+    leidaPor: [],
+    creadaEn: "2026-11-16T16:20:00.000Z",
+  },
+  {
+    id: "not-03",
+    tipo: "STOCK",
+    titulo: "Film stretch por debajo del mínimo",
+    detalle: "9 rollos disponibles · mínimo 12 rollos.",
+    roles: ["ADMIN", "PRODUCCION"],
+    leidaPor: [],
+    creadaEn: "2026-11-16T10:05:00.000Z",
+  },
+  {
+    id: "not-04",
+    tipo: "SISTEMA",
+    titulo: "Nuevo ciclo de producción",
+    detalle: "12 órdenes activas distribuidas en las 4 fases de control.",
+    roles: ["ADMIN", "PRODUCCION", "VENDEDOR"],
+    leidaPor: [],
+    creadaEn: "2026-11-15T07:00:00.000Z",
+  },
+];
+
 function buildSeed(): MockDatabase {
   return {
     clientes: SEED_CLIENTES,
-    ordenes: SEED_ORDENES,
-    inventario: SEED_INVENTARIO,
+    ordenes: SEED_ORDENES.map(normalizarOrden),
+    inventario: SEED_INVENTARIO.map(normalizarMaterial),
     movimientos: SEED_MOVIMIENTOS,
+    notificaciones: SEED_NOTIFICACIONES,
   };
 }
 
@@ -761,9 +873,13 @@ function readDb(): MockDatabase {
     }
     return {
       clientes: parsed.clientes,
-      ordenes: parsed.ordenes,
-      inventario: parsed.inventario ?? [],
+      ordenes: parsed.ordenes.map(normalizarOrden),
+      inventario: (parsed.inventario ?? []).map(normalizarMaterial),
       movimientos: parsed.movimientos ?? [],
+      notificaciones:
+        Array.isArray(parsed.notificaciones) && parsed.notificaciones.length > 0
+          ? parsed.notificaciones
+          : SEED_NOTIFICACIONES,
     };
   } catch {
     return buildSeed();
@@ -818,27 +934,86 @@ export const mockDb = {
       }, 0) + 1;
     const cliente = db.clientes.find((item) => item.id === input.clienteId);
 
+    const codigo = `OT-${year}-${String(nextNumber).padStart(4, "0")}`;
+    const ahora = new Date().toISOString();
+    const evento: EventoOrden = {
+      id: `evt-${crypto.randomUUID().slice(0, 8)}`,
+      fase: "EN_PROCESO",
+      anterior: null,
+      usuario: input.vendedor ?? "Sistema",
+      rol: "VENDEDOR",
+      fecha: ahora,
+      nota: "Orden creada y enviada a taller",
+    };
+
     const orden: OrdenTrabajo = {
       ...input,
       id: `ot-${crypto.randomUUID().slice(0, 8)}`,
-      codigo: `OT-${year}-${String(nextNumber).padStart(4, "0")}`,
+      codigo,
       clienteNombre: cliente?.nombre ?? "Cliente nuevo",
       fase: "EN_PROCESO",
       avance: 5,
       operador: "Por asignar",
-      fechaCreacion: new Date().toISOString(),
+      categoriaTrabajo: input.categoriaTrabajo ?? "GENERAL",
+      historial: [evento],
+      fechaCreacion: ahora,
+    };
+
+    const notificacion: Notificacion = {
+      id: `not-${crypto.randomUUID().slice(0, 8)}`,
+      tipo: "FASE",
+      titulo: "Nueva orden recibida en taller",
+      detalle: `${codigo} · ${orden.producto} · ${cliente?.nombre ?? "Cliente nuevo"}`,
+      ordenId: orden.id,
+      codigo,
+      roles: ["ADMIN", "PRODUCCION"],
+      leidaPor: [],
+      creadaEn: ahora,
     };
 
     db.ordenes = [orden, ...db.ordenes];
+    db.notificaciones = [notificacion, ...db.notificaciones];
     writeDb(db);
     return orden;
   },
 
-  async actualizarFaseOrden(id: string, fase: FasePlanta): Promise<OrdenTrabajo> {
+  /**
+   * Avanza una orden a la siguiente fase. El flujo es estrictamente secuencial:
+   * no se puede saltar ni retroceder, y cada paso queda auditado con usuario,
+   * rol y fecha. Al llegar a Finalizado/Empaquetado se notifica al vendedor.
+   */
+  async actualizarFaseOrden(
+    id: string,
+    fase: FasePlanta,
+    actor: ActorOrden,
+    nota?: string,
+  ): Promise<OrdenTrabajo> {
     await delay(240);
     const db = readDb();
     const index = db.ordenes.findIndex((orden) => orden.id === id);
     if (index === -1) throw new Error("La orden de trabajo no existe.");
+
+    const actual = db.ordenes[index];
+    const indiceActual = FASES_FLUJO.indexOf(actual.fase);
+    const indiceDestino = FASES_FLUJO.indexOf(fase);
+
+    if (indiceActual === -1) {
+      throw new Error("La orden tiene una fase desconocida.");
+    }
+
+    if (indiceDestino !== indiceActual + 1) {
+      if (indiceActual >= FASES_FLUJO.length - 1) {
+        throw new Error("La orden ya está empaquetada; no tiene fases pendientes.");
+      }
+      if (indiceDestino <= indiceActual) {
+        throw new Error(
+          "La orden no puede retroceder de fase: el flujo de calidad es secuencial.",
+        );
+      }
+      throw new Error(
+        `Debes completar «${FASE_PLANTA[FASES_FLUJO[indiceActual + 1]].label}» antes de avanzar.`,
+      );
+    }
 
     const avancePorFase: Record<FasePlanta, number> = {
       EN_PROCESO: 45,
@@ -847,12 +1022,45 @@ export const mockDb = {
       EMPACADO: 100,
     };
 
+    const ahora = new Date().toISOString();
+    const evento: EventoOrden = {
+      id: `evt-${crypto.randomUUID().slice(0, 8)}`,
+      fase,
+      anterior: actual.fase,
+      usuario: actor.usuario,
+      rol: actor.rol,
+      fecha: ahora,
+      nota,
+    };
+
     const actualizada: OrdenTrabajo = {
-      ...db.ordenes[index],
+      ...actual,
       fase,
       avance: avancePorFase[fase],
+      historial: [...(actual.historial ?? []), evento],
     };
+
+    const nuevas: Notificacion[] = [];
+
+    if (FASES_AVISO.includes(fase)) {
+      nuevas.push({
+        id: `not-${crypto.randomUUID().slice(0, 8)}`,
+        tipo: "PEDIDO_LISTO",
+        titulo:
+          fase === "EMPACADO"
+            ? "Pedido empaquetado y listo para entrega"
+            : "Producción finalizada, lista para empaque",
+        detalle: `${actual.codigo} · ${actual.producto} · ${actual.clienteNombre}`,
+        ordenId: actual.id,
+        codigo: actual.codigo,
+        roles: ["VENDEDOR", "ADMIN"],
+        leidaPor: [],
+        creadaEn: ahora,
+      });
+    }
+
     db.ordenes[index] = actualizada;
+    db.notificaciones = [...nuevas, ...db.notificaciones];
     writeDb(db);
     return actualizada;
   },
@@ -898,6 +1106,54 @@ export const mockDb = {
     db.movimientos = [movimiento, ...db.movimientos];
     writeDb(db);
     return movimiento;
+  },
+
+  async listarNotificaciones(rol: Rol): Promise<Notificacion[]> {
+    await delay(140);
+    return readDb()
+      .notificaciones.filter((notificacion) => notificacion.roles.includes(rol))
+      .sort(
+        (a, b) => new Date(b.creadaEn).getTime() - new Date(a.creadaEn).getTime(),
+      );
+  },
+
+  async marcarNotificacionLeida(
+    id: string,
+    usuarioId: string,
+  ): Promise<Notificacion | null> {
+    await delay(90);
+    const db = readDb();
+    const notificacion = db.notificaciones.find((item) => item.id === id);
+    if (!notificacion) return null;
+    if (!notificacion.leidaPor.includes(usuarioId)) {
+      notificacion.leidaPor = [...notificacion.leidaPor, usuarioId];
+      writeDb(db);
+    }
+    return notificacion;
+  },
+
+  async marcarNotificacionesLeidas(
+    usuarioId: string,
+    rol: Rol,
+  ): Promise<number> {
+    await delay(120);
+    const db = readDb();
+    let marcadas = 0;
+    db.notificaciones = db.notificaciones.map((notificacion) => {
+      if (
+        !notificacion.roles.includes(rol) ||
+        notificacion.leidaPor.includes(usuarioId)
+      ) {
+        return notificacion;
+      }
+      marcadas += 1;
+      return {
+        ...notificacion,
+        leidaPor: [...notificacion.leidaPor, usuarioId],
+      };
+    });
+    if (marcadas > 0) writeDb(db);
+    return marcadas;
   },
 
   async reset(): Promise<void> {

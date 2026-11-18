@@ -1,9 +1,13 @@
 import {
+  Activity,
   Boxes,
   Calculator,
   ClipboardList,
+  FilePlus2,
   LayoutDashboard,
+  Stamp,
   Users,
+  UsersRound,
   Waypoints,
   X,
   type LucideIcon,
@@ -12,8 +16,10 @@ import { NavLink } from "react-router-dom";
 import { MarkennyLogo } from "@/components/brand/MarkennyLogo";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { cn } from "@/lib/utils";
+import { useAuth } from "@/features/auth";
+import { cn, initials } from "@/lib/utils";
 import { SISTEMA } from "@/shared/catalogos";
+import { ROL_LABEL, type Rol } from "@/shared/domain";
 
 interface NavItem {
   to: string;
@@ -28,24 +34,61 @@ interface NavGroup {
   items: NavItem[];
 }
 
-const NAV_GROUPS: NavGroup[] = [
-  {
-    label: "Operación",
-    items: [
-      { to: "/", label: "Dashboard", icon: LayoutDashboard, end: true },
-      { to: "/planta", label: "Planta Kanban", icon: Waypoints, hint: "4 fases" },
-      { to: "/ventas/ordenes", label: "Órdenes de trabajo", icon: ClipboardList },
-      { to: "/ventas/cotizador", label: "Cotizador", icon: Calculator },
-    ],
-  },
-  {
-    label: "Catálogo",
-    items: [
-      { to: "/ventas/clientes", label: "Clientes", icon: Users },
-      { to: "/inventario", label: "Inventario", icon: Boxes },
-    ],
-  },
+const VENTAS_ITEMS: NavItem[] = [
+  { to: "/ventas/ordenes", label: "Órdenes de trabajo", icon: ClipboardList },
+  { to: "/ventas/nueva-orden", label: "Nueva orden", icon: FilePlus2, hint: "2 fichas" },
+  { to: "/ventas/seguimiento", label: "Seguimiento", icon: Activity },
+  { to: "/ventas/cotizador", label: "Cotizador", icon: Calculator },
+  { to: "/ventas/clientes", label: "Clientes", icon: UsersRound },
 ];
+
+const NAV_POR_ROL: Record<Rol, NavGroup[]> = {
+  ADMIN: [
+    {
+      label: "Administración",
+      items: [
+        { to: "/admin", label: "Dashboard general", icon: LayoutDashboard, end: true },
+        { to: "/admin/empleados", label: "Empleados y roles", icon: Users },
+      ],
+    },
+    {
+      label: "Ventas",
+      items: VENTAS_ITEMS,
+    },
+    {
+      label: "Taller y almacén",
+      items: [
+        { to: "/produccion", label: "Producción", icon: Waypoints, hint: "4 fases" },
+        { to: "/inventario", label: "Inventario", icon: Boxes },
+        { to: "/inventario/sellos", label: "Sellos y PT", icon: Stamp },
+      ],
+    },
+  ],
+  VENDEDOR: [
+    {
+      label: "Mi operación",
+      items: [
+        { to: "/ventas/dashboard", label: "Mi dashboard", icon: LayoutDashboard },
+        ...VENTAS_ITEMS,
+      ],
+    },
+  ],
+  PRODUCCION: [
+    {
+      label: "Taller",
+      items: [
+        { to: "/produccion", label: "Control de calidad", icon: Waypoints, hint: "4 fases" },
+      ],
+    },
+    {
+      label: "Almacén",
+      items: [
+        { to: "/inventario", label: "Inventario", icon: Boxes },
+        { to: "/inventario/sellos", label: "Sellos y PT", icon: Stamp },
+      ],
+    },
+  ],
+};
 
 interface SidebarProps {
   onNavigate?: () => void;
@@ -53,6 +96,10 @@ interface SidebarProps {
 }
 
 export function Sidebar({ onNavigate, onClose }: SidebarProps) {
+  const { usuario } = useAuth();
+  const rol = usuario?.rol ?? "ADMIN";
+  const grupos = NAV_POR_ROL[rol];
+
   return (
     <aside className="flex h-full w-[264px] flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground">
       <div className="flex h-16 items-center justify-between border-b border-sidebar-border px-5">
@@ -71,14 +118,14 @@ export function Sidebar({ onNavigate, onClose }: SidebarProps) {
       </div>
 
       <nav className="flex-1 overflow-y-auto px-3 py-5">
-        {NAV_GROUPS.map((group, groupIndex) => (
+        {grupos.map((group, groupIndex) => (
           <div key={group.label} className={cn(groupIndex > 0 && "mt-6")}>
             <p className="px-3 pb-2 text-[9px] font-semibold uppercase tracking-[0.24em] text-sidebar-muted/70">
               {group.label}
             </p>
             <ul className="space-y-1">
-              {group.items.map((item) => (
-                <li key={item.to}>
+              {group.items.map((item, itemIndex) => (
+                <li key={`${item.to}-${itemIndex}`}>
                   <NavLink
                     to={item.to}
                     end={item.end}
@@ -133,7 +180,7 @@ export function Sidebar({ onNavigate, onClose }: SidebarProps) {
               <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
             </span>
             <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/80">
-              Planta en vivo
+              {rol === "PRODUCCION" ? "Taller en vivo" : "Planta en vivo"}
             </p>
           </div>
           <p className="mt-2 text-[11px] leading-relaxed text-sidebar-muted">
@@ -149,15 +196,15 @@ export function Sidebar({ onNavigate, onClose }: SidebarProps) {
       <Separator className="bg-sidebar-border" />
 
       <div className="flex items-center gap-3 px-4 py-4">
-        <div className="grid h-9 w-9 place-items-center rounded-full bg-primary font-display text-sm font-bold text-white">
-          KH
+        <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary font-display text-sm font-bold text-white">
+          {usuario ? initials(usuario.nombre) : "MK"}
         </div>
         <div className="min-w-0 flex-1">
           <p className="truncate text-[12px] font-medium text-white">
-            Kenny Hernández
+            {usuario?.nombre ?? "Markenny"}
           </p>
           <p className="truncate text-[10px] text-sidebar-muted">
-            Administrador · {SISTEMA.version}
+            {ROL_LABEL[rol]} · {SISTEMA.version}
           </p>
         </div>
       </div>

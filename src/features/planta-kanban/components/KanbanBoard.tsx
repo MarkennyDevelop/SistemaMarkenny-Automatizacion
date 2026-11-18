@@ -12,6 +12,7 @@ interface KanbanBoardProps {
   isLoading?: boolean;
   movingId?: string | null;
   onMoveOrden: (ordenId: string, fase: FasePlanta) => void;
+  onOpenOrden?: (orden: OrdenTrabajo) => void;
 }
 
 /**
@@ -23,6 +24,7 @@ export function KanbanBoard({
   isLoading,
   movingId,
   onMoveOrden,
+  onOpenOrden,
 }: KanbanBoardProps) {
   const [, setArrastrando] = useState<string | null>(null);
 
@@ -37,6 +39,7 @@ export function KanbanBoard({
           isLoading={isLoading}
           movingId={movingId}
           onMoveOrden={onMoveOrden}
+          onOpenOrden={onOpenOrden}
           onDragStart={setArrastrando}
           onDragEnd={() => setArrastrando(null)}
         />
