@@ -4,6 +4,11 @@ Documento de traspaso técnico. Resume qué se construyó, por qué, qué falta 
 conviene revisar. Pensado para que otra persona (o Claude Code) continúe el trabajo
 sin tener que reconstruir el contexto.
 
+Para una evaluación rápida de la arquitectura, leer la **sección 15** (mapa de
+features, reglas de dependencia, puntos de extensión y checklist de lectura).
+Para el registro formal de la incidencia de acceso y su corrección, ir a la
+**sección 16**.
+
 ---
 
 ## 1. Resumen ejecutivo
@@ -365,3 +370,218 @@ Cuando falten (p. ej. el primer arranque o un perfil nuevo), `npm run dev` muest
 en `/login` y `/setup-admin` el botón **Cargar cuentas demo · solo desarrollo**
 (`DemoAccountsButton` + `authApi.cargarCuentasDemo`). Instala las tres cuentas,
 reinicia la sesión y recarga; el botón no se compila en producción.
+
+---
+
+## 15. Mapa de arquitectura para evaluación (Claude Code / herederos)
+
+Esta sección complementa el §3 con una vista orientada a **evaluar** el frontend:
+qué se puede tocar, dónde y con qué efectos colaterales. No cambia el código; es
+una guía de lectura y de decisión.
+
+### 15.1 Mapa de features
+
+| Feature | Entrada pública | Responsabilidad | No debe hacer |
+|---|---|---|---|
+| `auth/` | `index.ts` → `AuthProvider`, guardas, `authApi` | Identidad, sesión, alta de administrador y empleados, control de acceso | Conocer órdenes, clientes ni inventario |
+| `ventas/` | `index.ts` → páginas y hooks | Clientes, cotizador y fichas de OT (papelería, gran formato, general) | Escribir directamente en `mock/db.ts` ni decidir fases de planta |
+| `planta-kanban/` | `index.ts` → `usePlantaBoard`, tablero, detalle | Tablero de 4 fases, avance secuencial y trazabilidad de QC | Crear clientes u órdenes; solo consume y mueve OTs |
+| `inventario/` | `index.ts` → páginas, hooks, `inventarioApi` | Materiales, movimientos auditados, sellos y producto terminado | Modificar fases de una OT |
+| `notificaciones/` | `index.ts` → bell, hooks | Campana, listado y marcado de leídas | Generar reglas de negocio: solo presenta lo que otras features producen |
+| `dashboard/` | `index.ts` → vistas y hooks | KPIs derivados del mock para ADMIN y VENDEDOR | Duplicar cálculos que ya existen en `mock/db.ts` |
+| `shared/` | `domain.ts`, `catalogos.ts`, `fase-ui.ts`, `api/queryKeys.ts`, `mock/db.ts` | Tipos, catálogos, presentación de fases, claves de caché y persistencia simulada | Importar desde `features/` (regla estricta) |
+| `app/` + `components/` | `providers.tsx`, `App.tsx`, `ui/`, `layout/` | Composición, providers, primitivas Radix y shell visual | Contener reglas de negocio |
+
+### 15.2 Flujo de datos de una acción típica
+
+El sentido de la flecha es importante: la UI **nunca** escribe en el storage.
+
+```
+Componente presentacional (props + callbacks)
+        ↓ callback
+Página contenedora (*Page.tsx)
+        ↓ hook
+useXxx (TanStack Query)  ← queryKeys centralizadas
+        ↓
+xxxApi (features/*/api)  ← única puerta de entrada al dato
+        ↓
+mockDb / authStore  → localStorage (db.v1 / auth.v1)
+        ↓
+invalidateQueries → re-render de dashboard, listado y tablero
+```
+
+Ejemplo concreto — avanzar una OT en planta:
+
+`OrdenCard` → `KanbanColumn.onMove` → `usePlantaBoard.avanzarFase` →
+`mockDb.actualizarFaseOrden` (valida salto de uno, exige actor PRODUCCION/ADMIN,
+escribe `EventoOrden` y crea notificación si aplica) → `onSuccess` con optimistic
+update y rollback → invalidación de `ordenes`, `dashboard` y `notificaciones`.
+
+### 15.3 Reglas de dependencia y cómo verificarlas
+
+1. `shared/` no importa de `features/`.
+2. Una feature importa a otra **solo** por su `index.ts`; nunca por
+   `features/otra/components/...`.
+3. Los componentes visuales reciben props; no llaman a `api/` ni leen
+   `localStorage`.
+4. Solo `hooks/` (o el contenedor) habla con `api/`.
+5. `lib/` es lógica pura: sin React, sin DOM, sin storage.
+6. Las claves de caché se definen en `shared/api/queryKeys.ts`, no inline.
+
+Verificación rápida con `grep`:
+
+```bash
+# No debe haber resultados fuera de shared/
+grep -R "features/" src/shared
+
+# Los componentes no deberían importar api directamente
+grep -R "from .*api/" src/features/*/components
+
+# Las claves de query deben estar centralizadas
+grep -R "useQuery\|useMutation" src/features/*/hooks
+```
+
+### 15.4 Puntos de extensión
+
+| Quieres añadir… | Toca | No toques |
+|---|---|---|
+| Una ruta nueva | `App.tsx` + página en la feature + entrada en `Sidebar.tsx` y tabla de rutas de este doc | `mock/db.ts` salvo que necesites datos nuevos |
+| Un rol nuevo | `Rol` en `shared/domain.ts`, `homeForRol`, guardas, `Sidebar`, `queryKeys` si aplica | Las reglas de QC: el actor ya se valida por rol |
+| Una quinta fase | `FaseProduccion`, `FASES_PLANTA`, `fase-ui.ts`, validación en `usePlantaBoard` **y** `mockDb.actualizarFaseOrden` | Los componentes de tabla: derivan columnas de `FASES_PLANTA` |
+| Otra categoría de OT | `CategoriaTrabajo`, catálogos, ficha con Compound Components, motor de cotización | El listado genérico de órdenes |
+| Un endpoint Fastify | Solo `features/*/api/*.ts`; mantener la firma y `queryKeys` | Páginas, hooks ni componentes |
+| Un movimiento de inventario | `registrarMovimiento` en `mock/db.ts` + diálogo; el responsable se toma de la sesión | El cálculo de stock, que ya es derivado |
+
+### 15.5 Checklist de lectura recomendada
+
+Para una persona o agente que llegue al repo, este orden minimiza contexto:
+
+1. `README.md` → comandos, roles y registro de auditoría.
+2. `docs/ANALISIS-FRONTEND.md` §§1–4 → decisiones, estructura y dominio.
+3. `src/App.tsx` → árbol de rutas y guardas aplicados.
+4. `src/features/auth/components/guards.tsx` + `homeForRol` → quién ve qué.
+5. `src/shared/domain.ts` + `catalogos.ts` → vocabulario del negocio.
+6. `src/shared/mock/db.ts` → reglas de oro (fases, eventos, notificaciones, stock).
+7. `src/shared/api/queryKeys.ts` → caché e invalidaciones.
+8. Una feature vertical completa, p. ej. `planta-kanban/` (hook → api → board).
+9. `src/features/ventas/components/*/context.ts` → patrón Compound Components.
+10. `vite.config.ts` + `tailwind.config.ts` → build y sistema de diseño.
+
+### 15.6 Señales de alerta al revisar cambios
+
+- Un componente que lea `localStorage` o llame a `mockDb` directamente: rompe la
+  capa `api/` y hará dolorosa la migración a Fastify.
+- Un `useEffect` que sincronice dos queries manualmente: probablemente deba ser
+  una invalidación en `onSuccess`.
+- Cálculo de montos o stock duplicado en la UI: ya existe en `cotizador.ts` o en
+  `mock/db.ts`.
+- Un guarda nuevo sin actualizar `Sidebar`: el rol verá rutas prohibidas.
+- Cambios en `FaseProduccion` sin tocar `mockDb.actualizarFaseOrden`: la UI
+  permitiría saltos que el mock ya no sabría rechazar.
+- texto o icono nuevo fuera de la paleta rojo/negro/blanco definida en tokens.
+
+### 15.7 Deuda actual relacionada con esta área
+
+Además del §12, conviene vigilar:
+
+- La semilla y las reglas viven en un único `db.ts` de ~gran tamaño; al crecer,
+  dividir por agregado (`ordenes`, `inventario`, `notificaciones`).
+- No hay tests de las reglas de dependencia; un simple lint con `eslint-plugin-boundaries`
+  las convertiría en errores de CI.
+- `authStore.ts` es la pieza que sustituir por sesiones httpOnly; `authApi.ts`
+  ya concentra las firmas, pero `cargarCuentasDemo()` debe eliminarse en ese
+  momento junto con `DemoAccountsButton.tsx` y `vite-env.d.ts`.
+- La validación visual en desktop sigue pendiente (§11); el checklist anterior
+  ayuda a detectar regresiones al hacerla.
+
+---
+
+## 16. Registro de auditoría técnico — incidencia de acceso y corrección (2026-11-18)
+
+### 16.1 Cronología
+
+| Hora/Hito | Hecho |
+|---|---|
+| Tras `f21295b` | Fase 2 validada en el navegador de automatización con las tres cuentas creadas en su `localStorage`. |
+| Reporte del usuario | "Estoy intentando ingresar con las credenciales que les diste y no me da acceso". |
+| Cierre de servidores | Se detuvieron los procesos Vite/npm en el puerto 5173 antes de tocar el código. |
+| Diagnóstico | Las cuentas existían solo en el perfil de pruebas; no había semilla en el código ni en el navegador del usuario. |
+| Implementación | `cargarCuentasDemo()` + `DemoAccountsButton` + tipos `vite/client`; documentación actualizada. |
+| Verificación | Carga de cuentas en navegador vacío y login con los tres roles; `typecheck` y `build` limpios. |
+| Cierre | Commit `b7a0758`, servidores y pestaña de pruebas cerrados. |
+
+### 16.2 Evidencia del diagnóstico
+
+- Dos instancias de Vite escuchaban en `5173` (`::` y `127.0.0.1`) con sus árboles
+  de procesos `npm run dev → cmd → node → vite`; todas se terminaron.
+- En el navegador de pruebas, `localStorage['markenny.print-mis.auth.v1']`
+  contenía tres usuarios activos con `passwordHash` de 64 caracteres.
+- En un navegador sin esas claves, `/login` redirigía a `/setup-admin`: prueba de
+  que no había cuentas sembradas en el bundle.
+- Después de pulsar el nuevo botón en ese navegador vacío, el store mostró
+  `admin@markenny.com`, `valeria@markenny.com` y `luis@markenny.com` con sus
+  roles, `activo: true`, `sesion: null` y `creadoPor: "Cuentas demo (desarrollo)"`.
+
+### 16.3 Cambios a nivel de código
+
+- **`authApi.cargarCuentasDemo()`**: construye los tres `Usuario` con
+  `crearSalt()` + `hashPassword()` y llama a `escribirAuth({ usuarios, sesion: null })`.
+  Incluye guarda `if (!import.meta.env.DEV) throw ...` para que nunca se ejecute en
+  producción. Devuelve `UsuarioPublico[]` (sin secretos).
+- **`DemoAccountsButton`**: `if (!import.meta.env.DEV) return null`; usa
+  `window.confirm` antes de sobreescribir, `sonner` para el aviso y
+  `window.setTimeout(() => window.location.reload(), 600)` para aplicar el store.
+- **`AuthLayout`**: inserta el panel después de `children` en login y setup.
+- **`vite-env.d.ts`**: `/// <reference types="vite/client" />` para que TS acepte
+  `import.meta.env.DEV`.
+
+### 16.4 Validación técnica detallada
+
+| Paso | Resultado observado |
+|---|---|
+| Navegador vacío → `/login` | Redirect a `/setup-admin`; botón demo visible |
+| Cargar cuentas (confirmación aceptada) | 3 usuarios activos, hash de 64 caracteres, `sesion: null`, recarga a `/login` |
+| Login ADMIN | `Kenny Hernández`, `ADMIN`, `location = /admin` |
+| Cerrar sesión | Menú de cuenta → `Cerrar sesión` → `/login` |
+| Login VENDEDOR | `Valeria Rondón`, `VENDEDOR`, `location = /ventas/dashboard` |
+| Login PRODUCCION | `Luis Pérez`, `PRODUCCION`, `location = /produccion` |
+| `npm run typecheck` | Sin errores |
+| `npm run build` | Sin errores; atajo ausente en el bundle de producción por `import.meta.env.DEV` |
+
+### 16.5 Alternativas consideradas y descartadas
+
+| Alternativa | Por qué se descartó |
+|---|---|
+| Sembrar admin/vendedor/producción en el código | Rompe el requisito de `/setup-admin` como registro único y deja contraseñas conocidas en producción. |
+| Hardcodear un fallback en `LoginPage` | Oculta la causa real, mezcla credenciales de prueba con la lógica de negocio y no funciona en perfiles nuevos. |
+| Pedir al usuario que copiara el `localStorage` manualmente | Frágil, propenso a errores y no reproducible por otra persona. |
+| Dejar el botón también en `npm run preview` | Expondría las cuentas demo en un build que simula producción. |
+
+### 16.6 Impacto, trazabilidad y estado final
+
+- **Requisitos afectados:** acceso por rol (uno de los criterios de aceptación de
+  la Fase 2). Quedó verificado para los tres roles.
+- **No afectados:** register único del administrador, QC secuencial, eventos de
+  auditoría, notificaciones, inventario, ni el contrato sugerido con Fastify.
+- **Commits:** `f21295b` (funcionalidad de Fase 2) y `b7a0758` (este fix y su
+  documentación).
+- **Estado del entorno:** árbol de trabajo limpio tras el commit; servidores y
+  pestaña de pruebas cerrados; `dist/` regenerado con el build final.
+
+### 16.7 Rollback y recuperación
+
+1. Borrar `markenny.print-mis.auth.v1` y `markenny.print-mis.db.v1` del
+   `localStorage` del navegador afectado.
+2. Quitar `DemoAccountsButton` de `AuthLayout`, eliminar el archivo y el método
+   `cargarCuentasDemo()`, y revertir `b7a0758`.
+3. El flujo vuelve a `/setup-admin` en primer arranque; no quedan cuentas
+   sembradas ni secretos en el bundle.
+
+### 16.8 Lección documentada
+
+Un mock con persistencia local es correcto para validar reglas de negocio, pero
+sus datos **no son portables entre navegadores**. Cualquier credencial creada
+durante una prueba debe acompañarse de un mecanismo explícito —y de desarrollo—
+para reproducirla en el entorno de quien evalúa. La corrección eligió un atajo
+visible, confirmado y autocontenido, sin contaminar el flujo real de registro ni
+el build de producción.

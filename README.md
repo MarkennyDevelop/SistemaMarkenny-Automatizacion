@@ -189,10 +189,103 @@ importa rutas internas de otra feature.
   gran formato) en `features/ventas/lib/cotizador.ts`; también estima el monto de
   una OT.
 
+### Registro de auditoría — Fase 2 y habilitación de acceso (2026-11-18)
+
+Este apartado deja constancia del trabajo ejecutado después de la Fase 2 y de la
+incidencia de acceso reportada por el usuario. Commits de referencia:
+`f21295b` (Fase 2) y `b7a0758` (corrección de acceso).
+
+#### Contexto y alcance
+
+La Fase 2 entregó el frontend funcional completo: tres roles con guardas de ruta,
+fichas de OT para papelería y gran formato, tablero Kanban con control de calidad
+secuencial y auditado, notificaciones, inventario, sellos y cotizador. Todo se
+validó contra la API mock persistente en `localStorage`, sin backend.
+
+#### Síntoma reportado
+
+El usuario indicó que no podía ingresar con las credenciales entregadas para
+cada rol y preguntó si eran credenciales ficticias utilizadas únicamente en una
+prueba de recorrido.
+
+#### Diagnóstico y causa raíz
+
+Las credenciales **no están codificadas en la aplicación**. Se crearon durante
+la validación dentro del `localStorage` del navegador automatizado usado para las
+pruebas (`markenny.print-mis.auth.v1`). Ese almacenamiento es privado por
+navegador, perfil y equipo, por lo que en el navegador del usuario:
+
+- no existían esas cuentas y `/login` redirigía a `/setup-admin` (arranque sin
+  administrador), o
+- si registraba su propio administrador, el login rechazaba los correos demo.
+
+La lógica de autenticación —hash SHA-256 con sal por usuario, comparación y
+redirección por rol— estaba correcta. El fallo era de **disponibilidad de los
+datos de prueba**, no de validación de credenciales.
+
+#### Decisión tomada
+
+No sembrar usuarios en el flujo real, para preservar el requisito de registro
+único del administrador. En su lugar se agregó un atajo **exclusivo de
+desarrollo**: un botón que instala las tres cuentas demo en el navegador de quien
+evalúa la interfaz. Se oculta en producción con `import.meta.env.DEV`.
+
+| Archivo | Cambio y propósito |
+|---|---|
+| `src/features/auth/api/authApi.ts` | `cargarCuentasDemo()`: crea las tres cuentas con hash+sal, reemplaza el store de identidad y deja `sesion: null`. Falla fuera de `DEV`. |
+| `src/features/auth/components/DemoAccountsButton.tsx` | Panel de desarrollo con confirmación, toast, recarga y creación condicional (`return null` en producción). |
+| `src/features/auth/components/AuthLayout.tsx` | Integra el botón al pie de `/login` y `/setup-admin`. |
+| `src/vite-env.d.ts` | Habilita los tipos de `import.meta.env` usados por el atajo. |
+| `README.md` / `docs/ANALISIS-FRONTEND.md` | Documentación del comportamiento, registro y análisis para herederos. |
+
+#### Reproducción controlada
+
+1. `npm run dev` y abrir `http://localhost:5173`.
+2. En `/login` o `/setup-admin`, pulsar **Cargar cuentas demo · solo desarrollo**
+   y aceptar la confirmación (aviso de que se reemplazan las cuentas del navegador).
+3. La página se recarga; entrar con cualquiera de las credenciales de la tabla
+   anterior y comprobar el destino según el rol.
+4. Para reiniciar, borrar `markenny.print-mis.auth.v1` y
+   `markenny.print-mis.db.v1`, o repetir el paso 2.
+
+#### Resultado de la validación
+
+| Cuenta | Sesión iniciada | Redirección |
+|---|---|---|
+| `admin@markenny.com` | Kenny Hernández · ADMIN | `/admin` |
+| `valeria@markenny.com` | Valeria Rondón · VENDEDOR | `/ventas/dashboard` |
+| `luis@markenny.com` | Luis Pérez · PRODUCCION | `/produccion` |
+
+Se comprobó además el cierre de sesión desde el menú de la cuenta, que las tres
+cuentas quedaron activas con hash de 64 caracteres y `sesion: null` tras la carga,
+y que `npm run typecheck` y `npm run build` terminan sin errores. Los servidores y
+la pestaña de pruebas se cerraron al finalizar.
+
+#### Impacto en requisitos
+
+| Requisito | Estado tras el cambio |
+|---|---|
+| Registro único del administrador | Intacto: el botón es un atajo de desarrollo y no crea un segundo administrador desde la UI real. |
+| Tres roles y dashboards por rol | Confirmado con las tres redirecciones. |
+| Evaluación de interfaces por el usuario | Desbloqueada: el atajo funciona en el navegador del evaluador. |
+| Seguridad | Sin cambios en producción: el botón no se compila y el mock sigue siendo solo de desarrollo. |
+
+#### Riesgos, mitigaciones y rollback
+
+| Riesgo | Mitigación |
+|---|---|
+| Cualquier visitante pudiera instalar cuentas | `import.meta.env.DEV` impide que el componente exista en `npm run build` / `npm run preview`. |
+| Reemplazo accidental de cuentas propias | Confirmación explícita antes de sobreescribir el `localStorage`. |
+| Contraseñas demo visibles en código | Aceptable solo en desarrollo; el backend deberá gestionar credenciales reales. |
+
+Para revertir: eliminar el botón y `cargarCuentasDemo()`, revertir `b7a0758` y
+borrar ambas claves del `localStorage`. El sistema vuelve al flujo puro
+`/setup-admin` sin datos sembrados.
+
 ### Documentación de traspaso
 
-El análisis técnico completo (decisiones, patrones, verificación, pendientes y
-contrato sugerido con el backend) está en
-[`docs/ANALISIS-FRONTEND.md`](docs/ANALISIS-FRONTEND.md).
+El análisis técnico completo (decisiones, patrones, verificación, pendientes,
+mapa de arquitectura para evaluación y registro detallado de esta incidencia)
+está en [`docs/ANALISIS-FRONTEND.md`](docs/ANALISIS-FRONTEND.md), secciones 15 y 16.
 
 
