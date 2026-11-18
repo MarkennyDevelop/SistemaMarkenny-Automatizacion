@@ -257,6 +257,7 @@ desde el esquema Zod del servidor.
 | Primer arranque → `/setup-admin` | OK; tras crear admin queda bloqueado |
 | Alta de empleados Vendedor/Producción | OK; 3 usuarios activos en la demo |
 | Login por rol y redirección | OK (`/admin`, `/ventas/dashboard`, `/produccion`) |
+| Cuentas demo en un navegador nuevo | OK; botón de desarrollo instala las 3 cuentas y las 3 validan login |
 | Rutas protegidas | OK; Vendedor no entra a `/admin` ni a `/inventario`, Producción no entra a `/ventas` |
 | OT de papelería (`OT-2026-0185`) | OK; datos de especificación guardados y seguimiento visible |
 | OT de gran formato (`OT-2026-0186`) | OK; dimensiones en m, sustrato y resolución guardados |
@@ -357,3 +358,10 @@ Credenciales creadas durante la validación:
 | Administrador | `admin@markenny.com` | `Markenny2026` |
 | Vendedor | `valeria@markenny.com` | `Ventas2026` |
 | Producción | `luis@markenny.com` | `Planta2026` |
+
+Estas cuentas se guardan en el `localStorage` del navegador que las creó: no se
+comparten entre perfiles, equipos ni entre el navegador de pruebas y el tuyo.
+Cuando falten (p. ej. el primer arranque o un perfil nuevo), `npm run dev` muestra
+en `/login` y `/setup-admin` el botón **Cargar cuentas demo · solo desarrollo**
+(`DemoAccountsButton` + `authApi.cargarCuentasDemo`). Instala las tres cuentas,
+reinicia la sesión y recarga; el botón no se compila en producción.

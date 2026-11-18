@@ -94,6 +94,14 @@ sustituye por sesiones/cookies del backend.
 Para reiniciar la demo por completo, borrar `markenny.print-mis.db.v1` y
 `markenny.print-mis.auth.v1` del `localStorage` y recargar.
 
+> **Importante:** las cuentas viven en el `localStorage` de **cada navegador**.
+> Unas credenciales creadas en la sesión de pruebas de otro equipo o perfil no
+> existen en el tuyo: al abrir la app verás `/setup-admin` o el login rechazará
+> esos correos. Si eso ocurre, ejecuta `npm run dev` y pulsa **Cargar cuentas
+> demo · solo desarrollo**, que aparece al pie de `/login` y `/setup-admin`.
+> Ese botón instala las tres cuentas de la tabla anterior en tu navegador, cierra
+> la sesión y recarga. No aparece en el build de producción (`npm run preview`).
+
 ### Rutas
 
 | Ruta | Pantalla | Acceso |

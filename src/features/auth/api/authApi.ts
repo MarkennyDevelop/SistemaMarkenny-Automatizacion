@@ -214,6 +214,79 @@ export const authApi = {
       ),
     });
   },
+
+  /**
+   * Utilidad exclusiva de desarrollo: instala las tres cuentas de demostración
+   * en el navegador actual y cierra la sesión. No sustituye al flujo
+   * `/setup-admin`, que sigue siendo el único registro real del administrador.
+   */
+  async cargarCuentasDemo(): Promise<UsuarioPublico[]> {
+    if (!import.meta.env.DEV) {
+      throw new Error("Las cuentas demo solo están disponibles en desarrollo.");
+    }
+    await delay(300);
+
+    const definiciones: Array<{
+      id: string;
+      nombre: string;
+      email: string;
+      telefono: string;
+      cargo: string;
+      rol: Rol;
+      password: string;
+    }> = [
+      {
+        id: "usr-demo-admin",
+        nombre: "Kenny Hernández",
+        email: "admin@markenny.com",
+        telefono: "+58 424-651-2044",
+        cargo: "Gerente general",
+        rol: "ADMIN",
+        password: "Markenny2026",
+      },
+      {
+        id: "usr-demo-vendedor",
+        nombre: "Valeria Rondón",
+        email: "valeria@markenny.com",
+        telefono: "+58 412-555-0199",
+        cargo: "Ejecutiva de ventas",
+        rol: "VENDEDOR",
+        password: "Ventas2026",
+      },
+      {
+        id: "usr-demo-produccion",
+        nombre: "Luis Pérez",
+        email: "luis@markenny.com",
+        telefono: "+58 414-555-0100",
+        cargo: "Operario de planta",
+        rol: "PRODUCCION",
+        password: "Planta2026",
+      },
+    ];
+
+    const creadoEn = new Date().toISOString();
+    const usuarios: Usuario[] = await Promise.all(
+      definiciones.map(async (definicion) => {
+        const salt = crearSalt();
+        return {
+          id: definicion.id,
+          nombre: definicion.nombre,
+          email: definicion.email,
+          telefono: definicion.telefono,
+          cargo: definicion.cargo,
+          rol: definicion.rol,
+          activo: true,
+          passwordHash: await hashPassword(definicion.password, salt),
+          salt,
+          creadoEn,
+          creadoPor: "Cuentas demo (desarrollo)",
+        };
+      }),
+    );
+
+    escribirAuth({ usuarios, sesion: null });
+    return usuarios.map(sinSecretos);
+  },
 };
 
 export type { UsuarioPublico };
