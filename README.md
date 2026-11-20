@@ -306,3 +306,15 @@ mapa de arquitectura para evaluación y registro detallado de esta incidencia)
 está en [`docs/ANALISIS-FRONTEND.md`](docs/ANALISIS-FRONTEND.md), secciones 15 y 16.
 
 
+## Contrato de la API (fusionado desde la rama `API`)
+
+Esta rama contiene el contrato con el que se conectan el frontend (rama
+`Frontend`) y el backend (rama `Backend`):
+
+- `packages/contrato`: reglas compartidas, esquemas Zod y tabla de endpoints.
+- `packages/cliente-http`: cliente HTTP tipado para el frontend.
+- `docs/api/openapi.json`: especificación OpenAPI generada desde el contrato.
+
+Detalle, reglas de negocio acordadas y cambios pendientes en
+[`docs/api/README.md`](docs/api/README.md).
+
