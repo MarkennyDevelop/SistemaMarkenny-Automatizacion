@@ -104,6 +104,9 @@ describe('esquemas', () => {
   it('productos terminados: por defecto solo pendientes', () => {
     expect(FiltroProductosTerminadosSchema.parse({}).soloPendientes).toBe(true);
     expect(FiltroProductosTerminadosSchema.parse({ soloPendientes: 'false' }).soloPendientes).toBe(false);
+    // Idempotente: validar el resultado otra vez no falla.
+    const una = FiltroProductosTerminadosSchema.parse({ soloPendientes: 'false' });
+    expect(FiltroProductosTerminadosSchema.parse(una)).toEqual(una);
   });
 
   it('OrdenTrabajo exige código OT-AAAA-NNNN', () => {
