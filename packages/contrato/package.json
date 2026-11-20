@@ -1,0 +1,25 @@
+{
+  "name": "@markenny/contrato",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Contrato único de la API del Print MIS de Markenny: esquemas Zod, reglas compartidas y tabla de endpoints.",
+  "type": "module",
+  "main": "src/index.js",
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "openapi": "node scripts/generar-openapi.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "vitest": "^2.1.9",
+    "zod-to-json-schema": "^3.25.2"
+  }
+}
