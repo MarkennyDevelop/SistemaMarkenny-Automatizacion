@@ -1,3 +1,4 @@
+import { nuevoId } from "@/lib/utils";
 import type { Rol } from "@/shared/domain";
 import {
   buscarPorEmail,
@@ -17,10 +18,6 @@ import type {
 
 function delay(ms = 420) {
   return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-function nuevoId(prefijo: string) {
-  return `${prefijo}-${crypto.randomUUID().slice(0, 8)}`;
 }
 
 async function construirUsuario(input: {
@@ -47,6 +44,8 @@ async function construirUsuario(input: {
     creadoPor: input.creadoPor,
   };
 }
+
+const CREDENCIALES_INVALIDAS = "Correo o contraseña incorrectos.";
 
 function sesionUsuario(): Usuario | null {
   const db = leerAuth();
@@ -103,14 +102,15 @@ export const authApi = {
     await delay(480);
     const db = leerAuth();
     const usuario = buscarPorEmail(db, input.email);
-    if (!usuario) throw new Error("Credenciales inválidas. Verifica tu correo.");
+    // Mismo mensaje para correo y contraseña: no revela qué correos existen.
+    if (!usuario) throw new Error(CREDENCIALES_INVALIDAS);
     if (!usuario.activo) {
       throw new Error("Tu cuenta está desactivada. Contacta al administrador.");
     }
 
     const hash = await hashPassword(input.password, usuario.salt);
     if (hash !== usuario.passwordHash) {
-      throw new Error("Credenciales inválidas. Verifica tu contraseña.");
+      throw new Error(CREDENCIALES_INVALIDAS);
     }
 
     usuario.ultimoAcceso = new Date().toISOString();

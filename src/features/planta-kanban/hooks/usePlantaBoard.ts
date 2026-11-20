@@ -1,6 +1,11 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useMutation,
+  useMutationState,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { toast } from "sonner";
-import { plantaApi } from "@/features/planta-kanban/api/plantaApi";
+import { plantaApi } from "../api/plantaApi";
 import { useAuth } from "@/features/auth";
 import { queryKeys } from "@/shared/api/queryKeys";
 import {
@@ -9,6 +14,8 @@ import {
   type FasePlanta,
   type OrdenTrabajo,
 } from "@/shared/domain";
+
+const CLAVE_MOVER_ORDEN = ["planta", "mover-orden"] as const;
 
 interface MoverOrdenVariables {
   ordenId: string;
@@ -39,16 +46,19 @@ export function usePlantaBoard() {
   });
 
   const mutation = useMutation({
-    mutationFn: ({ ordenId, fase, nota }: MoverOrdenVariables) =>
-      plantaApi.actualizarFase(
+    mutationKey: CLAVE_MOVER_ORDEN,
+    mutationFn: ({ ordenId, fase, nota }: MoverOrdenVariables) => {
+      // Sin sesión no se firma ningún cambio: nunca se inventa un actor.
+      if (!usuario) {
+        return Promise.reject(new Error("Tu sesión expiró. Inicia sesión de nuevo."));
+      }
+      return plantaApi.actualizarFase(
         ordenId,
         fase,
-        {
-          usuario: usuario?.nombre ?? "Operario de planta",
-          rol: usuario?.rol ?? "PRODUCCION",
-        },
+        { usuario: usuario.nombre, rol: usuario.rol },
         nota,
-      ),
+      );
+    },
     onMutate: async ({ ordenId, fase }) => {
       await queryClient.cancelQueries({ queryKey: queryKeys.ordenes });
       const previous = queryClient.getQueryData<OrdenTrabajo[]>(queryKeys.ordenes);
@@ -64,8 +74,26 @@ export function usePlantaBoard() {
         queryClient.setQueryData(queryKeys.ordenes, context.previous);
       }
     },
+    onSuccess: (actualizada) => {
+      // Reemplaza la tarjeta optimista por la versión confirmada (avance e historial).
+      queryClient.setQueryData<OrdenTrabajo[]>(queryKeys.ordenes, (current) =>
+        current?.map((orden) => (orden.id === actualizada.id ? actualizada : orden)),
+      );
+      if (actualizada.fase === "FINALIZADO" || actualizada.fase === "EMPAQUETADO") {
+        toast.success("Notificación enviada al vendedor", {
+          description:
+            actualizada.fase === "EMPAQUETADO"
+              ? `${actualizada.codigo} quedó empaquetada y lista para entrega.`
+              : `${actualizada.codigo} quedó finalizada y pasa a empaque.`,
+        });
+      }
+    },
     onSettled: () => {
+      // Si aún hay otro avance en curso, refrescar ahora pisaría su estado
+      // optimista con datos viejos: se espera a que termine el último.
+      if (queryClient.isMutating({ mutationKey: CLAVE_MOVER_ORDEN }) > 1) return;
       void queryClient.invalidateQueries({ queryKey: queryKeys.ordenes });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.clientes });
       void queryClient.invalidateQueries({ queryKey: queryKeys.dashboard });
       void queryClient.invalidateQueries({ queryKey: queryKeys.notificaciones });
     },
@@ -73,10 +101,15 @@ export function usePlantaBoard() {
 
   const ordenes = query.data ?? [];
 
-  const columnas = FASES_PLANTA.map((fase) => ({
-    fase,
-    ordenes: ordenes.filter((orden) => orden.fase === fase),
-  }));
+  /**
+   * Órdenes con un avance todavía sin confirmar. Mientras una orden está aquí
+   * no acepta otro avance: un doble clic en "Marcar" no puede saltarse la
+   * revisión de calidad encadenando dos fases.
+   */
+  const enMovimiento = useMutationState({
+    filters: { mutationKey: CLAVE_MOVER_ORDEN, status: "pending" },
+    select: (mutacion) => (mutacion.state.variables as MoverOrdenVariables).ordenId,
+  });
 
   /**
    * Valida el salto antes de tocar la caché: evita que la tarjeta se mueva
@@ -85,6 +118,7 @@ export function usePlantaBoard() {
   const moverOrden = (variables: MoverOrdenVariables) => {
     const orden = ordenes.find((item) => item.id === variables.ordenId);
     if (!orden) return;
+    if (enMovimiento.includes(orden.id)) return;
 
     const origen = FASES_PLANTA.indexOf(orden.fase);
     const destino = FASES_PLANTA.indexOf(variables.fase);
@@ -108,20 +142,25 @@ export function usePlantaBoard() {
       return;
     }
 
-    mutation.mutate(variables);
+    mutation.mutate(variables, {
+      onError: (error) => {
+        toast.error("No se pudo avanzar la orden", {
+          description:
+            error instanceof Error ? error.message : "La tarjeta volvió a su fase original.",
+        });
+      },
+    });
   };
 
   return {
     ordenes,
-    columnas,
     isLoading: query.isLoading,
     isError: query.isError,
     isFetching: query.isFetching,
     refetch: query.refetch,
     actualizadoEn: query.dataUpdatedAt ? new Date(query.dataUpdatedAt) : null,
     moverOrden,
-    isMoving: mutation.isPending,
-    ordenEnMovimiento: mutation.variables?.ordenId ?? null,
-    error: mutation.error,
+    isMoving: enMovimiento.length > 0,
+    ordenesEnMovimiento: enMovimiento,
   };
 }

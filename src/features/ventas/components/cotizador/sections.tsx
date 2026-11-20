@@ -6,7 +6,6 @@ import {
   Percent,
   Printer,
   Scissors,
-  Sparkles,
   TrendingUp,
   Wallet,
   Zap,
@@ -481,8 +480,4 @@ export function ResumenCotizacion() {
       </div>
     </aside>
   );
-}
-
-export function CotizadorHeaderIcon() {
-  return <Sparkles className="h-4 w-4 text-primary" />;
 }

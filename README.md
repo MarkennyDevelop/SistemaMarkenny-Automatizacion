@@ -20,7 +20,7 @@ Automatizacion de Negocio.
 3. JavaScript como Lenguaje Base
 4. PostgreSQL para Base de Datos
 5. Zod para Validaciones y Seguridad
-6. Arquitectura Feature-Based Architecture
+6. Arquitectura Monolito Modular + Hexagonal + Event-Driven Interno
 
 # FRONTEND:
 
@@ -29,7 +29,7 @@ Automatizacion de Negocio.
 3. Tailwind CSS como Framework de estilos
 4. Vite como servidor y empaquetador
 5. Shadcn UI para Sistema de componentes
-6. Arquitectura Monolito Modular + Hexagonal + Event-Driven Interno
+6. Arquitectura Feature-Based Architecture
 
 ## Ramas del repositorio
 
@@ -58,6 +58,7 @@ npm run dev       # servidor de desarrollo en http://localhost:5173
 npm run build     # typecheck + build de producción en dist/
 npm run preview   # sirve el build (http://localhost:4173)
 npm run typecheck # solo verificación de tipos
+npm test          # pruebas unitarias (Vitest) de fechas, fichas, cotizador y reglas del mock
 ```
 
 > En Windows con PowerShell restringido, usar `npm.cmd` en lugar de `npm`.
@@ -170,8 +171,9 @@ importa rutas internas de otra feature.
   protegen el árbol de rutas; `homeForRol` decide el aterrizaje y el `Sidebar`
   oculta los módulos fuera del alcance del rol.
 - **Control de calidad secuencial**: `usePlantaBoard` y `mockDb.actualizarFaseOrden`
-  solo permiten avanzar una fase (sin saltos ni retrocesos); cada cambio agrega un
-  `EventoOrden` con usuario, rol, fecha y nota.
+  solo permiten avanzar una fase (sin saltos ni retrocesos) y solo con rol
+  Producción o Administrador; cada cambio agrega un `EventoOrden` con usuario,
+  rol, fecha y nota. Una orden con un avance pendiente no acepta otro.
 - **Notificaciones**: al marcar *Finalizado* o *Empaquetado* se genera una
   `Notificacion` para Vendedor y Administrador, visible en la campana del `Topbar`.
 - **Estado del servidor**: TanStack Query con `queryKeys` centralizadas,
@@ -281,6 +283,21 @@ la pestaña de pruebas se cerraron al finalizar.
 Para revertir: eliminar el botón y `cargarCuentasDemo()`, revertir `b7a0758` y
 borrar ambas claves del `localStorage`. El sistema vuelve al flujo puro
 `/setup-admin` sin datos sembrados.
+
+### Auditoría y limpieza del frontend (2026-11-20)
+
+Revisión completa antes de integrar con el backend Fastify. La lógica visual no
+cambió; se corrigieron bugs y se limpió código. El detalle (hallazgos, causa,
+corrección y verificación) está en
+[`docs/AUDITORIA-FRONTEND-2026-11.md`](docs/AUDITORIA-FRONTEND-2026-11.md).
+
+Cambios que afectan al contrato con el backend:
+
+- La cuarta fase se llama **`EMPAQUETADO`** (antes `EMPACADO`), igual que en el
+  backend. Los datos ya guardados en el navegador se migran solos al leerlos.
+- `fechaEntrega` se envía como ISO 8601 al mediodía local del día elegido.
+- Los acabados se envían siempre con su nombre legible.
+- Crear una orden y cambiar de fase exigen un actor con rol autorizado.
 
 ### Documentación de traspaso
 

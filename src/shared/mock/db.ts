@@ -1,4 +1,5 @@
-import { FASE_PLANTA, FASES_PLANTA } from "@/shared/domain";
+import { nuevoId } from "@/lib/utils";
+import { FASE_PLANTA, FASES_PLANTA, stockTrasMovimiento } from "@/shared/domain";
 import type {
   ActorOrden,
   CategoriaTrabajo,
@@ -25,7 +26,7 @@ interface MockDatabase {
 }
 
 /** Fases que disparan aviso al vendedor cuando el pedido está listo. */
-const FASES_AVISO: FasePlanta[] = ["FINALIZADO", "EMPACADO"];
+const FASES_AVISO: FasePlanta[] = ["FINALIZADO", "EMPAQUETADO"];
 
 /** Orden obligatorio del flujo de planta. */
 const FASES_FLUJO: FasePlanta[] = FASES_PLANTA;
@@ -49,8 +50,26 @@ function inferirCategoria(orden: OrdenTrabajo): CategoriaTrabajo {
   return "GENERAL";
 }
 
+/**
+ * Hasta la auditoría de noviembre 2026 la cuarta fase se guardaba como
+ * "EMPACADO". El backend y el contrato usan "EMPAQUETADO"; los datos ya
+ * persistidos en el navegador se migran al leerlos.
+ */
+function migrarFase(fase: string): FasePlanta {
+  return (fase === "EMPACADO" ? "EMPAQUETADO" : fase) as FasePlanta;
+}
+
 /** Completa campos agregados en la fase 2 sobre datos ya persistidos. */
-function normalizarOrden(orden: OrdenTrabajo): OrdenTrabajo {
+function normalizarOrden(original: OrdenTrabajo): OrdenTrabajo {
+  const orden: OrdenTrabajo = {
+    ...original,
+    fase: migrarFase(original.fase),
+    historial: original.historial?.map((evento) => ({
+      ...evento,
+      fase: migrarFase(evento.fase),
+      anterior: evento.anterior ? migrarFase(evento.anterior) : null,
+    })),
+  };
   const historial =
     orden.historial && orden.historial.length > 0
       ? orden.historial
@@ -321,7 +340,7 @@ const SEED_ORDENES: OrdenTrabajo[] = [
     producto: "Pendones 80x200 cm",
     descripcion: "Pendones en lona con ojales, arte aprobado",
     tecnologia: "GRAN_FORMATO",
-    fase: "EMPACADO",
+    fase: "EMPAQUETADO",
     prioridad: "MEDIA",
     maquina: "Mimaki JV300",
     operador: "José Manuel Díaz",
@@ -405,7 +424,7 @@ const SEED_ORDENES: OrdenTrabajo[] = [
     producto: "Calcomanías 5x5",
     descripcion: "Calcomanías adhesivas para herramienta",
     tecnologia: "DIGITAL",
-    fase: "EMPACADO",
+    fase: "EMPAQUETADO",
     prioridad: "BAJA",
     maquina: "Konica Minolta C4080",
     operador: "Daniela Rojas",
@@ -908,7 +927,7 @@ export const mockDb = {
     const db = readDb();
     const cliente: Cliente = {
       ...input,
-      id: `cli-${crypto.randomUUID().slice(0, 8)}`,
+      id: nuevoId("cli"),
       ordenesActivas: 0,
       saldoPendiente: 0,
       creadoEn: new Date().toISOString(),
@@ -923,8 +942,14 @@ export const mockDb = {
     return readDb().ordenes;
   },
 
-  async crearOrden(input: NuevaOrdenTrabajo): Promise<OrdenTrabajo> {
+  async crearOrden(
+    input: NuevaOrdenTrabajo,
+    actor: ActorOrden,
+  ): Promise<OrdenTrabajo> {
     await delay(420);
+    if (actor.rol !== "VENDEDOR" && actor.rol !== "ADMIN") {
+      throw new Error("Solo ventas o administración pueden crear órdenes de trabajo.");
+    }
     const db = readDb();
     const year = new Date().getFullYear();
     const nextNumber =
@@ -933,24 +958,26 @@ export const mockDb = {
         return Number.isFinite(parsed) ? Math.max(max, parsed) : max;
       }, 0) + 1;
     const cliente = db.clientes.find((item) => item.id === input.clienteId);
+    if (!cliente) throw new Error("El cliente seleccionado no existe.");
 
     const codigo = `OT-${year}-${String(nextNumber).padStart(4, "0")}`;
     const ahora = new Date().toISOString();
     const evento: EventoOrden = {
-      id: `evt-${crypto.randomUUID().slice(0, 8)}`,
+      id: nuevoId("evt"),
       fase: "EN_PROCESO",
       anterior: null,
-      usuario: input.vendedor ?? "Sistema",
-      rol: "VENDEDOR",
+      usuario: actor.usuario,
+      rol: actor.rol,
       fecha: ahora,
       nota: "Orden creada y enviada a taller",
     };
 
     const orden: OrdenTrabajo = {
       ...input,
-      id: `ot-${crypto.randomUUID().slice(0, 8)}`,
+      id: nuevoId("ot"),
       codigo,
-      clienteNombre: cliente?.nombre ?? "Cliente nuevo",
+      clienteNombre: cliente.nombre,
+      vendedor: input.vendedor ?? actor.usuario,
       fase: "EN_PROCESO",
       avance: 5,
       operador: "Por asignar",
@@ -960,10 +987,10 @@ export const mockDb = {
     };
 
     const notificacion: Notificacion = {
-      id: `not-${crypto.randomUUID().slice(0, 8)}`,
+      id: nuevoId("not"),
       tipo: "FASE",
       titulo: "Nueva orden recibida en taller",
-      detalle: `${codigo} · ${orden.producto} · ${cliente?.nombre ?? "Cliente nuevo"}`,
+      detalle: `${codigo} · ${orden.producto} · ${cliente.nombre}`,
       ordenId: orden.id,
       codigo,
       roles: ["ADMIN", "PRODUCCION"],
@@ -972,6 +999,11 @@ export const mockDb = {
     };
 
     db.ordenes = [orden, ...db.ordenes];
+    db.clientes = db.clientes.map((item) =>
+      item.id === cliente.id
+        ? { ...item, ordenesActivas: item.ordenesActivas + 1 }
+        : item,
+    );
     db.notificaciones = [notificacion, ...db.notificaciones];
     writeDb(db);
     return orden;
@@ -989,6 +1021,9 @@ export const mockDb = {
     nota?: string,
   ): Promise<OrdenTrabajo> {
     await delay(240);
+    if (actor.rol !== "PRODUCCION" && actor.rol !== "ADMIN") {
+      throw new Error("Solo producción o administración pueden cambiar la fase de una orden.");
+    }
     const db = readDb();
     const index = db.ordenes.findIndex((orden) => orden.id === id);
     if (index === -1) throw new Error("La orden de trabajo no existe.");
@@ -1019,12 +1054,12 @@ export const mockDb = {
       EN_PROCESO: 45,
       EN_REVISION: 85,
       FINALIZADO: 98,
-      EMPACADO: 100,
+      EMPAQUETADO: 100,
     };
 
     const ahora = new Date().toISOString();
     const evento: EventoOrden = {
-      id: `evt-${crypto.randomUUID().slice(0, 8)}`,
+      id: nuevoId("evt"),
       fase,
       anterior: actual.fase,
       usuario: actor.usuario,
@@ -1044,10 +1079,10 @@ export const mockDb = {
 
     if (FASES_AVISO.includes(fase)) {
       nuevas.push({
-        id: `not-${crypto.randomUUID().slice(0, 8)}`,
+        id: nuevoId("not"),
         tipo: "PEDIDO_LISTO",
         titulo:
-          fase === "EMPACADO"
+          fase === "EMPAQUETADO"
             ? "Pedido empaquetado y listo para entrega"
             : "Producción finalizada, lista para empaque",
         detalle: `${actual.codigo} · ${actual.producto} · ${actual.clienteNombre}`,
@@ -1060,6 +1095,13 @@ export const mockDb = {
     }
 
     db.ordenes[index] = actualizada;
+    if (fase === "EMPAQUETADO") {
+      db.clientes = db.clientes.map((item) =>
+        item.id === actual.clienteId
+          ? { ...item, ordenesActivas: Math.max(0, item.ordenesActivas - 1) }
+          : item,
+      );
+    }
     db.notificaciones = [...nuevas, ...db.notificaciones];
     writeDb(db);
     return actualizada;
@@ -1087,13 +1129,20 @@ export const mockDb = {
     const material = db.inventario.find((item) => item.id === input.materialId);
     if (!material) throw new Error("El material no existe en inventario.");
 
-    const factor = input.tipo === "ENTRADA" ? 1 : -1;
-    const nuevoStock = Math.max(0, material.stock + input.cantidad * factor);
+    if (!(input.cantidad > 0)) {
+      throw new Error("La cantidad del movimiento debe ser mayor a cero.");
+    }
+    const nuevoStock = stockTrasMovimiento(material.stock, input.tipo, input.cantidad);
+    if (nuevoStock < 0) {
+      throw new Error(
+        `Stock insuficiente: hay ${material.stock} ${material.unidad} de «${material.nombre}» y el movimiento requiere ${input.cantidad}.`,
+      );
+    }
     material.stock = nuevoStock;
     material.actualizadoEn = new Date().toISOString();
 
     const movimiento: MovimientoInventario = {
-      id: `mov-${crypto.randomUUID().slice(0, 8)}`,
+      id: nuevoId("mov"),
       materialId: material.id,
       materialNombre: material.nombre,
       tipo: input.tipo,

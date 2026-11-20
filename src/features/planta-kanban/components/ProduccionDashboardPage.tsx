@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   AlertCircle,
   BellRing,
@@ -10,7 +10,6 @@ import {
   ShieldCheck,
   Waypoints,
 } from "lucide-react";
-import { toast } from "sonner";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -36,7 +35,7 @@ const ICONO_FASE: Record<FasePlanta, typeof Play> = {
   EN_PROCESO: Play,
   EN_REVISION: ShieldCheck,
   FINALIZADO: ClipboardCheck,
-  EMPACADO: PackageCheck,
+  EMPAQUETADO: PackageCheck,
 };
 
 function hace(fecha: Date | null) {
@@ -56,8 +55,7 @@ export function ProduccionDashboardPage() {
     actualizadoEn,
     moverOrden,
     isMoving,
-    ordenEnMovimiento,
-    error,
+    ordenesEnMovimiento,
     refetch,
   } = usePlantaBoard();
   const { conectado, modo } = usePlantaEnVivo();
@@ -65,15 +63,6 @@ export function ProduccionDashboardPage() {
   const [busqueda, setBusqueda] = useState("");
   const [maquina, setMaquina] = useState("todas");
   const [detalleId, setDetalleId] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (error) {
-      toast.error("No se pudo avanzar la orden", {
-        description:
-          error instanceof Error ? error.message : "La tarjeta volvió a su fase original.",
-      });
-    }
-  }, [error]);
 
   const maquinas = useMemo(
     () => [...new Set(ordenes.map((orden) => orden.maquina))].sort(),
@@ -109,21 +98,9 @@ export function ProduccionDashboardPage() {
     const siguiente = siguienteFaseDe(orden.fase);
     if (!siguiente) return;
 
-    moverOrden({
-      ordenId: orden.id,
-      fase: siguiente,
-      origen: orden.fase,
-      nota,
-    });
-
-    if (siguiente === "FINALIZADO" || siguiente === "EMPACADO") {
-      toast.success("Notificación enviada al vendedor", {
-        description:
-          siguiente === "EMPACADO"
-            ? `${orden.codigo} quedó empaquetada y lista para entrega.`
-            : `${orden.codigo} quedó finalizada y pasa a empaque.`,
-      });
-    }
+    // El aviso "notificación enviada" lo muestra el hook solo cuando el
+    // servidor confirma el avance; antes salía aunque la operación fallara.
+    moverOrden({ ordenId: orden.id, fase: siguiente, origen: orden.fase, nota });
   };
 
   return (
@@ -278,7 +255,7 @@ export function ProduccionDashboardPage() {
         <KanbanBoard
           columnas={columnas}
           isLoading={isLoading}
-          movingId={ordenEnMovimiento}
+          ordenesEnMovimiento={ordenesEnMovimiento}
           onMoveOrden={(ordenId, fase) => {
             const orden = ordenes.find((item) => item.id === ordenId);
             if (orden) moverOrden({ ordenId, fase, origen: orden.fase });
@@ -302,7 +279,7 @@ export function ProduccionDashboardPage() {
         orden={detalle}
         onOpenChange={(abierto) => !abierto && setDetalleId(null)}
         onAvanzar={avanzar}
-        isPending={isMoving}
+        isPending={detalle ? ordenesEnMovimiento.includes(detalle.id) : false}
       />
     </div>
   );

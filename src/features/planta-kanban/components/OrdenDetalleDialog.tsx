@@ -33,17 +33,13 @@ import {
   type OrdenTrabajo,
 } from "@/shared/domain";
 import { FASE_UI } from "@/shared/fase-ui";
+import { siguienteFaseDe } from "./OrdenCard";
 
 interface OrdenDetalleDialogProps {
   orden: OrdenTrabajo | null;
   onOpenChange: (abierto: boolean) => void;
   onAvanzar: (orden: OrdenTrabajo, nota?: string) => void;
   isPending?: boolean;
-}
-
-function siguienteFase(fase: FasePlanta): FasePlanta | null {
-  const indice = FASES_PLANTA.indexOf(fase);
-  return FASES_PLANTA[indice + 1] ?? null;
 }
 
 function hora(fecha: string) {
@@ -59,7 +55,7 @@ const ICONO_FASE: Record<FasePlanta, typeof Play> = {
   EN_PROCESO: Play,
   EN_REVISION: ShieldCheck,
   FINALIZADO: ClipboardCheck,
-  EMPACADO: PackageCheck,
+  EMPAQUETADO: PackageCheck,
 };
 
 /**
@@ -82,7 +78,7 @@ export function OrdenDetalleDialog({
   if (!orden) return null;
 
   const actual = FASES_PLANTA.indexOf(orden.fase);
-  const siguiente = siguienteFase(orden.fase);
+  const siguiente = siguienteFaseDe(orden.fase);
   const spec = orden.especificaciones ?? {};
   const historial = [...(orden.historial ?? [])].sort(
     (a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime(),
@@ -310,9 +306,15 @@ export function OrdenDetalleDialog({
         {(orden.descripcion || spec.observaciones) && (
           <div className="rounded-lg border border-dashed border-border bg-muted/30 px-3.5 py-2.5">
             <p className="section-label">Observaciones para planta</p>
-            <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
-              {orden.descripcion || spec.observaciones}
-            </p>
+            {/* Descripción y observaciones son campos distintos: antes, si había
+                descripción, las observaciones del vendedor no llegaban a verse. */}
+            {[orden.descripcion, spec.observaciones]
+              .filter((texto): texto is string => Boolean(texto?.trim()))
+              .map((texto, indice) => (
+                <p key={indice} className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+                  {texto}
+                </p>
+              ))}
           </div>
         )}
 

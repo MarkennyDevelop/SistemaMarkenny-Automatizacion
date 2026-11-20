@@ -66,8 +66,10 @@ export function sinSecretos(usuario: Usuario): UsuarioPublico {
 }
 
 export function crearSalt(): string {
-  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
-    return crypto.randomUUID();
+  if (typeof crypto !== "undefined" && typeof crypto.getRandomValues === "function") {
+    return Array.from(crypto.getRandomValues(new Uint8Array(16)), (byte) =>
+      byte.toString(16).padStart(2, "0"),
+    ).join("");
   }
   return Math.random().toString(36).slice(2);
 }

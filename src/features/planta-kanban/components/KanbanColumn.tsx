@@ -11,7 +11,7 @@ const LINEA: Record<FasePlanta, string> = {
   EN_PROCESO: "w-1/2 bg-primary",
   EN_REVISION: "w-3/4 bg-primary",
   FINALIZADO: "w-full bg-markenny-ink dark:bg-white",
-  EMPACADO: "w-full bg-muted-foreground/50",
+  EMPAQUETADO: "w-full bg-muted-foreground/50",
 };
 
 interface KanbanColumnProps {
@@ -19,11 +19,9 @@ interface KanbanColumnProps {
   indice: number;
   ordenes: OrdenTrabajo[];
   isLoading?: boolean;
-  movingId?: string | null;
+  ordenesEnMovimiento: string[];
   onMoveOrden: (ordenId: string, fase: FasePlanta) => void;
   onOpenOrden?: (orden: OrdenTrabajo) => void;
-  onDragStart: (ordenId: string) => void;
-  onDragEnd: () => void;
 }
 
 export function KanbanColumn({
@@ -31,11 +29,9 @@ export function KanbanColumn({
   indice,
   ordenes,
   isLoading,
-  movingId,
+  ordenesEnMovimiento,
   onMoveOrden,
   onOpenOrden,
-  onDragStart,
-  onDragEnd,
 }: KanbanColumnProps) {
   const [sobre, setSobre] = useState(false);
   const ui = FASE_UI[fase];
@@ -117,11 +113,9 @@ export function KanbanColumn({
             <OrdenCard
               key={orden.id}
               orden={orden}
-              isMoving={movingId === orden.id}
+              isMoving={ordenesEnMovimiento.includes(orden.id)}
               onMove={(nuevaFase) => onMoveOrden(orden.id, nuevaFase)}
               onOpen={() => onOpenOrden?.(orden)}
-              onDragStart={() => onDragStart(orden.id)}
-              onDragEnd={onDragEnd}
             />
           ))
         )}

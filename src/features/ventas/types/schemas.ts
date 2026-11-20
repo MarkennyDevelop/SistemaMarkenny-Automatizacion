@@ -1,4 +1,16 @@
 import { z } from "zod";
+import { esAnteriorAHoy, parseFecha } from "@/lib/fechas";
+
+/** Fecha "AAAA-MM-DD" válida y no anterior a hoy (común a todas las fichas). */
+const fechaEntregaSchema = z
+  .string()
+  .min(1, "Indica la fecha de entrega")
+  .refine((value) => !Number.isNaN(parseFecha(value).getTime()), {
+    message: "Fecha inválida",
+  })
+  .refine((value) => !esAnteriorAHoy(value), {
+    message: "La fecha de entrega no puede ser anterior a hoy",
+  });
 
 export const ordenTrabajoSchema = z.object({
   clienteId: z.string().min(1, "Selecciona el cliente de la orden"),
@@ -34,12 +46,7 @@ export const ordenTrabajoSchema = z.object({
   tintasRetiro: z.number().int().min(0).max(8),
   tintasPantone: z.array(z.string()).default([]),
   acabados: z.array(z.string()).default([]),
-  fechaEntrega: z
-    .string()
-    .min(1, "Indica la fecha de entrega")
-    .refine((value) => !Number.isNaN(new Date(value).getTime()), {
-      message: "Fecha inválida",
-    }),
+  fechaEntrega: fechaEntregaSchema,
   observaciones: z
     .string()
     .trim()
@@ -108,14 +115,21 @@ export const papeleriaSchema = z
       .min(1, "Mínimo 1 parte")
       .max(6, "Máximo 6 partes"),
     usaNumeracion: z.boolean(),
+    // Opcionales en el esquema: solo se exigen si "usaNumeracion" está activo
+    // (ver superRefine). Antes, un campo vacío y deshabilitado bloqueaba el
+    // envío con un error que el usuario no podía ver ni corregir.
     numeracionDesde: z
       .number({ invalid_type_error: "Indica el número inicial" })
-      .int()
-      .min(0, "No puede ser negativo"),
+      .int("Debe ser un número entero")
+      .min(0, "No puede ser negativo")
+      .optional()
+      .or(z.nan().transform(() => undefined)),
     numeracionHasta: z
       .number({ invalid_type_error: "Indica el número final" })
-      .int()
-      .min(0, "No puede ser negativo"),
+      .int("Debe ser un número entero")
+      .min(0, "No puede ser negativo")
+      .optional()
+      .or(z.nan().transform(() => undefined)),
     numeracionPrefijo: z
       .string()
       .trim()
@@ -131,12 +145,7 @@ export const papeleriaSchema = z
     tintasTiro: z.number().int().min(0).max(6),
     tintasPantone: z.array(z.string()).default([]),
     acabados: z.array(z.string()).default([]),
-    fechaEntrega: z
-      .string()
-      .min(1, "Indica la fecha de entrega")
-      .refine((value) => !Number.isNaN(new Date(value).getTime()), {
-        message: "Fecha inválida",
-      }),
+    fechaEntrega: fechaEntregaSchema,
     observaciones: z
       .string()
       .trim()
@@ -145,7 +154,26 @@ export const papeleriaSchema = z
       .or(z.literal("")),
   })
   .superRefine((values, ctx) => {
-    if (values.usaNumeracion && values.numeracionHasta < values.numeracionDesde) {
+    if (!values.usaNumeracion) return;
+    if (values.numeracionDesde === undefined) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["numeracionDesde"],
+        message: "Indica el número inicial",
+      });
+    }
+    if (values.numeracionHasta === undefined) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["numeracionHasta"],
+        message: "Indica el número final",
+      });
+    }
+    if (
+      values.numeracionDesde !== undefined &&
+      values.numeracionHasta !== undefined &&
+      values.numeracionHasta < values.numeracionDesde
+    ) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["numeracionHasta"],
@@ -229,12 +257,7 @@ export const granFormatoSchema = z.object({
   prioridad: z.enum(["BAJA", "MEDIA", "ALTA", "URGENTE"]),
   maquina: z.string().min(1, "Selecciona la máquina"),
   acabados: z.array(z.string()).default([]),
-  fechaEntrega: z
-    .string()
-    .min(1, "Indica la fecha de entrega")
-    .refine((value) => !Number.isNaN(new Date(value).getTime()), {
-      message: "Fecha inválida",
-    }),
+  fechaEntrega: fechaEntregaSchema,
   observaciones: z
     .string()
     .trim()
@@ -294,7 +317,6 @@ export const clienteSchema = z.object({
 });
 
 export type ClienteFormValues = z.infer<typeof clienteSchema>;
-
 
 export const COTIZACION_DEFAULTS: CotizacionFormValues = {
   tecnologia: "OFFSET",

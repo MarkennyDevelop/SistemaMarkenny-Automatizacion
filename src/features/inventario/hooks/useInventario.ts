@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { inventarioApi, type RegistrarMovimientoInput } from "@/features/inventario/api/inventarioApi";
+import { inventarioApi, type RegistrarMovimientoInput } from "../api/inventarioApi";
 import { queryKeys } from "@/shared/api/queryKeys";
-import type { CategoriaInventario, MaterialInventario } from "@/shared/domain";
+import type { CategoriaInventario } from "@/shared/domain";
 
 export function useInventario() {
   const query = useQuery({
@@ -62,20 +62,8 @@ export function useRegistrarMovimiento() {
   return useMutation({
     mutationFn: (input: RegistrarMovimientoInput) =>
       inventarioApi.registrarMovimiento(input),
-    onSuccess: (movimiento) => {
-      queryClient.setQueryData<MaterialInventario[]>(
-        queryKeys.inventario,
-        (current) =>
-          current?.map((material) => {
-            if (material.id !== movimiento.materialId) return material;
-            const factor = movimiento.tipo === "ENTRADA" ? 1 : -1;
-            return {
-              ...material,
-              stock: Math.max(0, material.stock + movimiento.cantidad * factor),
-              actualizadoEn: movimiento.fecha,
-            };
-          }),
-      );
+    // El stock lo calcula el servidor; la UI solo vuelve a leerlo.
+    onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.inventario });
       void queryClient.invalidateQueries({ queryKey: queryKeys.movimientos });
       void queryClient.invalidateQueries({ queryKey: queryKeys.dashboard });

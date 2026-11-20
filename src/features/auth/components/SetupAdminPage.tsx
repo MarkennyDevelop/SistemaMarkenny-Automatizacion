@@ -18,6 +18,7 @@ import { FormField, FormGrid } from "@/components/forms/primitives";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { queryKeys } from "@/shared/api/queryKeys";
 import { authApi } from "../api/authApi";
 import { useAuth } from "../context";
 import {
@@ -40,7 +41,7 @@ export function SetupAdminPage() {
   const [errorGeneral, setErrorGeneral] = useState<string | null>(null);
 
   const { data: hayAdmin, isLoading } = useQuery({
-    queryKey: ["auth", "hay-admin"],
+    queryKey: queryKeys.hayAdministrador,
     queryFn: authApi.hayAdministrador,
     staleTime: 0,
   });

@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ventasApi } from "@/features/ventas/api/ventasApi";
+import { ventasApi } from "../api/ventasApi";
 import { queryKeys } from "@/shared/api/queryKeys";
 import type { NuevoCliente } from "@/shared/domain";
 

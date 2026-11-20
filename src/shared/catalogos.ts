@@ -17,14 +17,6 @@ export const MAQUINAS = [
   "Troqueladora Bobst",
 ] as const;
 
-export const OPERADORES = [
-  "Luis Pérez",
-  "Daniela Rojas",
-  "Carlos Mendoza",
-  "Andreína Gil",
-  "José Manuel Díaz",
-] as const;
-
 export const SUSTRATOS = [
   { id: "couche-150", nombre: "Couché 150 g", gramaje: 150, precioHoja: 0.21 },
   { id: "couche-300", nombre: "Couché 300 g", gramaje: 300, precioHoja: 0.38 },

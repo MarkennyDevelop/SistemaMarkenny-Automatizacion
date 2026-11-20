@@ -1,4 +1,9 @@
-import type { NuevoCliente, NuevaOrdenTrabajo, OrdenTrabajo } from "@/shared/domain";
+import type {
+  ActorOrden,
+  NuevoCliente,
+  NuevaOrdenTrabajo,
+  OrdenTrabajo,
+} from "@/shared/domain";
 import { mockDb } from "@/shared/mock/db";
 
 /**
@@ -17,6 +22,6 @@ export const ventasApi = {
   listarClientes: () => mockDb.listarClientes(),
   crearCliente: (input: NuevoCliente) => mockDb.crearCliente(input),
   listarOrdenes: () => mockDb.listarOrdenes(),
-  crearOrden: (input: NuevaOrdenTrabajo): Promise<OrdenTrabajo> =>
-    mockDb.crearOrden(input),
+  crearOrden: (input: NuevaOrdenTrabajo, actor: ActorOrden): Promise<OrdenTrabajo> =>
+    mockDb.crearOrden(input, actor),
 };

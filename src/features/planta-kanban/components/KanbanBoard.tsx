@@ -1,4 +1,3 @@
-import { useState } from "react";
 import type { FasePlanta, OrdenTrabajo } from "@/shared/domain";
 import { KanbanColumn } from "./KanbanColumn";
 
@@ -10,7 +9,7 @@ export interface ColumnaKanban {
 interface KanbanBoardProps {
   columnas: ColumnaKanban[];
   isLoading?: boolean;
-  movingId?: string | null;
+  ordenesEnMovimiento?: string[];
   onMoveOrden: (ordenId: string, fase: FasePlanta) => void;
   onOpenOrden?: (orden: OrdenTrabajo) => void;
 }
@@ -22,12 +21,10 @@ interface KanbanBoardProps {
 export function KanbanBoard({
   columnas,
   isLoading,
-  movingId,
+  ordenesEnMovimiento = [],
   onMoveOrden,
   onOpenOrden,
 }: KanbanBoardProps) {
-  const [, setArrastrando] = useState<string | null>(null);
-
   return (
     <div className="no-scrollbar -mx-1 flex snap-x gap-3 overflow-x-auto px-1 pb-2 xl:mx-0 xl:grid xl:grid-cols-4 xl:overflow-visible xl:px-0">
       {columnas.map((columna, index) => (
@@ -37,11 +34,9 @@ export function KanbanBoard({
           indice={index}
           ordenes={columna.ordenes}
           isLoading={isLoading}
-          movingId={movingId}
+          ordenesEnMovimiento={ordenesEnMovimiento}
           onMoveOrden={onMoveOrden}
           onOpenOrden={onOpenOrden}
-          onDragStart={setArrastrando}
-          onDragEnd={() => setArrastrando(null)}
         />
       ))}
     </div>

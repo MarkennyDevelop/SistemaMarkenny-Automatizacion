@@ -5,25 +5,20 @@ import { toast } from "sonner";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { ACABADOS, SUSTRATOS } from "@/shared/catalogos";
-import type { NuevaOrdenTrabajo } from "@/shared/domain";
-import { OrdenTrabajoForm } from "../components/orden-trabajo/OrdenTrabajoForm";
+import { useAuth } from "@/features/auth";
+import { fechaEnDias } from "@/lib/fechas";
+import { OrdenTrabajoForm } from "./orden-trabajo/OrdenTrabajoForm";
 import { useClientes } from "../hooks/useClientes";
 import { useCrearOrdenTrabajo } from "../hooks/useOrdenesTrabajo";
-import { estimarMontoOrden } from "../lib/cotizador";
+import { ordenDesdeFichaGeneral } from "../lib/ordenes";
 import type { OrdenTrabajoFormValues } from "../types/schemas";
-
-function fechaEnDias(dias: number) {
-  const fecha = new Date();
-  fecha.setDate(fecha.getDate() + dias);
-  return fecha.toISOString().slice(0, 10);
-}
 
 export function NuevaOrdenTrabajoPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { data: clientes = [], isLoading } = useClientes();
   const crearOrden = useCrearOrdenTrabajo();
+  const { usuario } = useAuth();
 
   const clientePreseleccionado = searchParams.get("cliente") ?? "";
 
@@ -36,44 +31,7 @@ export function NuevaOrdenTrabajoPage() {
   );
 
   const handleSubmit = async (values: OrdenTrabajoFormValues) => {
-    const sustrato = SUSTRATOS.find((item) => item.id === values.sustratoId);
-    const acabados = values.acabados.reduce<string[]>((lista, id) => {
-      const nombre = ACABADOS.find((item) => item.id === id)?.nombre;
-      if (nombre) lista.push(nombre);
-      return lista;
-    }, []);
-    const tintas = [
-      ...(values.tintasTiro > 0 ? ["CMYK"] : []),
-      ...values.tintasPantone,
-    ];
-
-    const monto = estimarMontoOrden({
-      tecnologia: values.tecnologia,
-      cantidad: values.cantidad,
-      anchoMm: values.anchoMm,
-      altoMm: values.altoMm,
-      tintasTiro: values.tintasTiro,
-      tintasRetiro: values.tintasRetiro,
-      sustratoId: values.sustratoId,
-      acabados: values.acabados,
-    });
-
-    const payload: NuevaOrdenTrabajo = {
-      clienteId: values.clienteId,
-      producto: values.producto,
-      descripcion:
-        [values.descripcion, values.observaciones].filter(Boolean).join(" · ") ||
-        "Sin descripción técnica",
-      tecnologia: values.tecnologia,
-      prioridad: values.prioridad,
-      maquina: values.maquina,
-      cantidad: values.cantidad,
-      fechaEntrega: new Date(`${values.fechaEntrega}T12:00:00`).toISOString(),
-      montoTotal: monto.total,
-      sustrato: sustrato?.nombre ?? "Sustrato por definir",
-      tintas,
-      acabados,
-    };
+    const payload = ordenDesdeFichaGeneral(values, usuario?.nombre);
 
     try {
       const orden = await crearOrden.mutateAsync(payload);

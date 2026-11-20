@@ -340,9 +340,15 @@ function DatosOrden({ orden }: { orden: OrdenTrabajo }) {
       {(orden.descripcion || spec.observaciones) && (
         <div className="rounded-lg border border-dashed border-border bg-muted/30 px-4 py-3">
           <p className="section-label">Observaciones para planta</p>
-          <p className="mt-1.5 text-[11.5px] leading-relaxed text-muted-foreground">
-            {orden.descripcion || spec.observaciones}
-          </p>
+          {/* Descripción y observaciones son campos distintos: antes, si había
+              descripción, las observaciones del vendedor no llegaban a verse. */}
+          {[orden.descripcion, spec.observaciones]
+            .filter((texto): texto is string => Boolean(texto?.trim()))
+            .map((texto, indice) => (
+              <p key={indice} className="mt-1.5 text-[11.5px] leading-relaxed text-muted-foreground">
+                {texto}
+              </p>
+            ))}
         </div>
       )}
     </div>
@@ -518,11 +524,11 @@ export function SeguimientoPage() {
                 </div>
               </div>
 
-              {(seleccionada.fase === "FINALIZADO" || seleccionada.fase === "EMPACADO") && (
+              {(seleccionada.fase === "FINALIZADO" || seleccionada.fase === "EMPAQUETADO") && (
                 <div className="flex items-center gap-2 border-t border-white/10 bg-primary/15 px-5 py-2.5 text-[11px] font-medium text-white">
                   <PackageCheck className="h-3.5 w-3.5 text-primary" />
                   Pedido{" "}
-                  {seleccionada.fase === "EMPACADO"
+                  {seleccionada.fase === "EMPAQUETADO"
                     ? "empaquetado y listo para entrega"
                     : "finalizado, en espera de empaque"}
                   . El vendedor ya recibió la notificación.

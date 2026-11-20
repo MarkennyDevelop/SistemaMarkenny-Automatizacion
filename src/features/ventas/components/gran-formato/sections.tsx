@@ -1,4 +1,5 @@
 import { useWatch } from "react-hook-form";
+import { aMilimetros } from "../../lib/ordenes";
 import {
   AlertCircle,
   Building2,
@@ -26,6 +27,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { fechaInputLocal } from "@/lib/fechas";
 import { cn, formatCurrency, formatDate, formatNumber } from "@/lib/utils";
 import { ACABADOS, SUSTRATOS } from "@/shared/catalogos";
 import {
@@ -56,11 +58,6 @@ const ACABADOS_GRAN = ACABADOS.filter((acabado) =>
     "plastificado",
   ].includes(acabado.id),
 );
-
-/** Convierte la medida capturada a milímetros para el motor de costos. */
-export function aMilimetros(valor: number, unidad: "cm" | "m") {
-  return unidad === "m" ? valor * 1000 : valor * 10;
-}
 
 /* ------------------------------------------------------------------ */
 /* 01 · Pieza                                                          */
@@ -395,7 +392,7 @@ export function DimensionesSection() {
               <Input
                 id="fechaEntrega"
                 type="date"
-                min={new Date().toISOString().slice(0, 10)}
+                min={fechaInputLocal()}
                 className="pr-9"
                 {...register("fechaEntrega")}
               />

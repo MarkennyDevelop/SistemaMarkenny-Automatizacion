@@ -70,7 +70,7 @@ export function AuthLayout({
                   {fase === "EN_PROCESO" && "En proceso"}
                   {fase === "EN_REVISION" && "En revisión"}
                   {fase === "FINALIZADO" && "Finalizado"}
-                  {fase === "EMPACADO" && "Empaquetado"}
+                  {fase === "EMPAQUETADO" && "Empaquetado"}
                 </span>
               </li>
             ))}

@@ -83,4 +83,3 @@ export const GranFormatoForm = Object.assign(GranFormatoFormRoot, {
   Acciones,
 });
 
-export { aMilimetros } from "./sections";

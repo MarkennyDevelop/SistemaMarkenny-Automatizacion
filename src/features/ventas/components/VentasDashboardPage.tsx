@@ -65,9 +65,9 @@ export function VentasDashboardPage() {
   const { data: ordenes = [], isLoading } = useOrdenesTrabajo();
 
   const resumen = useMemo(() => {
-    const activas = ordenes.filter((orden) => orden.fase !== "EMPACADO");
+    const activas = ordenes.filter((orden) => orden.fase !== "EMPAQUETADO");
     const listas = ordenes.filter(
-      (orden) => orden.fase === "FINALIZADO" || orden.fase === "EMPACADO",
+      (orden) => orden.fase === "FINALIZADO" || orden.fase === "EMPAQUETADO",
     );
     const enTaller = ordenes.filter(
       (orden) => orden.fase === "EN_PROCESO" || orden.fase === "EN_REVISION",
@@ -256,7 +256,7 @@ export function VentasDashboardPage() {
                       value={progresoFase(orden)}
                       className="h-1"
                       indicatorClassName={cn(
-                        orden.fase === "EMPACADO" ? "bg-muted-foreground" : "bg-primary",
+                        orden.fase === "EMPAQUETADO" ? "bg-muted-foreground" : "bg-primary",
                       )}
                     />
                     <span className="shrink-0 text-[9px] tabular-nums text-muted-foreground">

@@ -43,7 +43,7 @@ export function SellosPage() {
   const empaquetadas = useMemo(
     () =>
       ordenes
-        .filter((orden) => orden.fase === "EMPACADO")
+        .filter((orden) => orden.fase === "EMPAQUETADO")
         .sort(
           (a, b) =>
             new Date(a.fechaEntrega).getTime() - new Date(b.fechaEntrega).getTime(),
@@ -85,12 +85,17 @@ export function SellosPage() {
         motivo: values.motivo,
         usuario: values.usuario,
       });
-      toast.success("Salida de almacén registrada", {
-        description: `${movimiento.materialNombre} · ${formatNumber(movimiento.cantidad)} unidades despachadas`,
-      });
+      toast.success(
+        movimiento.tipo === "ENTRADA"
+          ? "Entrada de almacén registrada"
+          : "Salida de almacén registrada",
+        {
+          description: `${movimiento.materialNombre} · ${formatNumber(movimiento.cantidad)} unidades`,
+        },
+      );
       setDialogoAbierto(false);
     } catch (error) {
-      toast.error("No se pudo registrar la salida", {
+      toast.error("No se pudo registrar el movimiento", {
         description: error instanceof Error ? error.message : "Intenta nuevamente.",
       });
       throw error;
@@ -377,6 +382,7 @@ export function SellosPage() {
         onOpenChange={setDialogoAbierto}
         materiales={sellos}
         materialInicial={materialInicial}
+        tipoInicial="SALIDA"
         isSubmitting={registrar.isPending}
         onSubmit={handleSubmit}
       />

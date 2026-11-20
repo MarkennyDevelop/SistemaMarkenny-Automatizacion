@@ -17,7 +17,8 @@ export type { PapeleriaFormRootProps } from "./components/papeleria/PapeleriaFor
 export { GranFormatoForm } from "./components/gran-formato/GranFormatoForm";
 export type { GranFormatoFormRootProps } from "./components/gran-formato/GranFormatoForm";
 
-// Contratos y hooks
+// Contratos, acceso a datos y hooks
+export { ventasApi } from "./api/ventasApi";
 export {
   ordenTrabajoSchema,
   cotizacionSchema,

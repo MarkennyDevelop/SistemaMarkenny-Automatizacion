@@ -144,7 +144,7 @@ export function DashboardView({ data, fecha }: DashboardViewProps) {
                               {fase === "EN_PROCESO" && "Impresión y acabados"}
                               {fase === "EN_REVISION" && "QC y aprobación"}
                               {fase === "FINALIZADO" && "Listo para empaque"}
-                              {fase === "EMPACADO" && "Despacho pendiente"}
+                              {fase === "EMPAQUETADO" && "Despacho pendiente"}
                             </p>
                           </div>
                         </div>

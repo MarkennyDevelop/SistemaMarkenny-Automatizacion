@@ -9,6 +9,7 @@ import { FormField } from "@/components/forms/primitives";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { queryKeys } from "@/shared/api/queryKeys";
 import { authApi } from "../api/authApi";
 import { useAuth } from "../context";
 import { homeForRol } from "../lib/roles";
@@ -29,7 +30,7 @@ export function LoginPage() {
   const [errorCredenciales, setErrorCredenciales] = useState<string | null>(null);
 
   const { data: hayAdmin, isLoading: verificandoAdmin } = useQuery({
-    queryKey: ["auth", "hay-admin"],
+    queryKey: queryKeys.hayAdministrador,
     queryFn: authApi.hayAdministrador,
     staleTime: 0,
   });

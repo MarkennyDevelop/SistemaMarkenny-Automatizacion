@@ -22,7 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { formatNumber } from "@/lib/utils";
-import type { MaterialInventario } from "@/shared/domain";
+import { stockTrasMovimiento, type MaterialInventario } from "@/shared/domain";
 import { movimientoSchema, type MovimientoFormValues } from "../types/schema";
 
 interface RegistrarMovimientoDialogProps {
@@ -30,6 +30,8 @@ interface RegistrarMovimientoDialogProps {
   onOpenChange: (open: boolean) => void;
   materiales: MaterialInventario[];
   materialInicial?: string;
+  /** Tipo preseleccionado (p. ej. "SALIDA" al despachar desde Sellos). */
+  tipoInicial?: MovimientoFormValues["tipo"];
   isSubmitting?: boolean;
   onSubmit: (values: MovimientoFormValues) => Promise<void>;
 }
@@ -46,6 +48,7 @@ export function RegistrarMovimientoDialog({
   onOpenChange,
   materiales,
   materialInicial,
+  tipoInicial = "ENTRADA",
   isSubmitting,
   onSubmit,
 }: RegistrarMovimientoDialogProps) {
@@ -55,7 +58,7 @@ export function RegistrarMovimientoDialog({
     resolver: zodResolver(movimientoSchema),
     defaultValues: {
       materialId: materialInicial ?? "",
-      tipo: "ENTRADA",
+      tipo: tipoInicial,
       cantidad: 1,
       motivo: "",
       usuario: responsable,
@@ -76,27 +79,26 @@ export function RegistrarMovimientoDialog({
     if (open) {
       reset({
         materialId: materialInicial ?? "",
-        tipo: "ENTRADA",
+        tipo: tipoInicial,
         cantidad: 1,
         motivo: "",
         usuario: responsable,
       });
     }
-  }, [open, materialInicial, reset, responsable]);
+  }, [open, materialInicial, tipoInicial, reset, responsable]);
 
   const materialId = watch("materialId");
   const tipo = watch("tipo");
   const cantidad = Number(watch("cantidad")) || 0;
   const material = materiales.find((item) => item.id === materialId);
-  const factor = tipo === "ENTRADA" ? 1 : -1;
   const stockResultante = material
-    ? Math.max(0, material.stock + cantidad * factor)
+    ? stockTrasMovimiento(material.stock, tipo, cantidad)
     : null;
+  const stockInsuficiente = stockResultante !== null && stockResultante < 0;
 
   const submit = handleSubmit(async (values) => {
     try {
       await onSubmit(values);
-      reset();
       onOpenChange(false);
     } catch {
       // El contenedor ya notifica el error; se mantiene el diálogo abierto.
@@ -209,8 +211,16 @@ export function RegistrarMovimientoDialog({
               <span className="text-muted-foreground">
                 Stock actual: {formatNumber(material.stock)} {material.unidad}
               </span>
-              <span className="font-semibold tabular-nums">
-                Resultante: {formatNumber(stockResultante ?? 0)} {material.unidad}
+              <span
+                className={
+                  stockInsuficiente
+                    ? "font-semibold tabular-nums text-destructive"
+                    : "font-semibold tabular-nums"
+                }
+              >
+                {stockInsuficiente
+                  ? "Stock insuficiente"
+                  : `Resultante: ${formatNumber(stockResultante ?? 0)} ${material.unidad}`}
               </span>
             </div>
           )}
@@ -219,7 +229,7 @@ export function RegistrarMovimientoDialog({
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
+            <Button type="submit" disabled={isSubmitting || stockInsuficiente}>
               {isSubmitting ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (

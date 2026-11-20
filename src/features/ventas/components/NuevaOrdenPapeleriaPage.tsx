@@ -4,20 +4,13 @@ import { toast } from "sonner";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/features/auth";
-import { SUSTRATOS } from "@/shared/catalogos";
-import type { NuevaOrdenTrabajo } from "@/shared/domain";
+import { fechaEnDias } from "@/lib/fechas";
 import { useClientes } from "../hooks/useClientes";
 import { useCrearOrdenTrabajo } from "../hooks/useOrdenesTrabajo";
-import { estimarMontoOrden } from "../lib/cotizador";
+import { ordenDesdePapeleria } from "../lib/ordenes";
 import type { PapeleriaFormValues } from "../types/schemas";
 import { PapeleriaForm } from "./papeleria/PapeleriaForm";
 import { TipoTrabajoTabs } from "./TipoTrabajoTabs";
-
-function fechaEnDias(dias: number) {
-  const fecha = new Date();
-  fecha.setDate(fecha.getDate() + dias);
-  return fecha.toISOString().slice(0, 10);
-}
 
 export function NuevaOrdenPapeleriaPage() {
   const navigate = useNavigate();
@@ -26,47 +19,7 @@ export function NuevaOrdenPapeleriaPage() {
   const crear = useCrearOrdenTrabajo();
 
   const handleSubmit = async (values: PapeleriaFormValues) => {
-    const sustrato = SUSTRATOS.find((item) => item.id === values.sustratoId);
-    const monto = estimarMontoOrden({
-      tecnologia: values.tecnologia,
-      cantidad: values.cantidad,
-      anchoMm: values.anchoMm,
-      altoMm: values.altoMm,
-      tintasTiro: values.tintasTiro,
-      tintasRetiro: 0,
-      sustratoId: values.sustratoId,
-      acabados: values.acabados,
-    });
-
-    const orden: NuevaOrdenTrabajo = {
-      clienteId: values.clienteId,
-      producto: values.producto,
-      descripcion: values.descripcion ?? "",
-      tecnologia: values.tecnologia,
-      prioridad: values.prioridad,
-      maquina: values.maquina,
-      cantidad: values.cantidad,
-      fechaEntrega: values.fechaEntrega,
-      montoTotal: monto.total,
-      sustrato: sustrato?.nombre ?? "Por definir",
-      tintas:
-        values.tintasPantone.length > 0 ? values.tintasPantone : ["CMYK proceso"],
-      acabados: values.acabados,
-      categoriaTrabajo: "PAPELERIA",
-      vendedor: usuario?.nombre,
-      especificaciones: {
-        tipoPapeleria: values.tipoPapeleria,
-        partes: values.partes,
-        numeracionDesde: values.usaNumeracion ? values.numeracionDesde : undefined,
-        numeracionHasta: values.usaNumeracion ? values.numeracionHasta : undefined,
-        numeracionPrefijo: values.usaNumeracion
-          ? values.numeracionPrefijo || undefined
-          : undefined,
-        gramaje: sustrato?.gramaje,
-        pantones: values.tintasPantone,
-        observaciones: values.observaciones || undefined,
-      },
-    };
+    const orden = ordenDesdePapeleria(values, usuario?.nombre);
 
     try {
       const creada = await crear.mutateAsync(orden);

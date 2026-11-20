@@ -6,7 +6,6 @@ import {
   GripVertical,
   MoreHorizontal,
   Printer,
-  UserRound,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -19,6 +18,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Progress } from "@/components/ui/progress";
+import { diasHasta } from "@/lib/fechas";
 import { cn, formatNumber, initials } from "@/lib/utils";
 import {
   FASES_PLANTA,
@@ -35,14 +35,10 @@ interface OrdenCardProps {
   isMoving?: boolean;
   onMove: (fase: FasePlanta) => void;
   onOpen?: () => void;
-  onDragStart: () => void;
-  onDragEnd: () => void;
 }
 
 function entrega(fecha: string) {
-  const dias = Math.ceil(
-    (new Date(fecha).getTime() - Date.now()) / 86_400_000,
-  );
+  const dias = diasHasta(fecha);
   if (dias < 0) return { texto: `Vencida ${Math.abs(dias)} d`, urgente: true };
   if (dias === 0) return { texto: "Entrega hoy", urgente: true };
   if (dias === 1) return { texto: "Entrega mañana", urgente: true };
@@ -59,31 +55,27 @@ export function OrdenCard({
   isMoving,
   onMove,
   onOpen,
-  onDragStart,
-  onDragEnd,
 }: OrdenCardProps) {
   const [dragging, setDragging] = useState(false);
   const fecha = entrega(orden.fechaEntrega);
   const prioridadAlta = orden.prioridad === "URGENTE" || orden.prioridad === "ALTA";
   const siguiente = siguienteFaseDe(orden.fase);
+  const puedeMover = Boolean(siguiente) && !isMoving;
 
   return (
     <article
-      draggable={Boolean(siguiente)}
+      draggable={puedeMover}
+      aria-busy={isMoving || undefined}
       onDragStart={(event) => {
-        if (!siguiente) {
+        if (!puedeMover) {
           event.preventDefault();
           return;
         }
         event.dataTransfer.setData("text/plain", orden.id);
         event.dataTransfer.effectAllowed = "move";
         setDragging(true);
-        onDragStart();
       }}
-      onDragEnd={() => {
-        setDragging(false);
-        onDragEnd();
-      }}
+      onDragEnd={() => setDragging(false)}
       className={cn(
         "group relative rounded-lg border border-border bg-card p-3.5 shadow-card transition-all hover:border-primary/30 hover:shadow-raised",
         siguiente ? "cursor-grab active:cursor-grabbing" : "cursor-default",
@@ -130,6 +122,7 @@ export function OrdenCard({
               {siguiente ? (
                 <DropdownMenuItem
                   className="gap-2 text-xs"
+                  disabled={isMoving}
                   onSelect={() => onMove(siguiente)}
                 >
                   <ClipboardCheck className="h-3.5 w-3.5 text-primary" />
@@ -216,7 +209,8 @@ export function OrdenCard({
         <button
           type="button"
           onClick={() => onMove(siguiente)}
-          className="mt-2.5 flex w-full items-center justify-center gap-1.5 rounded-md border border-dashed border-primary/30 bg-primary/[0.04] py-1.5 text-[9.5px] font-semibold uppercase tracking-wide text-primary transition-colors hover:bg-primary/[0.08]"
+          disabled={isMoving}
+          className="mt-2.5 flex w-full items-center justify-center gap-1.5 rounded-md border border-dashed border-primary/30 bg-primary/[0.04] py-1.5 text-[9.5px] font-semibold uppercase tracking-wide text-primary transition-colors hover:bg-primary/[0.08] disabled:pointer-events-none"
         >
           <ClipboardCheck className="h-3 w-3" />
           Marcar {FASE_PLANTA[siguiente].label}
@@ -248,15 +242,6 @@ export function OrdenCardSkeleton() {
         <div className="h-5 w-5 animate-pulse rounded-full bg-muted" />
         <div className="h-2 w-20 animate-pulse rounded bg-muted" />
       </div>
-    </div>
-  );
-}
-
-export function OrdenCardEmptyHint() {
-  return (
-    <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
-      <UserRound className="h-3 w-3" />
-      Sin operador asignado
     </div>
   );
 }

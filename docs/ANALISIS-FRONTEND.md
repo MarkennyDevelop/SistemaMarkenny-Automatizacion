@@ -30,7 +30,7 @@ Estado actual (fase 2):
     (`luis@markenny.com`) desde `/admin/empleados`;
   - login por rol con redirección a `/admin`, `/ventas/dashboard` y `/produccion`;
   - creación de `OT-2026-0185` (papelería) y `OT-2026-0186` (gran formato);
-  - avance secuencial `EN_PROCESO → EN_REVISION → FINALIZADO → EMPACADO` con nota,
+  - avance secuencial `EN_PROCESO → EN_REVISION → FINALIZADO → EMPAQUETADO` con nota,
     historial auditado y notificación al vendedor;
   - bloqueo del salto de fase por drag & drop (la orden no cambia);
   - despacho de 100 unidades de `inv-sellos-dukes` (stock 1.200 → 1.100) con
@@ -172,7 +172,7 @@ para reducir re-renders.
   rechaza saltos y retrocesos y exige actor con rol `PRODUCCION` o `ADMIN`.
 - Cada avance agrega un `EventoOrden` con usuario, rol, fecha y nota, visible en
   el stepper de seguimiento del vendedor y en el detalle de la orden en planta.
-- `FINALIZADO` y `EMPACADO` generan una `Notificacion` para `VENDEDOR` y `ADMIN`,
+- `FINALIZADO` y `EMPAQUETADO` generan una `Notificacion` para `VENDEDOR` y `ADMIN`,
   mostrada por `NotificacionesBell` en el `Topbar`.
 
 ## 6. Sistema de diseño
@@ -210,7 +210,7 @@ para reducir re-renders.
 | `*` | `NotFoundPage` | Autenticado |
 
 `BrowserRouter` con `future={{ v7_startTransition, v7_relativeSplatPath }}`.
-La plantilla `PlantaKanbanPage` sigue exportada pero ya no tiene ruta propia.
+La plantilla `PlantaKanbanPage` se eliminó en la auditoría del 2026-11-20 (no tenía ruta).
 
 ## 8. Datos mock
 
@@ -275,8 +275,8 @@ desde el esquema Zod del servidor.
 
 ## 12. Pendientes / deuda técnica priorizada
 
-1. **Tests**: no hay suite. Prioridad: `cotizador.ts` (puro), validación de fases
-   en `mock/db.ts`, y un smoke test de rutas con Testing Library.
+1. **Tests**: existe una suite Vitest (`npm test`) para fechas, fichas de OT,
+   cotizador y reglas del mock. Falta un smoke test de rutas con Testing Library.
 2. **Sustituir los mocks por Fastify**: implementar `fetch` en `*Api.ts` (incluido
    `authApi.ts`) y tipar respuestas con Zod; mantener `queryKeys`.
 3. **Autenticación real**: el login actual es solo un mock local con SHA-256;
@@ -329,7 +329,7 @@ Reglas que el frontend asume:
 - `fase` solo acepta los 4 valores definidos y el cambio debe ser de **una sola
   posición hacia adelante**; el backend devuelve `409` ante saltos o retrocesos.
 - Cada cambio de fase crea un `EventoOrden` inmutable con usuario, rol, fecha y
-  nota. `FINALIZADO`/`EMPACADO` crean notificaciones para VENDEDOR y ADMIN.
+  nota. `FINALIZADO`/`EMPAQUETADO` crean notificaciones para VENDEDOR y ADMIN.
 - Los movimientos de inventario son **inmutables** (auditoría); el stock se
   recalcula en el servidor y el responsable es el usuario de la sesión.
 - Fechas en ISO 8601; el frontend formatea a `es-VE`.

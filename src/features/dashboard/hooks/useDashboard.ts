@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { inventarioApi } from "@/features/inventario/api/inventarioApi";
-import { ventasApi } from "@/features/ventas/api/ventasApi";
+import { inventarioApi } from "@/features/inventario";
+import { ventasApi } from "@/features/ventas";
 import { queryKeys } from "@/shared/api/queryKeys";
 import {
   FASES_PLANTA,
@@ -32,7 +32,7 @@ async function cargarDashboard(): Promise<DashboardData> {
   ]);
 
   const ahora = Date.now();
-  const activas = ordenes.filter((orden) => orden.fase !== "EMPACADO");
+  const activas = ordenes.filter((orden) => orden.fase !== "EMPAQUETADO");
 
   const porFase = FASES_PLANTA.reduce(
     (acc, fase) => {

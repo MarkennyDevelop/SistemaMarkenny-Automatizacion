@@ -27,6 +27,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { fechaInputLocal } from "@/lib/fechas";
 import { cn, formatCurrency, formatDate, formatNumber } from "@/lib/utils";
 import { ACABADOS, MAQUINAS, SUSTRATOS, TINTAS_PANTONE } from "@/shared/catalogos";
 import {
@@ -268,7 +269,7 @@ export function TirajeSection() {
               <Input
                 id="fechaEntrega"
                 type="date"
-                min={new Date().toISOString().slice(0, 10)}
+                min={fechaInputLocal()}
                 className="pr-9"
                 {...register("fechaEntrega")}
               />

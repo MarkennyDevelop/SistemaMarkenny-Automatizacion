@@ -6,9 +6,7 @@ type BadgeVariant =
   | "secondary"
   | "outline"
   | "muted"
-  | "destructive"
-  | "success"
-  | "warning";
+  | "destructive";
 
 interface FaseUI {
   label: string;
@@ -44,7 +42,7 @@ export const FASE_UI: Record<FasePlanta, FaseUI> = {
     accent: "text-foreground",
     soft: "bg-foreground/[0.05]",
   },
-  EMPACADO: {
+  EMPAQUETADO: {
     label: "Empaquetado",
     badge: "outline",
     dot: "bg-muted-foreground",

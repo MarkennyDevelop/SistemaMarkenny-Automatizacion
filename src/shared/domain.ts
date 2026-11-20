@@ -25,7 +25,7 @@ export const ROL_DESCRIPCION: Record<Rol, string> = {
 /* Producción                                                          */
 /* ------------------------------------------------------------------ */
 
-export type FasePlanta = "EN_PROCESO" | "EN_REVISION" | "FINALIZADO" | "EMPACADO";
+export type FasePlanta = "EN_PROCESO" | "EN_REVISION" | "FINALIZADO" | "EMPAQUETADO";
 
 export type Tecnologia = "OFFSET" | "DIGITAL" | "GRAN_FORMATO" | "FLEXOGRAFIA";
 
@@ -71,6 +71,8 @@ export interface EspecificacionesTrabajo {
   unidadDimension?: "cm" | "m";
   resolucionDpi?: number;
   /* Comunes */
+  tintasTiro?: number;
+  tintasRetiro?: number;
   gramaje?: number;
   pantones?: string[];
   observaciones?: string;
@@ -196,6 +198,19 @@ export interface MaterialInventario {
 
 export type TipoMovimiento = "ENTRADA" | "SALIDA" | "AJUSTE" | "RESERVA";
 
+/**
+ * Stock resultante de un movimiento. ENTRADA suma; SALIDA, RESERVA y AJUSTE
+ * (merma o corrección por conteo) restan. Puede devolver un valor negativo:
+ * quien llama decide rechazarlo, nunca se trunca en silencio a cero.
+ */
+export function stockTrasMovimiento(
+  stock: number,
+  tipo: TipoMovimiento,
+  cantidad: number,
+): number {
+  return tipo === "ENTRADA" ? stock + cantidad : stock - cantidad;
+}
+
 export interface MovimientoInventario {
   id: string;
   materialId: string;
@@ -250,7 +265,7 @@ export const FASE_PLANTA: Record<
     short: "Finalizado",
     description: "Producción terminada, lista para empacar",
   },
-  EMPACADO: {
+  EMPAQUETADO: {
     label: "Empaquetado",
     short: "Empaque",
     description: "Producto final embalado para despacho",
@@ -261,7 +276,7 @@ export const FASES_PLANTA: FasePlanta[] = [
   "EN_PROCESO",
   "EN_REVISION",
   "FINALIZADO",
-  "EMPACADO",
+  "EMPAQUETADO",
 ];
 
 export const CATEGORIA_TRABAJO_LABEL: Record<CategoriaTrabajo, string> = {

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/shared/api/queryKeys";
 import { authApi } from "../api/authApi";
 import { AuthContext } from "../context";
 import type { UsuarioPublico } from "../lib/authStore";
@@ -37,10 +38,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const registrarAdministrador = useCallback(
     async (values: SetupAdminFormValues) => {
       const admin = await authApi.registrarAdministrador(values);
+      queryClient.setQueryData(queryKeys.hayAdministrador, true);
       setUsuario(admin);
       return admin;
     },
-    [],
+    [queryClient],
   );
 
   const logout = useCallback(async () => {

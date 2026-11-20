@@ -11,5 +11,5 @@ export const queryKeys = {
   dashboard: ["dashboard"] as const,
   notificaciones: ["notificaciones"] as const,
   empleados: ["empleados"] as const,
-  sesion: ["sesion"] as const,
+  hayAdministrador: ["auth", "hay-admin"] as const,
 } as const;

@@ -35,6 +35,8 @@ export interface CotizacionResultado {
 
 const round = (value: number) => Math.round(value * 100) / 100;
 
+const numeroSeguro = (value: number) => (Number.isFinite(value) ? value : 0);
+
 function sustrato(id: string) {
   return SUSTRATOS.find((item) => item.id === id) ?? SUSTRATOS[0];
 }
@@ -101,7 +103,19 @@ function cotizarGranFormato(
  * encapsula sus propias fórmulas de mermas, planchas y tiempo de máquina.
  * La interfaz de salida es común para la UI y para el resumen de la OT.
  */
-export function calcularCotizacion(input: CotizacionInput): CotizacionResultado {
+export function calcularCotizacion(entrada: CotizacionInput): CotizacionResultado {
+  // Un campo numérico vacío llega como NaN desde el formulario; se trata como 0
+  // para que el resumen en vivo no muestre "NaN" mientras el usuario escribe.
+  const input: CotizacionInput = {
+    ...entrada,
+    tiraje: numeroSeguro(entrada.tiraje),
+    anchoMm: numeroSeguro(entrada.anchoMm),
+    altoMm: numeroSeguro(entrada.altoMm),
+    tintasTiro: numeroSeguro(entrada.tintasTiro),
+    tintasRetiro: numeroSeguro(entrada.tintasRetiro),
+    margen: numeroSeguro(entrada.margen),
+    acabados: entrada.acabados ?? [],
+  };
   const papel = sustrato(input.sustratoId);
   const base =
     input.tecnologia === "GRAN_FORMATO"
