@@ -370,11 +370,14 @@ export const ProductoTerminadoSchema = z.object({
 export const FiltroProductosTerminadosSchema = z
   .object({
     tipo: z.enum(TIPOS_PRODUCTO_TERMINADO).optional(),
-    /** Por defecto solo lo que falta por entregar. */
+    /**
+     * Por defecto solo lo que falta por entregar. Acepta el texto de la query
+     * ("true"/"false") o un booleano, para que validar dos veces (HTTP y caso
+     * de uso) dé el mismo resultado.
+     */
     soloPendientes: z
-      .enum(['true', 'false'])
-      .default('true')
-      .transform((v) => v === 'true'),
+      .union([z.boolean(), z.enum(['true', 'false']).transform((v) => v === 'true')])
+      .default(true),
   })
   .strict();
 
