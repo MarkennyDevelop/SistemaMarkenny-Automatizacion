@@ -40,6 +40,7 @@ import {
   type OrdenTrabajo,
 } from "@/shared/domain";
 import { FASE_UI } from "@/shared/fase-ui";
+import { useEventosProduccion } from "@/shared/api/tiempoReal";
 import { useOrdenesTrabajo } from "../hooks/useOrdenesTrabajo";
 
 function fechaHora(fecha: string) {
@@ -361,6 +362,8 @@ function DatosOrden({ orden }: { orden: OrdenTrabajo }) {
 
 export function SeguimientoPage() {
   const { data: ordenes = [], isLoading } = useOrdenesTrabajo();
+  // Los avances de planta llegan en vivo (SSE); el refresco periódico queda de respaldo.
+  useEventosProduccion();
   const [params, setParams] = useSearchParams();
   const [busqueda, setBusqueda] = useState("");
 

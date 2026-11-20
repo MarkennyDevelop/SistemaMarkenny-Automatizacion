@@ -1,5 +1,5 @@
-import { fileURLToPath, URL } from "node:url";
 import { defineConfig } from "vitest/config";
+import { ALIAS } from "./vite.config";
 
 // Zona horaria de Markenny (UTC-4): las pruebas de fechas reproducen el
 // desfase de un día que se corrigió. Se fija aquí y no en el script de npm
@@ -7,11 +7,7 @@ import { defineConfig } from "vitest/config";
 process.env.TZ = "America/Caracas";
 
 export default defineConfig({
-  resolve: {
-    alias: {
-      "@": fileURLToPath(new URL("./src", import.meta.url)),
-    },
-  },
+  resolve: { alias: ALIAS, dedupe: ["zod"] },
   test: {
     include: ["src/**/*.test.ts"],
     environment: "node",

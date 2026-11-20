@@ -1,18 +1,14 @@
-import type { ActorOrden, FasePlanta, OrdenTrabajo } from "@/shared/domain";
-import { mockDb } from "@/shared/mock/db";
+import { api } from "@/shared/api/cliente";
+import type { FasePlanta } from "@/shared/domain";
 
 /**
- * Adaptador de datos de Planta.
- * Endpoint previsto: PATCH /v1/ordenes/:id/fase
- * Evento SSE previsto: GET /v1/produccion/taller-stream
+ * Adaptador de Planta sobre el backend.
+ *   GET  /api/v1/ordenes
+ *   POST /api/v1/ordenes/:id/transiciones   (secuencial, auditado, con bloqueo por versión)
+ * El operario que firma el cambio es el usuario de la sesión.
  */
 export const plantaApi = {
-  listarOrdenes: () => mockDb.listarOrdenes(),
-  actualizarFase: (
-    ordenId: string,
-    fase: FasePlanta,
-    actor: ActorOrden,
-    nota?: string,
-  ): Promise<OrdenTrabajo> =>
-    mockDb.actualizarFaseOrden(ordenId, fase, actor, nota),
+  listarOrdenes: () => api.listarOrdenes(),
+  actualizarFase: (ordenId: string, fase: FasePlanta, opciones: { nota?: string; versionEsperada?: number } = {}) =>
+    api.cambiarFaseOrden({ params: { id: ordenId }, body: { fase, ...opciones } }),
 };

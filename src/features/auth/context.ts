@@ -1,5 +1,5 @@
 import { createContext, useContext } from "react";
-import type { UsuarioPublico } from "./lib/authStore";
+import type { UsuarioPublico } from "@/shared/domain";
 import type { LoginFormValues, SetupAdminFormValues } from "./types/schemas";
 
 export interface AuthContextValue {

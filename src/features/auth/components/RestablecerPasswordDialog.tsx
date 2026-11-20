@@ -13,7 +13,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useRestablecerPassword } from "../hooks/useEmpleados";
-import type { UsuarioPublico } from "../lib/authStore";
+import type { UsuarioPublico } from "@/shared/domain";
 
 interface RestablecerPasswordDialogProps {
   usuario: UsuarioPublico | null;

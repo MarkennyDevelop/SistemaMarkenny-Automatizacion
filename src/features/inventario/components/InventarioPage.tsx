@@ -78,7 +78,6 @@ export function InventarioPage() {
         tipo: values.tipo,
         cantidad: values.cantidad,
         motivo: values.motivo,
-        usuario: values.usuario,
       });
       toast.success("Movimiento registrado", {
         description: `${movimiento.materialNombre} · ${movimiento.tipo.toLowerCase()} de ${formatNumber(movimiento.cantidad)}`,

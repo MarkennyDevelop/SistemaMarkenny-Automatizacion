@@ -1,13 +1,21 @@
 /**
- * Núcleo compartido de tipos del dominio gráfico.
- * Los features consumen estas entidades y las exponen en su propio index.ts.
+ * Tipos del dominio gráfico.
+ *
+ * Las entidades que viajan por la API se derivan del contrato
+ * (`packages/contrato`): frontend y backend no pueden desincronizarse.
+ * Aquí quedan además las etiquetas en español de la interfaz.
  */
+import type { EntradaDeEndpoint, RespuestaDe } from "@markenny/cliente-http";
+import { FASES } from "@markenny/contrato/dominio";
+
+export { stockTrasMovimiento } from "@markenny/contrato/dominio";
 
 /* ------------------------------------------------------------------ */
 /* Identidad y roles                                                   */
 /* ------------------------------------------------------------------ */
 
-export type Rol = "ADMIN" | "VENDEDOR" | "PRODUCCION";
+export type UsuarioPublico = RespuestaDe<"sesionActual">;
+export type Rol = UsuarioPublico["rol"];
 
 export const ROL_LABEL: Record<Rol, string> = {
   ADMIN: "Administrador",
@@ -22,225 +30,53 @@ export const ROL_DESCRIPCION: Record<Rol, string> = {
 };
 
 /* ------------------------------------------------------------------ */
-/* Producción                                                          */
+/* Órdenes de trabajo y producción                                     */
 /* ------------------------------------------------------------------ */
 
-export type FasePlanta = "EN_PROCESO" | "EN_REVISION" | "FINALIZADO" | "EMPAQUETADO";
-
-export type Tecnologia = "OFFSET" | "DIGITAL" | "GRAN_FORMATO" | "FLEXOGRAFIA";
-
-export type Prioridad = "BAJA" | "MEDIA" | "ALTA" | "URGENTE";
-
+export type OrdenTrabajo = RespuestaDe<"obtenerOrden">;
+export type EventoOrden = OrdenTrabajo["historial"][number];
+export type EspecificacionesTrabajo = OrdenTrabajo["especificaciones"];
+export type FasePlanta = OrdenTrabajo["fase"];
+export type EstadoEntrega = OrdenTrabajo["estadoEntrega"];
+export type Tecnologia = OrdenTrabajo["tecnologia"];
+export type Prioridad = OrdenTrabajo["prioridad"];
 /**
- * Familia del trabajo. Determina qué ficha técnica usa el vendedor
- * (papelería corporativa vs. gran formato/adhesivos) y cómo se muestra
- * la orden en planta.
+ * Familia del trabajo: determina la ficha técnica del vendedor (papelería
+ * corporativa o gran formato/adhesivos) y cómo se muestra la orden en planta.
  */
-export type CategoriaTrabajo = "PAPELERIA" | "GRAN_FORMATO" | "GENERAL";
-
-export type TipoPapeleria =
-  | "FACTURA"
-  | "TALONARIO"
-  | "RECIPE"
-  | "NOTA"
-  | "ORDEN_COMPRA"
-  | "RECIBO"
-  | "CARTA"
-  | "OTRO";
-
-export type TipoGranFormato =
-  | "PENDON"
-  | "STICKER"
-  | "VINIL"
-  | "LONA"
-  | "BACKING"
-  | "ROTULO"
-  | "OTRO";
-
-export interface EspecificacionesTrabajo {
-  /* Papelería corporativa */
-  tipoPapeleria?: TipoPapeleria;
-  partes?: number;
-  numeracionDesde?: number;
-  numeracionHasta?: number;
-  numeracionPrefijo?: string;
-  /* Gran formato y adhesivos */
-  tipoGranFormato?: TipoGranFormato;
-  ancho?: number;
-  alto?: number;
-  unidadDimension?: "cm" | "m";
-  resolucionDpi?: number;
-  /* Comunes */
-  tintasTiro?: number;
-  tintasRetiro?: number;
-  gramaje?: number;
-  pantones?: string[];
-  observaciones?: string;
-}
-
-export interface EventoOrden {
-  id: string;
-  fase: FasePlanta;
-  anterior: FasePlanta | null;
-  usuario: string;
-  rol: Rol;
-  fecha: string;
-  nota?: string;
-}
-
-/** Identidad mínima del operario que ejecuta un cambio de fase. */
-export interface ActorOrden {
-  usuario: string;
-  rol: Rol;
-}
+export type CategoriaTrabajo = OrdenTrabajo["categoriaTrabajo"];
+export type TipoPapeleria = NonNullable<EspecificacionesTrabajo["tipoPapeleria"]>;
+export type TipoGranFormato = NonNullable<EspecificacionesTrabajo["tipoGranFormato"]>;
+/** Cuerpo de `POST /ordenes`: el vendedor lo asigna el servidor (usuario de la sesión). */
+export type NuevaOrdenTrabajo = EntradaDeEndpoint<"crearOrden">["body"];
 
 /* ------------------------------------------------------------------ */
 /* Ventas                                                              */
 /* ------------------------------------------------------------------ */
 
-export interface Cliente {
-  id: string;
-  nombre: string;
-  rif: string;
-  contacto: string;
-  telefono: string;
-  email: string;
-  ciudad: string;
-  ordenesActivas: number;
-  saldoPendiente: number;
-  creadoEn: string;
-}
-
-export type NuevoCliente = Omit<
-  Cliente,
-  "id" | "creadoEn" | "ordenesActivas" | "saldoPendiente"
->;
-
-export interface NuevaOrdenTrabajo {
-  clienteId: string;
-  producto: string;
-  descripcion: string;
-  tecnologia: Tecnologia;
-  prioridad: Prioridad;
-  maquina: string;
-  cantidad: number;
-  fechaEntrega: string;
-  montoTotal: number;
-  sustrato: string;
-  tintas: string[];
-  acabados: string[];
-  categoriaTrabajo?: CategoriaTrabajo;
-  especificaciones?: EspecificacionesTrabajo;
-  vendedor?: string;
-}
-
-export interface OrdenTrabajo {
-  id: string;
-  codigo: string;
-  clienteId: string;
-  clienteNombre: string;
-  producto: string;
-  descripcion: string;
-  tecnologia: Tecnologia;
-  fase: FasePlanta;
-  prioridad: Prioridad;
-  maquina: string;
-  operador: string;
-  cantidad: number;
-  avance: number;
-  montoTotal: number;
-  sustrato: string;
-  tintas: string[];
-  acabados: string[];
-  fechaCreacion: string;
-  fechaEntrega: string;
-  categoriaTrabajo?: CategoriaTrabajo;
-  especificaciones?: EspecificacionesTrabajo;
-  vendedor?: string;
-  historial?: EventoOrden[];
-}
+export type Cliente = RespuestaDe<"listarClientes">[number];
+export type NuevoCliente = EntradaDeEndpoint<"crearCliente">["body"];
 
 /* ------------------------------------------------------------------ */
 /* Inventario                                                          */
 /* ------------------------------------------------------------------ */
 
-export type CategoriaInventario =
-  | "PAPEL"
-  | "TINTAS"
-  | "PLANCHAS"
-  | "VINILOS"
-  | "SELLOS"
-  | "ALMACEN";
-
-export type UnidadMedida =
-  | "resma"
-  | "pliego"
-  | "kg"
-  | "litro"
-  | "unidad"
-  | "rollo"
-  | "caja";
-
-export interface MaterialInventario {
-  id: string;
-  sku: string;
-  nombre: string;
-  categoria: CategoriaInventario;
-  unidad: UnidadMedida;
-  stock: number;
-  stockMinimo: number;
-  costoUnitario: number;
-  ubicacion: string;
-  proveedor: string;
-  lote: string;
-  actualizadoEn: string;
-}
-
-export type TipoMovimiento = "ENTRADA" | "SALIDA" | "AJUSTE" | "RESERVA";
-
-/**
- * Stock resultante de un movimiento. ENTRADA suma; SALIDA, RESERVA y AJUSTE
- * (merma o corrección por conteo) restan. Puede devolver un valor negativo:
- * quien llama decide rechazarlo, nunca se trunca en silencio a cero.
- */
-export function stockTrasMovimiento(
-  stock: number,
-  tipo: TipoMovimiento,
-  cantidad: number,
-): number {
-  return tipo === "ENTRADA" ? stock + cantidad : stock - cantidad;
-}
-
-export interface MovimientoInventario {
-  id: string;
-  materialId: string;
-  materialNombre: string;
-  tipo: TipoMovimiento;
-  cantidad: number;
-  motivo: string;
-  usuario: string;
-  fecha: string;
-}
+export type MaterialInventario = RespuestaDe<"listarMateriales">[number];
+export type CategoriaInventario = MaterialInventario["categoria"];
+export type UnidadMedida = MaterialInventario["unidad"];
+export type MovimientoInventario = RespuestaDe<"registrarMovimiento">;
+export type TipoMovimiento = MovimientoInventario["tipo"];
+/** Cuerpo de `POST /inventario/movimientos`: el responsable es el usuario de la sesión. */
+export type NuevoMovimiento = EntradaDeEndpoint<"registrarMovimiento">["body"];
+/** Sellos y productos terminados en almacén pendientes de entrega. */
+export type ProductoTerminado = RespuestaDe<"listarProductosTerminados">[number];
 
 /* ------------------------------------------------------------------ */
 /* Notificaciones                                                      */
 /* ------------------------------------------------------------------ */
 
-export type TipoNotificacion = "PEDIDO_LISTO" | "FASE" | "STOCK" | "SISTEMA";
-
-export interface Notificacion {
-  id: string;
-  tipo: TipoNotificacion;
-  titulo: string;
-  detalle: string;
-  ordenId?: string;
-  codigo?: string;
-  /** Roles que deben ver la notificación. */
-  roles: Rol[];
-  /** IDs de usuarios que ya la marcaron como leída. */
-  leidaPor: string[];
-  creadaEn: string;
-}
+export type Notificacion = RespuestaDe<"listarNotificaciones">[number];
+export type TipoNotificacion = Notificacion["tipo"];
 
 /* ------------------------------------------------------------------ */
 /* Etiquetas                                                           */
@@ -272,12 +108,15 @@ export const FASE_PLANTA: Record<
   },
 };
 
-export const FASES_PLANTA: FasePlanta[] = [
-  "EN_PROCESO",
-  "EN_REVISION",
-  "FINALIZADO",
-  "EMPAQUETADO",
-];
+/** Orden de las 4 fases, tomado del contrato. */
+export const FASES_PLANTA: readonly FasePlanta[] = FASES;
+
+export const ESTADO_ENTREGA_LABEL: Record<EstadoEntrega, string> = {
+  NO_APLICA: "En producción",
+  PENDIENTE: "Pendiente de entrega",
+  PARCIAL: "Entrega parcial",
+  ENTREGADO: "Entregado",
+};
 
 export const CATEGORIA_TRABAJO_LABEL: Record<CategoriaTrabajo, string> = {
   PAPELERIA: "Papelería corporativa",

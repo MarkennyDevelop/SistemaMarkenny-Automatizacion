@@ -3,7 +3,6 @@ import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/features/auth";
 import { fechaEnDias } from "@/lib/fechas";
 import { useClientes } from "../hooks/useClientes";
 import { useCrearOrdenTrabajo } from "../hooks/useOrdenesTrabajo";
@@ -14,12 +13,11 @@ import { TipoTrabajoTabs } from "./TipoTrabajoTabs";
 
 export function NuevaOrdenGranFormatoPage() {
   const navigate = useNavigate();
-  const { usuario } = useAuth();
   const { data: clientes = [], isLoading: cargandoClientes } = useClientes();
   const crear = useCrearOrdenTrabajo();
 
   const handleSubmit = async (values: GranFormatoFormValues) => {
-    const orden = ordenDesdeGranFormato(values, usuario?.nombre);
+    const orden = ordenDesdeGranFormato(values);
 
     try {
       const creada = await crear.mutateAsync(orden);

@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { alExpirarSesion } from "@/shared/api/cliente";
 import { queryKeys } from "@/shared/api/queryKeys";
 import { authApi } from "../api/authApi";
 import { AuthContext } from "../context";
-import type { UsuarioPublico } from "../lib/authStore";
+import type { UsuarioPublico } from "@/shared/domain";
 import type { LoginFormValues, SetupAdminFormValues } from "../types/schemas";
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -29,11 +30,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  const login = useCallback(async (values: LoginFormValues) => {
-    const autenticado = await authApi.login(values);
-    setUsuario(autenticado);
-    return autenticado;
-  }, []);
+  // Si el backend responde 401 (sesión caducada, cuenta desactivada o
+  // contraseña restablecida), se vuelve al login sin datos en caché.
+  useEffect(
+    () =>
+      alExpirarSesion(() => {
+        setUsuario(null);
+        queryClient.clear();
+      }),
+    [queryClient],
+  );
+
+  const login = useCallback(
+    async (values: LoginFormValues) => {
+      const autenticado = await authApi.login(values);
+      queryClient.clear(); // nada en caché de una sesión anterior
+      setUsuario(autenticado);
+      return autenticado;
+    },
+    [queryClient],
+  );
 
   const registrarAdministrador = useCallback(
     async (values: SetupAdminFormValues) => {
@@ -46,9 +62,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 
   const logout = useCallback(async () => {
-    await authApi.logout();
-    setUsuario(null);
-    queryClient.clear();
+    try {
+      await authApi.logout();
+    } finally {
+      setUsuario(null);
+      queryClient.clear();
+    }
   }, [queryClient]);
 
   const value = useMemo(

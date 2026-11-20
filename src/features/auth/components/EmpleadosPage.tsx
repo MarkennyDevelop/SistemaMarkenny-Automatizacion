@@ -35,7 +35,7 @@ import { cn, formatDate, initials } from "@/lib/utils";
 import { ROL_LABEL, type Rol } from "@/shared/domain";
 import { useAuth } from "../context";
 import { useCambiarEstadoUsuario, useEmpleados } from "../hooks/useEmpleados";
-import type { UsuarioPublico } from "../lib/authStore";
+import type { UsuarioPublico } from "@/shared/domain";
 import { NuevoEmpleadoDialog } from "./NuevoEmpleadoDialog";
 import { RestablecerPasswordDialog } from "./RestablecerPasswordDialog";
 

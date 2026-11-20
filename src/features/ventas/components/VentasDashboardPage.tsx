@@ -66,8 +66,11 @@ export function VentasDashboardPage() {
 
   const resumen = useMemo(() => {
     const activas = ordenes.filter((orden) => orden.fase !== "EMPAQUETADO");
+    // Listas para entregar: finalizadas o empaquetadas que el almacén aún no entregó.
     const listas = ordenes.filter(
-      (orden) => orden.fase === "FINALIZADO" || orden.fase === "EMPAQUETADO",
+      (orden) =>
+        (orden.fase === "FINALIZADO" || orden.fase === "EMPAQUETADO") &&
+        orden.estadoEntrega !== "ENTREGADO",
     );
     const enTaller = ordenes.filter(
       (orden) => orden.fase === "EN_PROCESO" || orden.fase === "EN_REVISION",

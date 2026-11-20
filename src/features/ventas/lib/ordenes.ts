@@ -40,8 +40,7 @@ function textoOpcional(valor?: string) {
 }
 
 export function ordenDesdePapeleria(
-  values: PapeleriaFormValues,
-  vendedor?: string,
+  values: PapeleriaFormValues
 ): NuevaOrdenTrabajo {
   const sustrato = sustratoDe(values.sustratoId);
   const monto = estimarMontoOrden({
@@ -70,7 +69,6 @@ export function ordenDesdePapeleria(
       values.tintasPantone.length > 0 ? values.tintasPantone : ["CMYK proceso"],
     acabados: nombresAcabados(values.acabados),
     categoriaTrabajo: "PAPELERIA",
-    vendedor,
     especificaciones: {
       tipoPapeleria: values.tipoPapeleria,
       partes: values.partes,
@@ -88,8 +86,7 @@ export function ordenDesdePapeleria(
 }
 
 export function ordenDesdeGranFormato(
-  values: GranFormatoFormValues,
-  vendedor?: string,
+  values: GranFormatoFormValues
 ): NuevaOrdenTrabajo {
   const sustrato = sustratoDe(values.sustratoId);
   const monto = estimarMontoOrden({
@@ -117,7 +114,6 @@ export function ordenDesdeGranFormato(
     tintas: ["CMYK alta cobertura"],
     acabados: nombresAcabados(values.acabados),
     categoriaTrabajo: "GRAN_FORMATO",
-    vendedor,
     especificaciones: {
       tipoGranFormato: values.tipoGranFormato,
       ancho: values.ancho,
@@ -131,8 +127,7 @@ export function ordenDesdeGranFormato(
 }
 
 export function ordenDesdeFichaGeneral(
-  values: OrdenTrabajoFormValues,
-  vendedor?: string,
+  values: OrdenTrabajoFormValues
 ): NuevaOrdenTrabajo {
   const sustrato = sustratoDe(values.sustratoId);
   const monto = estimarMontoOrden({
@@ -160,7 +155,6 @@ export function ordenDesdeFichaGeneral(
     tintas: [...(values.tintasTiro > 0 ? ["CMYK"] : []), ...values.tintasPantone],
     acabados: nombresAcabados(values.acabados),
     categoriaTrabajo: "GENERAL",
-    vendedor,
     especificaciones: {
       tintasTiro: values.tintasTiro,
       tintasRetiro: values.tintasRetiro,

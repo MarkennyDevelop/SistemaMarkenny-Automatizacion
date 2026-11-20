@@ -30,7 +30,7 @@ const papeleria = papeleriaSchema.parse({
 });
 
 describe("ordenDesdePapeleria", () => {
-  const orden = ordenDesdePapeleria(papeleria, "Valeria Rondón");
+  const orden = ordenDesdePapeleria(papeleria);
 
   it("envía nombres de acabados, no identificadores", () => {
     expect(orden.acabados).toEqual(["Numerado", "Engrapado", "Perforado"]);
@@ -44,7 +44,6 @@ describe("ordenDesdePapeleria", () => {
   it("conserva numeración, partes, tintas y observaciones en la ficha técnica", () => {
     expect(orden).toMatchObject({
       categoriaTrabajo: "PAPELERIA",
-      vendedor: "Valeria Rondón",
       tintas: ["Pantone 032 C"],
       especificaciones: {
         tipoPapeleria: "FACTURA",
@@ -84,7 +83,7 @@ describe("ordenDesdeGranFormato", () => {
 });
 
 describe("ordenDesdeFichaGeneral", () => {
-  it("separa descripción y observaciones e identifica al vendedor", () => {
+  it("separa descripción y observaciones", () => {
     const valores = ordenTrabajoSchema.parse({
       ...ORDEN_TRABAJO_DEFAULTS,
       clienteId: CLIENTE,
@@ -94,11 +93,10 @@ describe("ordenDesdeFichaGeneral", () => {
       acabados: ["barniz-uv"],
       fechaEntrega: entrega,
     });
-    const orden = ordenDesdeFichaGeneral(valores, "Kenny Hernández");
+    const orden = ordenDesdeFichaGeneral(valores);
     expect(orden).toMatchObject({
       descripcion: "16 páginas",
       categoriaTrabajo: "GENERAL",
-      vendedor: "Kenny Hernández",
       acabados: ["Barniz UV"],
       especificaciones: { observaciones: "Prueba de color antes de tirar" },
     });

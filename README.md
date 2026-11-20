@@ -50,41 +50,41 @@ Aplicación React 18 + TypeScript 5 + Vite 5 + Tailwind 3 + shadcn/ui (Radix).
 Vive en la raíz del repositorio (`src/`), no en `apps/frontend`, para respetar la
 estructura `src/features/*` acordada.
 
-### Comandos
+### Cómo abrir el sistema completo (frontend + backend)
+
+El frontend (esta rama) habla con el backend (rama `Backend`) por la API
+`/api/v1`. Se necesitan **Node.js 20.12 o superior** y **PostgreSQL 13 o
+superior**, y dos carpetas: una con cada rama.
 
 ```bash
-npm install       # instalar dependencias
-npm run dev       # servidor de desarrollo en http://localhost:5173
-npm run build     # typecheck + build de producción en dist/
-npm run preview   # sirve el build (http://localhost:4173)
-npm run typecheck # solo verificación de tipos
-npm test          # pruebas unitarias (Vitest) de fechas, fichas, cotizador y reglas del mock
+# Una sola vez: segunda carpeta con la rama Backend, junto a esta
+git fetch origin
+git worktree add ../markenny-backend Backend
 ```
 
-> En Windows con PowerShell restringido, usar `npm.cmd` en lugar de `npm`.
+**Terminal 1 — backend** (en `../markenny-backend`):
 
-### Acceso, roles y primer arranque
+```bash
+npm install
+cp apps/backend/.env.example apps/backend/.env   # ajustar DATABASE_URL
+npm run migrate                                   # crea las tablas
+npm run seed:demo                                 # opcional: cuentas y datos de demostración
+npm run dev:backend                               # API en http://localhost:3000
+```
 
-El sistema arranca **sin usuarios sembrados**. Al abrir la aplicación por primera
-vez, `/login` redirige a `/setup-admin`, donde se registra la cuenta maestra de
-Administrador. Esa pantalla se bloquea de forma permanente en cuanto existe un
-administrador activo.
+**Terminal 2 — frontend** (en esta carpeta):
 
-| Rol | Alcance | Aterrizaje |
-|---|---|---|
-| Administrador | Control total: ventas, producción, inventario y empleados | `/admin` |
-| Vendedor | Ventas, clientes, OT y seguimiento de sus trabajos | `/ventas/dashboard` |
-| Producción | Taller, control de calidad, empaque y almacén | `/produccion` |
+```bash
+npm install
+npm run dev                                       # abre http://localhost:5173
+```
 
-El alta de empleados es exclusiva del Administrador (`/admin/empleados`) y solo
-permite crear cuentas **Vendedor** o **Producción**; no se puede crear un segundo
-administrador desde la interfaz.
+Vite reenvía `/api` al backend en `http://localhost:3000`; otra dirección se
+indica con la variable `VITE_BACKEND_URL`. Así frontend y API comparten
+origen y la cookie de sesión funciona sin configurar CORS.
 
-La identidad se persiste en `localStorage` (`markenny.print-mis.auth.v1`) con
-SHA-256 + sal por usuario. Es un mock de desarrollo: al conectar Fastify se
-sustituye por sesiones/cookies del backend.
-
-**Credenciales de la demo validada:**
+Cuentas de `npm run seed:demo` (solo para pruebas; la demo solo se carga en
+una base vacía):
 
 | Rol | Correo | Contraseña |
 |---|---|---|
@@ -92,16 +92,40 @@ sustituye por sesiones/cookies del backend.
 | Vendedor | `valeria@markenny.com` | `Ventas2026` |
 | Producción | `luis@markenny.com` | `Planta2026` |
 
-Para reiniciar la demo por completo, borrar `markenny.print-mis.db.v1` y
-`markenny.print-mis.auth.v1` del `localStorage` y recargar.
+Sin `seed:demo`, la primera visita lleva a `/setup-admin` para registrar al
+administrador maestro.
 
-> **Importante:** las cuentas viven en el `localStorage` de **cada navegador**.
-> Unas credenciales creadas en la sesión de pruebas de otro equipo o perfil no
-> existen en el tuyo: al abrir la app verás `/setup-admin` o el login rechazará
-> esos correos. Si eso ocurre, ejecuta `npm run dev` y pulsa **Cargar cuentas
-> demo · solo desarrollo**, que aparece al pie de `/login` y `/setup-admin`.
-> Ese botón instala las tres cuentas de la tabla anterior en tu navegador, cierra
-> la sesión y recarga. No aparece en el build de producción (`npm run preview`).
+> En Windows con PowerShell restringido, usar `npm.cmd` en lugar de `npm`, y
+> `copy` en lugar de `cp`.
+
+### Comandos del frontend
+
+```bash
+npm run dev       # servidor de desarrollo en http://localhost:5173 (con proxy a la API)
+npm run build     # typecheck + build de producción en dist/
+npm run preview   # sirve el build en http://localhost:4173 (también con proxy a la API)
+npm run typecheck # solo verificación de tipos
+npm test          # pruebas unitarias (Vitest)
+```
+
+### Acceso y roles
+
+| Rol | Alcance | Aterrizaje |
+|---|---|---|
+| Administrador | Control total: ventas, producción, inventario y empleados | `/admin` |
+| Vendedor | Sus clientes, sus órdenes de trabajo y su seguimiento | `/ventas/dashboard` |
+| Producción | Taller, control de calidad, empaque, almacén y entregas | `/produccion` |
+
+- El administrador maestro se registra una sola vez en `/setup-admin`. El
+  backend rechaza un segundo registro (`409`).
+- El alta de empleados (Vendedor o Producción) es exclusiva del Administrador
+  (`/admin/empleados`).
+- **La sesión es una cookie httpOnly del backend.** El navegador no guarda
+  usuarios, contraseñas ni datos de negocio.
+- Los permisos se comprueban en el servidor; las guardas del frontend solo
+  ocultan pantallas.
+- Si la sesión caduca o el administrador desactiva la cuenta, la app vuelve al
+  login sola.
 
 ### Rutas
 
@@ -152,7 +176,7 @@ src/
 │        ├─ ordenes/     # Tabla de OT
 │        └─ clientes/    # Tabla y diálogo de clientes
 ├─ lib/                  # utilidades (cn, formatCurrency, formatDate…)
-└─ shared/               # domain.ts, catalogos.ts, fase-ui.ts, mock/db.ts, api/queryKeys.ts
+└─ shared/               # domain.ts (tipos del contrato), catalogos.ts, fase-ui.ts, api/ (cliente, queryKeys, tiempoReal)
 ```
 
 Cada feature exporta su API pública desde `index.ts`; el resto de la app nunca
@@ -170,12 +194,17 @@ importa rutas internas de otra feature.
 - **Autenticación y permisos**: `RequireAuth`, `RequireRole` y `PublicOnly`
   protegen el árbol de rutas; `homeForRol` decide el aterrizaje y el `Sidebar`
   oculta los módulos fuera del alcance del rol.
-- **Control de calidad secuencial**: `usePlantaBoard` y `mockDb.actualizarFaseOrden`
-  solo permiten avanzar una fase (sin saltos ni retrocesos) y solo con rol
-  Producción o Administrador; cada cambio agrega un `EventoOrden` con usuario,
-  rol, fecha y nota. Una orden con un avance pendiente no acepta otro.
-- **Notificaciones**: al marcar *Finalizado* o *Empaquetado* se genera una
-  `Notificacion` para Vendedor y Administrador, visible en la campana del `Topbar`.
+- **Control de calidad secuencial**: el tablero solo ofrece la fase siguiente y
+  el backend es la autoridad: rechaza saltos, exige rol Producción o
+  Administrador y registra cada cambio con usuario, rol, fecha y nota. El
+  retrabajo `En Revisión → En Proceso` exige motivo. Una orden con un avance
+  pendiente no acepta otro, y `versionEsperada` evita pisar el cambio de otro
+  operario.
+- **Notificaciones**: al marcar *Finalizado* o *Empaquetado*, el vendedor de esa
+  orden (y el Administrador) recibe el aviso en la campana del `Topbar`.
+- **Entregas**: en *Sellos y PT* se registra la entrega total o parcial de cada
+  pedido empaquetado; al completarla, la orden queda "Entregado" en el
+  seguimiento.
 - **Estado del servidor**: TanStack Query con `queryKeys` centralizadas,
   mutaciones optimistas en Kanban e invalidación cruzada (una OT nueva refresca
   dashboard, listado y tablero).
@@ -183,15 +212,21 @@ importa rutas internas de otra feature.
   resumen sticky con cálculos derivados.
 - **Diseño**: paleta rojo/negro/blanco definida en `tailwind.config.ts` e
   `src/index.css`; tipografías locales con `@fontsource` (Inter + Barlow Condensed).
-- **Datos mock**: `src/shared/mock/db.ts` simula una API con latencia y persiste en
-  `localStorage` (`markenny.print-mis.db.v1`); la identidad vive aparte en
-  `markenny.print-mis.auth.v1`. La capa `api/` ya está separada para sustituirla
-  por los endpoints Fastify sin tocar los componentes.
+- **Datos**: cada feature tiene su capa `api/` sobre `src/shared/api/cliente.ts`,
+  el cliente HTTP generado desde el contrato (`packages/cliente-http`). Los
+  tipos de `shared/domain.ts` se derivan del contrato.
+- **Tiempo real**: `useEventosProduccion` (`shared/api/tiempoReal.ts`) escucha el
+  flujo SSE del backend y refresca tablero, seguimiento, almacén y campana al
+  instante.
 - **Motor de cotización**: patrón Strategy por tipo de impresión (offset, digital,
   gran formato) en `features/ventas/lib/cotizador.ts`; también estima el monto de
   una OT.
 
 ### Registro de auditoría — Fase 2 y habilitación de acceso (2026-11-18)
+
+> **Histórico.** Esta sección describe la etapa previa al backend. Desde el
+> 2026-11-20 el frontend usa la API y las cuentas viven en PostgreSQL. El botón
+> "Cargar cuentas demo" se sustituyó por `npm run seed:demo` del backend.
 
 Este apartado deja constancia del trabajo ejecutado después de la Fase 2 y de la
 incidencia de acceso reportada por el usuario. Commits de referencia:

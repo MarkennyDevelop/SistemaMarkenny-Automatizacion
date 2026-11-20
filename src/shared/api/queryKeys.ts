@@ -8,6 +8,7 @@ export const queryKeys = {
   ordenes: ["ordenes"] as const,
   inventario: ["inventario"] as const,
   movimientos: ["movimientos"] as const,
+  productosTerminados: ["productos-terminados"] as const,
   dashboard: ["dashboard"] as const,
   notificaciones: ["notificaciones"] as const,
   empleados: ["empleados"] as const,

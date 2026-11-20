@@ -4,7 +4,6 @@ import { Link } from "react-router-dom";
 import { MarkennyLogo } from "@/components/brand/MarkennyLogo";
 import { FASES_PLANTA } from "@/shared/domain";
 import { SISTEMA } from "@/shared/catalogos";
-import { DemoAccountsButton } from "./DemoAccountsButton";
 
 interface AuthLayoutProps {
   eyebrow: string;
@@ -117,7 +116,6 @@ export function AuthLayout({
 
           <div className="mt-7">{children}</div>
 
-          <DemoAccountsButton />
 
           {footer && (
             <div className="mt-6 border-t border-border/70 pt-5 text-[12px] text-muted-foreground">

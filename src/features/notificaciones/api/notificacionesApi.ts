@@ -1,17 +1,11 @@
-import { mockDb } from "@/shared/mock/db";
-import type { Rol } from "@/shared/domain";
+import { api } from "@/shared/api/cliente";
 
 /**
- * Adaptador de notificaciones.
- * Contrato previsto con Fastify:
- *   GET   /v1/notificaciones
- *   PATCH /v1/notificaciones/:id/leida
- *   PATCH /v1/notificaciones/leidas
+ * Adaptador de notificaciones sobre el backend. El servidor ya filtra por rol
+ * (y por vendedor) y resuelve `leida` para el usuario de la sesión.
  */
 export const notificacionesApi = {
-  listar: (rol: Rol) => mockDb.listarNotificaciones(rol),
-  marcarLeida: (id: string, usuarioId: string) =>
-    mockDb.marcarNotificacionLeida(id, usuarioId),
-  marcarTodas: (usuarioId: string, rol: Rol) =>
-    mockDb.marcarNotificacionesLeidas(usuarioId, rol),
+  listar: () => api.listarNotificaciones(),
+  marcarLeida: (id: string) => api.marcarNotificacionLeida({ params: { id } }),
+  marcarTodas: () => api.marcarNotificacionesLeidas(),
 };

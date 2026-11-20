@@ -1,30 +1,16 @@
-import type {
-  MaterialInventario,
-  MovimientoInventario,
-  TipoMovimiento,
-} from "@/shared/domain";
-import { mockDb } from "@/shared/mock/db";
-
-export interface RegistrarMovimientoInput {
-  materialId: string;
-  tipo: TipoMovimiento;
-  cantidad: number;
-  motivo: string;
-  usuario: string;
-}
+import { api } from "@/shared/api/cliente";
+import type { NuevoMovimiento } from "@/shared/domain";
 
 /**
- * Adaptador de datos de Inventario.
- * Endpoints previstos:
- *   GET  /v1/inventario
- *   GET  /v1/inventario/movimientos
- *   POST /v1/inventario/movimientos
+ * Adaptador de Inventario sobre el backend (`/api/v1/inventario/...`).
+ * El responsable de cada movimiento o entrega es el usuario de la sesión.
  */
 export const inventarioApi = {
-  listar: (): Promise<MaterialInventario[]> => mockDb.listarInventario(),
-  listarMovimientos: (): Promise<MovimientoInventario[]> =>
-    mockDb.listarMovimientos(),
-  registrarMovimiento: (
-    input: RegistrarMovimientoInput,
-  ): Promise<MovimientoInventario> => mockDb.registrarMovimiento(input),
+  listar: () => api.listarMateriales(),
+  listarMovimientos: (limite = 50) => api.listarMovimientos({ query: { limite } }),
+  registrarMovimiento: (input: NuevoMovimiento) => api.registrarMovimiento({ body: input }),
+  /** Sellos y productos terminados que siguen en almacén. */
+  listarProductosPendientes: () => api.listarProductosTerminados({ query: { soloPendientes: "true" } }),
+  registrarEntrega: (productoId: string, cantidad: number, recibidoPor?: string) =>
+    api.registrarEntrega({ params: { id: productoId }, body: { cantidad, recibidoPor: recibidoPor || undefined } }),
 };

@@ -24,11 +24,16 @@ function ThemedToaster() {
     <Toaster
       theme={resolvedTheme}
       position="top-right"
-      richColors
       closeButton
+      // Sin `richColors` (verde/ámbar/azul): los avisos usan la paleta de la
+      // marca. Éxito en negro/blanco, error con acento rojo.
       toastOptions={{
         classNames: {
-          toast: "font-sans",
+          toast: "font-sans border-border bg-card text-foreground",
+          success: "[&_[data-icon]]:text-foreground",
+          error: "border-primary/40 [&_[data-icon]]:text-primary",
+          warning: "[&_[data-icon]]:text-primary",
+          info: "[&_[data-icon]]:text-foreground",
         },
       }}
     />

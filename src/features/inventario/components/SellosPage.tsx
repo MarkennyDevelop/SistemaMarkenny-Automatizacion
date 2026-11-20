@@ -6,7 +6,6 @@ import {
   PackageCheck,
   Search,
   Stamp,
-  TrendingUp,
   Truck,
   Wallet,
 } from "lucide-react";
@@ -18,17 +17,28 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { diasHasta } from "@/lib/fechas";
 import { cn, formatCurrency, formatDate, formatNumber } from "@/lib/utils";
 import { useOrdenesTrabajo } from "@/features/ventas";
-import type { MaterialInventario } from "@/shared/domain";
+import { mensajeDeError } from "@/shared/api/cliente";
+import type { MaterialInventario, ProductoTerminado } from "@/shared/domain";
+import { RegistrarEntregaDialog } from "./RegistrarEntregaDialog";
 import { RegistrarMovimientoDialog } from "./RegistrarMovimientoDialog";
-import { useInventario, useRegistrarMovimiento } from "../hooks/useInventario";
+import {
+  useInventario,
+  useProductosPendientes,
+  useRegistrarEntrega,
+  useRegistrarMovimiento,
+} from "../hooks/useInventario";
 import type { MovimientoFormValues } from "../types/schema";
 
 export function SellosPage() {
   const { materiales, isLoading } = useInventario();
   const { data: ordenes = [] } = useOrdenesTrabajo();
+  const { data: pendientes = [] } = useProductosPendientes();
   const registrar = useRegistrarMovimiento();
+  const entregar = useRegistrarEntrega();
+  const [entregaDe, setEntregaDe] = useState<ProductoTerminado | null>(null);
 
   const [tab, setTab] = useState("sellos");
   const [busqueda, setBusqueda] = useState("");
@@ -40,16 +50,19 @@ export function SellosPage() {
     [materiales],
   );
 
-  const empaquetadas = useMemo(
-    () =>
-      ordenes
-        .filter((orden) => orden.fase === "EMPAQUETADO")
-        .sort(
-          (a, b) =>
-            new Date(a.fechaEntrega).getTime() - new Date(b.fechaEntrega).getTime(),
-        ),
-    [ordenes],
-  );
+  /**
+   * Pedidos empaquetados que siguen en almacén (total o parcialmente). Salen
+   * de la lista al registrar la entrega completa. Se cruzan con la orden para
+   * mostrar fecha de entrega y monto.
+   */
+  const empaquetadas = useMemo(() => {
+    const porId = new Map(ordenes.map((orden) => [orden.id, orden]));
+    return pendientes
+      .map((producto) => ({ producto, orden: producto.ordenId ? porId.get(producto.ordenId) : undefined }))
+      .sort((a, b) =>
+        (a.orden?.fechaEntrega ?? a.producto.ingresadoEn).localeCompare(b.orden?.fechaEntrega ?? b.producto.ingresadoEn),
+      );
+  }, [pendientes, ordenes]);
 
   const filtrados = useMemo(() => {
     const termino = busqueda.trim().toLowerCase();
@@ -83,7 +96,6 @@ export function SellosPage() {
         tipo: values.tipo,
         cantidad: values.cantidad,
         motivo: values.motivo,
-        usuario: values.usuario,
       });
       toast.success(
         movimiento.tipo === "ENTRADA"
@@ -316,52 +328,52 @@ export function SellosPage() {
             </Card>
           ) : (
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-              {empaquetadas.map((orden) => {
-                const vencida =
-                  new Date(orden.fechaEntrega).getTime() <
-                  new Date(new Date().toDateString()).getTime();
+              {empaquetadas.map(({ producto, orden }) => {
+                const vencida = orden ? diasHasta(orden.fechaEntrega) < 0 : false;
                 return (
-                  <Card key={orden.id} className="flex flex-col p-4">
+                  <Card key={producto.id} className="flex flex-col p-4">
                     <div className="flex items-center justify-between gap-2">
                       <span className="font-mono text-[10px] font-semibold text-primary">
-                        {orden.codigo}
+                        {producto.codigoOrden ?? "Sin orden"}
                       </span>
                       <Badge variant={vencida ? "destructive" : "solid"}>
-                        {vencida ? "Entrega vencida" : "Lista para entrega"}
+                        {vencida
+                          ? "Entrega vencida"
+                          : producto.estadoEntrega === "PARCIAL"
+                            ? "Entrega parcial"
+                            : "Lista para entrega"}
                       </Badge>
                     </div>
                     <p className="mt-2 line-clamp-2 text-[12.5px] font-semibold leading-snug">
-                      {orden.producto}
+                      {producto.descripcion}
                     </p>
                     <p className="mt-0.5 truncate text-[10.5px] text-muted-foreground">
-                      {orden.clienteNombre}
+                      {producto.clienteNombre ?? "—"}
                     </p>
 
                     <dl className="mt-3 space-y-1.5 text-[10.5px]">
                       <div className="flex justify-between gap-3">
-                        <dt className="text-muted-foreground">Unidades</dt>
+                        <dt className="text-muted-foreground">Pendientes</dt>
                         <dd className="font-medium tabular-nums">
-                          {formatNumber(orden.cantidad)}
+                          {formatNumber(producto.cantidadPendiente)} / {formatNumber(producto.cantidad)}
                         </dd>
                       </div>
                       <div className="flex justify-between gap-3">
                         <dt className="text-muted-foreground">Entrega</dt>
-                        <dd className="font-medium">{formatDate(orden.fechaEntrega)}</dd>
+                        <dd className="font-medium">{orden ? formatDate(orden.fechaEntrega) : "—"}</dd>
                       </div>
                       <div className="flex justify-between gap-3">
                         <dt className="text-muted-foreground">Monto</dt>
                         <dd className="font-semibold tabular-nums">
-                          {formatCurrency(orden.montoTotal)}
+                          {orden ? formatCurrency(orden.montoTotal) : "—"}
                         </dd>
                       </div>
                     </dl>
 
                     <div className="mt-3 flex items-center gap-2 border-t border-border/70 pt-3">
-                      <Button size="sm" variant="outline" className="flex-1" asChild>
-                        <Link to={`/ventas/seguimiento?ot=${orden.codigo}`}>
-                          <TrendingUp className="h-3.5 w-3.5" />
-                          Ver seguimiento
-                        </Link>
+                      <Button size="sm" className="flex-1" onClick={() => setEntregaDe(producto)}>
+                        <Truck className="h-3.5 w-3.5" />
+                        Registrar entrega
                       </Button>
                     </div>
                   </Card>
@@ -372,10 +384,32 @@ export function SellosPage() {
 
           <div className="rounded-lg border border-dashed border-border px-4 py-3 text-[10px] leading-relaxed text-muted-foreground">
             Las órdenes en fase <span className="font-semibold text-foreground">Empaquetado</span>{" "}
-            permanecen en almacén hasta que el vendedor confirme la entrega al cliente.
+            permanecen en almacén hasta registrar la entrega al cliente (total o parcial).
+            Al entregar todo, la orden queda como entregada en el seguimiento del vendedor.
           </div>
         </TabsContent>
       </Tabs>
+
+      <RegistrarEntregaDialog
+        producto={entregaDe}
+        isSubmitting={entregar.isPending}
+        onOpenChange={(abierto) => !abierto && setEntregaDe(null)}
+        onSubmit={async ({ cantidad, recibidoPor }) => {
+          if (!entregaDe) return;
+          try {
+            const actualizado = await entregar.mutateAsync({ productoId: entregaDe.id, cantidad, recibidoPor });
+            toast.success(
+              actualizado.estadoEntrega === "ENTREGADO" ? "Pedido entregado" : "Entrega parcial registrada",
+              {
+                description: `${actualizado.codigoOrden ?? actualizado.descripcion} · ${formatNumber(cantidad)} unidades`,
+              },
+            );
+          } catch (error) {
+            toast.error("No se pudo registrar la entrega", { description: mensajeDeError(error) });
+            throw error;
+          }
+        }}
+      />
 
       <RegistrarMovimientoDialog
         open={dialogoAbierto}

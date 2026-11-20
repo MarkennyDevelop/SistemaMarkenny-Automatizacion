@@ -5,7 +5,6 @@ import { toast } from "sonner";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { useAuth } from "@/features/auth";
 import { fechaEnDias } from "@/lib/fechas";
 import { OrdenTrabajoForm } from "./orden-trabajo/OrdenTrabajoForm";
 import { useClientes } from "../hooks/useClientes";
@@ -18,7 +17,6 @@ export function NuevaOrdenTrabajoPage() {
   const [searchParams] = useSearchParams();
   const { data: clientes = [], isLoading } = useClientes();
   const crearOrden = useCrearOrdenTrabajo();
-  const { usuario } = useAuth();
 
   const clientePreseleccionado = searchParams.get("cliente") ?? "";
 
@@ -31,7 +29,7 @@ export function NuevaOrdenTrabajoPage() {
   );
 
   const handleSubmit = async (values: OrdenTrabajoFormValues) => {
-    const payload = ordenDesdeFichaGeneral(values, usuario?.nombre);
+    const payload = ordenDesdeFichaGeneral(values);
 
     try {
       const orden = await crearOrden.mutateAsync(payload);

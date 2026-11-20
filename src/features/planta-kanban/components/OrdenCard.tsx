@@ -188,10 +188,10 @@ export function OrdenCard({
       <footer className="mt-2.5 flex items-center justify-between gap-2 border-t border-border/70 pt-2.5">
         <div className="flex min-w-0 items-center gap-1.5">
           <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-markenny-ink text-[8px] font-semibold text-white dark:bg-white dark:text-markenny-ink">
-            {initials(orden.operador)}
+            {initials(orden.operador ?? "Por asignar")}
           </span>
           <span className="truncate text-[9.5px] text-muted-foreground">
-            {orden.operador}
+            {orden.operador ?? "Por asignar"}
           </span>
         </div>
         <div

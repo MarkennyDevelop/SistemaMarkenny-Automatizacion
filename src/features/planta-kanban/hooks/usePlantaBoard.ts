@@ -6,7 +6,6 @@ import {
 } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { plantaApi } from "../api/plantaApi";
-import { useAuth } from "@/features/auth";
 import { queryKeys } from "@/shared/api/queryKeys";
 import {
   FASE_PLANTA,
@@ -22,12 +21,13 @@ interface MoverOrdenVariables {
   fase: FasePlanta;
   origen: FasePlanta;
   nota?: string;
+  versionEsperada?: number;
 }
 
 /**
  * Container lógico del tablero de planta.
  * La actualización es optimista: la tarjeta se mueve al instante y se
- * reconcilia con el servidor (hoy mock, mañana PATCH /v1/ordenes/:id/fase).
+ * reconcilia con el servidor (POST /api/v1/ordenes/:id/transiciones).
  *
  * El flujo es estrictamente secuencial: solo se permite avanzar a la fase
  * inmediatamente siguiente. Cada movimiento se firma con el usuario de la
@@ -35,7 +35,6 @@ interface MoverOrdenVariables {
  */
 export function usePlantaBoard() {
   const queryClient = useQueryClient();
-  const { usuario } = useAuth();
 
   const query = useQuery({
     queryKey: queryKeys.ordenes,
@@ -47,18 +46,10 @@ export function usePlantaBoard() {
 
   const mutation = useMutation({
     mutationKey: CLAVE_MOVER_ORDEN,
-    mutationFn: ({ ordenId, fase, nota }: MoverOrdenVariables) => {
-      // Sin sesión no se firma ningún cambio: nunca se inventa un actor.
-      if (!usuario) {
-        return Promise.reject(new Error("Tu sesión expiró. Inicia sesión de nuevo."));
-      }
-      return plantaApi.actualizarFase(
-        ordenId,
-        fase,
-        { usuario: usuario.nombre, rol: usuario.rol },
-        nota,
-      );
-    },
+    // El operario que firma el cambio es el usuario de la sesión (lo pone el
+    // servidor). `versionEsperada` evita pisar el cambio de otro operario.
+    mutationFn: ({ ordenId, fase, nota, versionEsperada }: MoverOrdenVariables) =>
+      plantaApi.actualizarFase(ordenId, fase, { nota, versionEsperada }),
     onMutate: async ({ ordenId, fase }) => {
       await queryClient.cancelQueries({ queryKey: queryKeys.ordenes });
       const previous = queryClient.getQueryData<OrdenTrabajo[]>(queryKeys.ordenes);
@@ -142,7 +133,7 @@ export function usePlantaBoard() {
       return;
     }
 
-    mutation.mutate(variables, {
+    mutation.mutate({ ...variables, versionEsperada: orden.version }, {
       onError: (error) => {
         toast.error("No se pudo avanzar la orden", {
           description:

@@ -1,5 +1,4 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useAuth } from "@/features/auth";
 import { ventasApi } from "../api/ventasApi";
 import { queryKeys } from "@/shared/api/queryKeys";
 import type { NuevaOrdenTrabajo } from "@/shared/domain";
@@ -16,15 +15,10 @@ export function useOrdenesTrabajo() {
 
 export function useCrearOrdenTrabajo() {
   const queryClient = useQueryClient();
-  const { usuario } = useAuth();
 
   return useMutation({
-    mutationFn: (input: NuevaOrdenTrabajo) => {
-      if (!usuario) {
-        return Promise.reject(new Error("Tu sesión expiró. Inicia sesión de nuevo."));
-      }
-      return ventasApi.crearOrden(input, { usuario: usuario.nombre, rol: usuario.rol });
-    },
+    // El vendedor de la orden es el usuario de la sesión: lo asigna el servidor.
+    mutationFn: (input: NuevaOrdenTrabajo) => ventasApi.crearOrden(input),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.ordenes });
       void queryClient.invalidateQueries({ queryKey: queryKeys.clientes });

@@ -1,292 +1,51 @@
-import { nuevoId } from "@/lib/utils";
-import type { Rol } from "@/shared/domain";
-import {
-  buscarPorEmail,
-  crearSalt,
-  escribirAuth,
-  hashPassword,
-  leerAuth,
-  sinSecretos,
-  type Usuario,
-  type UsuarioPublico,
-} from "../lib/authStore";
+import { api, ApiError } from "@/shared/api/cliente";
+import type { UsuarioPublico } from "@/shared/domain";
 import type {
   EmpleadoFormValues,
   LoginFormValues,
   SetupAdminFormValues,
 } from "../types/schemas";
 
-function delay(ms = 420) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-async function construirUsuario(input: {
-  nombre: string;
-  email: string;
-  telefono?: string;
-  cargo?: string;
-  rol: Rol;
-  password: string;
-  creadoPor?: string;
-}): Promise<Usuario> {
-  const salt = crearSalt();
-  return {
-    id: nuevoId("usr"),
-    nombre: input.nombre.trim(),
-    email: input.email.trim().toLowerCase(),
-    telefono: input.telefono?.trim() || undefined,
-    cargo: input.cargo?.trim() || undefined,
-    rol: input.rol,
-    activo: true,
-    passwordHash: await hashPassword(input.password, salt),
-    salt,
-    creadoEn: new Date().toISOString(),
-    creadoPor: input.creadoPor,
-  };
-}
-
-const CREDENCIALES_INVALIDAS = "Correo o contraseña incorrectos.";
-
-function sesionUsuario(): Usuario | null {
-  const db = leerAuth();
-  if (!db.sesion) return null;
-  return db.usuarios.find((usuario) => usuario.id === db.sesion?.usuarioId) ?? null;
-}
-
+/**
+ * Adaptador de identidad sobre el backend (`/api/v1/auth` y `/api/v1/usuarios`).
+ * La sesión es una cookie httpOnly que gestiona el navegador: aquí no se
+ * guardan tokens ni contraseñas.
+ */
 export const authApi = {
+  /** Usuario de la sesión actual, o `null` si no hay sesión vigente. */
   async sesionActual(): Promise<UsuarioPublico | null> {
-    await delay(120);
-    const usuario = sesionUsuario();
-    return usuario && usuario.activo ? sinSecretos(usuario) : null;
+    try {
+      return await api.sesionActual();
+    } catch (error) {
+      if (error instanceof ApiError && error.estado === 401) return null;
+      throw error;
+    }
   },
 
   async hayAdministrador(): Promise<boolean> {
-    await delay(100);
-    return leerAuth().usuarios.some((usuario) => usuario.rol === "ADMIN");
+    return (await api.estadoInstalacion()).hayAdministrador;
   },
 
-  /**
-   * Registro único del administrador maestro. Si ya existe un administrador
-   * —aunque esté inactivo— la operación se rechaza y el formulario se bloquea.
-   */
-  async registrarAdministrador(
-    input: SetupAdminFormValues,
-  ): Promise<UsuarioPublico> {
-    await delay(520);
-    const db = leerAuth();
-    if (db.usuarios.some((usuario) => usuario.rol === "ADMIN")) {
-      throw new Error("El administrador maestro ya fue registrado en este sistema.");
-    }
-    if (buscarPorEmail(db, input.email)) {
-      throw new Error("Ese correo ya está registrado.");
-    }
+  /** Registro único del administrador maestro; deja la sesión iniciada. */
+  registrarAdministrador: ({ confirmar: _confirmar, ...datos }: SetupAdminFormValues) =>
+    api.registrarAdministrador({ body: { ...datos, cargo: datos.cargo || undefined } }),
 
-    const admin = await construirUsuario({
-      nombre: input.nombre,
-      email: input.email,
-      telefono: input.telefono,
-      cargo: input.cargo || "Administrador general",
-      rol: "ADMIN",
-      password: input.password,
-    });
-    admin.ultimoAcceso = new Date().toISOString();
+  login: (datos: LoginFormValues) => api.login({ body: datos }),
 
-    escribirAuth({
-      usuarios: [admin, ...db.usuarios],
-      sesion: { usuarioId: admin.id, iniciadoEn: new Date().toISOString() },
-    });
-    return sinSecretos(admin);
-  },
+  logout: () => api.logout(),
 
-  async login(input: LoginFormValues): Promise<UsuarioPublico> {
-    await delay(480);
-    const db = leerAuth();
-    const usuario = buscarPorEmail(db, input.email);
-    // Mismo mensaje para correo y contraseña: no revela qué correos existen.
-    if (!usuario) throw new Error(CREDENCIALES_INVALIDAS);
-    if (!usuario.activo) {
-      throw new Error("Tu cuenta está desactivada. Contacta al administrador.");
-    }
+  listarUsuarios: () => api.listarUsuarios(),
 
-    const hash = await hashPassword(input.password, usuario.salt);
-    if (hash !== usuario.passwordHash) {
-      throw new Error(CREDENCIALES_INVALIDAS);
-    }
+  crearEmpleado: ({ confirmar: _confirmar, ...datos }: EmpleadoFormValues) =>
+    api.crearEmpleado({
+      body: { ...datos, telefono: datos.telefono || undefined, cargo: datos.cargo || undefined },
+    }),
 
-    usuario.ultimoAcceso = new Date().toISOString();
-    escribirAuth({
-      ...db,
-      usuarios: db.usuarios.map((item) => (item.id === usuario.id ? usuario : item)),
-      sesion: { usuarioId: usuario.id, iniciadoEn: new Date().toISOString() },
-    });
-    return sinSecretos(usuario);
-  },
+  cambiarEstadoUsuario: (id: string, activo: boolean) =>
+    api.cambiarEstadoUsuario({ params: { id }, body: { activo } }),
 
-  async logout(): Promise<void> {
-    await delay(120);
-    const db = leerAuth();
-    escribirAuth({ ...db, sesion: null });
-  },
-
-  async listarUsuarios(): Promise<UsuarioPublico[]> {
-    await delay(280);
-    return leerAuth()
-      .usuarios.map(sinSecretos)
-      .sort((a, b) => {
-        if (a.rol !== b.rol) return a.rol === "ADMIN" ? -1 : 1;
-        return a.nombre.localeCompare(b.nombre);
-      });
-  },
-
-  async crearEmpleado(input: EmpleadoFormValues): Promise<UsuarioPublico> {
-    await delay(460);
-    const db = leerAuth();
-    const actual = sesionUsuario();
-    if (!actual || actual.rol !== "ADMIN") {
-      throw new Error("Solo el administrador puede registrar empleados.");
-    }
-    if (buscarPorEmail(db, input.email)) {
-      throw new Error("Ese correo ya está registrado.");
-    }
-
-    const empleado = await construirUsuario({
-      nombre: input.nombre,
-      email: input.email,
-      telefono: input.telefono || undefined,
-      cargo: input.cargo || (input.rol === "VENDEDOR" ? "Ejecutivo de ventas" : "Operario de planta"),
-      rol: input.rol,
-      password: input.password,
-      creadoPor: actual.nombre,
-    });
-
-    escribirAuth({ ...db, usuarios: [...db.usuarios, empleado] });
-    return sinSecretos(empleado);
-  },
-
-  async cambiarEstadoUsuario(id: string, activo: boolean): Promise<UsuarioPublico> {
-    await delay(280);
-    const db = leerAuth();
-    const actual = sesionUsuario();
-    if (!actual || actual.rol !== "ADMIN") {
-      throw new Error("Solo el administrador puede modificar usuarios.");
-    }
-    if (actual.id === id && !activo) {
-      throw new Error("No puedes desactivar tu propia cuenta.");
-    }
-
-    const objetivo = db.usuarios.find((usuario) => usuario.id === id);
-    if (!objetivo) throw new Error("El usuario no existe.");
-    if (objetivo.rol === "ADMIN" && !activo) {
-      const adminsActivos = db.usuarios.filter(
-        (usuario) => usuario.rol === "ADMIN" && usuario.activo,
-      );
-      if (adminsActivos.length <= 1) {
-        throw new Error("Debe existir al menos un administrador activo.");
-      }
-    }
-
-    const actualizado: Usuario = { ...objetivo, activo };
-    escribirAuth({
-      ...db,
-      usuarios: db.usuarios.map((usuario) =>
-        usuario.id === id ? actualizado : usuario,
-      ),
-    });
-    return sinSecretos(actualizado);
-  },
-
-  async restablecerPassword(id: string, password: string): Promise<void> {
-    await delay(320);
-    const db = leerAuth();
-    const actual = sesionUsuario();
-    if (!actual || actual.rol !== "ADMIN") {
-      throw new Error("Solo el administrador puede restablecer contraseñas.");
-    }
-    const objetivo = db.usuarios.find((usuario) => usuario.id === id);
-    if (!objetivo) throw new Error("El usuario no existe.");
-
-    const salt = crearSalt();
-    const passwordHash = await hashPassword(password, salt);
-    escribirAuth({
-      ...db,
-      usuarios: db.usuarios.map((usuario) =>
-        usuario.id === id ? { ...usuario, salt, passwordHash } : usuario,
-      ),
-    });
-  },
-
-  /**
-   * Utilidad exclusiva de desarrollo: instala las tres cuentas de demostración
-   * en el navegador actual y cierra la sesión. No sustituye al flujo
-   * `/setup-admin`, que sigue siendo el único registro real del administrador.
-   */
-  async cargarCuentasDemo(): Promise<UsuarioPublico[]> {
-    if (!import.meta.env.DEV) {
-      throw new Error("Las cuentas demo solo están disponibles en desarrollo.");
-    }
-    await delay(300);
-
-    const definiciones: Array<{
-      id: string;
-      nombre: string;
-      email: string;
-      telefono: string;
-      cargo: string;
-      rol: Rol;
-      password: string;
-    }> = [
-      {
-        id: "usr-demo-admin",
-        nombre: "Kenny Hernández",
-        email: "admin@markenny.com",
-        telefono: "+58 424-651-2044",
-        cargo: "Gerente general",
-        rol: "ADMIN",
-        password: "Markenny2026",
-      },
-      {
-        id: "usr-demo-vendedor",
-        nombre: "Valeria Rondón",
-        email: "valeria@markenny.com",
-        telefono: "+58 412-555-0199",
-        cargo: "Ejecutiva de ventas",
-        rol: "VENDEDOR",
-        password: "Ventas2026",
-      },
-      {
-        id: "usr-demo-produccion",
-        nombre: "Luis Pérez",
-        email: "luis@markenny.com",
-        telefono: "+58 414-555-0100",
-        cargo: "Operario de planta",
-        rol: "PRODUCCION",
-        password: "Planta2026",
-      },
-    ];
-
-    const creadoEn = new Date().toISOString();
-    const usuarios: Usuario[] = await Promise.all(
-      definiciones.map(async (definicion) => {
-        const salt = crearSalt();
-        return {
-          id: definicion.id,
-          nombre: definicion.nombre,
-          email: definicion.email,
-          telefono: definicion.telefono,
-          cargo: definicion.cargo,
-          rol: definicion.rol,
-          activo: true,
-          passwordHash: await hashPassword(definicion.password, salt),
-          salt,
-          creadoEn,
-          creadoPor: "Cuentas demo (desarrollo)",
-        };
-      }),
-    );
-
-    escribirAuth({ usuarios, sesion: null });
-    return usuarios.map(sinSecretos);
-  },
+  restablecerPassword: (id: string, password: string) =>
+    api.restablecerPassword({ params: { id }, body: { password } }),
 };
 
 export type { UsuarioPublico };

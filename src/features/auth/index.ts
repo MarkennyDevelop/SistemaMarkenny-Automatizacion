@@ -12,5 +12,5 @@ export {
 export { useAuth } from "./context";
 export { authApi } from "./api/authApi";
 export { homeForRol } from "./lib/roles";
-export type { UsuarioPublico } from "./lib/authStore";
+export type { UsuarioPublico } from "@/shared/domain";
 export { useEmpleados } from "./hooks/useEmpleados";

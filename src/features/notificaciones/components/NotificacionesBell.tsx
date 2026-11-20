@@ -1,6 +1,5 @@
 import { Bell, CheckCheck, PackageCheck, Radio, TriangleAlert } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/features/auth";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -40,7 +39,6 @@ const ICONO: Record<Notificacion["tipo"], typeof Bell> = {
 
 export function NotificacionesBell() {
   const navigate = useNavigate();
-  const { usuario } = useAuth();
   const { notificaciones, sinLeer } = useNotificaciones();
   const marcarLeida = useMarcarNotificacionLeida();
   const marcarTodas = useMarcarTodasLeidas();
@@ -96,7 +94,7 @@ export function NotificacionesBell() {
             </p>
           ) : (
             notificaciones.slice(0, 10).map((notificacion) => {
-              const leida = notificacion.leidaPor.includes(usuario?.id ?? "");
+              const leida = notificacion.leida;
               const Icono = ICONO[notificacion.tipo];
               return (
                 <DropdownMenuItem

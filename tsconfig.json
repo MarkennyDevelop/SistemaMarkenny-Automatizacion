@@ -20,9 +20,15 @@
     "noFallthroughCasesInSwitch": true,
 
     "baseUrl": ".",
+    "allowJs": true,
+    "checkJs": false,
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@markenny/contrato": ["./packages/contrato/src/index.js"],
+      "@markenny/contrato/dominio": ["./packages/contrato/src/dominio.js"],
+      "@markenny/cliente-http": ["./packages/cliente-http/src/index.ts"]
     }
   },
-  "include": ["src", "vite.config.ts", "vitest.config.ts", "tailwind.config.ts"]
+  "include": ["src", "vite.config.ts", "vitest.config.ts", "tailwind.config.ts"],
+  "exclude": ["packages/**/test", "packages/**/*.test.ts", "node_modules"]
 }
