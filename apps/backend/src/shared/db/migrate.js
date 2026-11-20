@@ -28,7 +28,8 @@ export async function migrar(pool, { logger = console } = {}) {
 
 // Ejecución directa: `npm run migrate`
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  const { cargarConfig } = await import('../../config/env.js');
+  const { cargarArchivoEnv, cargarConfig } = await import('../../config/env.js');
+  cargarArchivoEnv();
   const { crearPool } = await import('./pool.js');
   const config = cargarConfig();
   if (!config.DATABASE_URL) {

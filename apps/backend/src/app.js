@@ -2,40 +2,67 @@
 import Fastify from 'fastify';
 import { NodeEventBus } from './shared/events/eventBus.js';
 import { relojSistema, generadorUuid } from './shared/infra/sistema.js';
-import { usuarioPlugin } from './shared/http/usuario.js';
 import { manejadorErrores } from './shared/http/manejadorErrores.js';
+import { registrarApi } from './shared/http/api.js';
+import { sesionPlugin } from './shared/http/sesion.js';
 import { crearPool } from './shared/db/pool.js';
-import { crearModuloProduccion, InMemoryOrdenRepository, PostgresOrdenRepository } from './modules/produccion/index.js';
+import {
+  crearModuloAuth,
+  crearHasherScrypt,
+  tokensSesion,
+  UsuarioRepositoryMemoria,
+  UsuarioRepositoryPostgres,
+  SesionRepositoryMemoria,
+  SesionRepositoryPostgres,
+} from './modules/auth/index.js';
+import { crearModuloVentas, ClienteRepositoryMemoria, ClienteRepositoryPostgres } from './modules/ventas/index.js';
+import { crearModuloProduccion, OrdenRepositoryMemoria, OrdenRepositoryPostgres } from './modules/produccion/index.js';
 import {
   crearModuloInventario,
-  InMemoryMaterialRepository,
-  InMemoryProductoTerminadoRepository,
-  PostgresMaterialRepository,
-  PostgresProductoTerminadoRepository,
+  MaterialRepositoryMemoria,
+  MaterialRepositoryPostgres,
+  ProductoTerminadoRepositoryMemoria,
+  ProductoTerminadoRepositoryPostgres,
 } from './modules/inventario/index.js';
-import { crearModuloVentas } from './modules/ventas/index.js';
+import {
+  crearModuloNotificaciones,
+  NotificacionRepositoryMemoria,
+  NotificacionRepositoryPostgres,
+} from './modules/notificaciones/index.js';
 
 function crearRepositorios(pool) {
   if (pool) {
     return {
-      ordenRepository: new PostgresOrdenRepository(pool),
-      materialRepository: new PostgresMaterialRepository(pool),
-      productoTerminadoRepository: new PostgresProductoTerminadoRepository(pool),
+      usuarios: new UsuarioRepositoryPostgres(pool),
+      sesiones: new SesionRepositoryPostgres(pool),
+      clientes: new ClienteRepositoryPostgres(pool),
+      ordenes: new OrdenRepositoryPostgres(pool),
+      materiales: new MaterialRepositoryPostgres(pool),
+      productos: new ProductoTerminadoRepositoryPostgres(pool),
+      notificaciones: new NotificacionRepositoryPostgres(pool),
     };
   }
+  const usuarios = new UsuarioRepositoryMemoria();
   return {
-    ordenRepository: new InMemoryOrdenRepository(),
-    materialRepository: new InMemoryMaterialRepository(),
-    productoTerminadoRepository: new InMemoryProductoTerminadoRepository(),
+    usuarios,
+    sesiones: new SesionRepositoryMemoria(usuarios),
+    clientes: new ClienteRepositoryMemoria(),
+    ordenes: new OrdenRepositoryMemoria(),
+    materiales: new MaterialRepositoryMemoria(),
+    productos: new ProductoTerminadoRepositoryMemoria(),
+    notificaciones: new NotificacionRepositoryMemoria(),
   };
 }
 
 /**
  * @param {{ config: object, overrides?: object }} opciones
- *   `overrides` permite a las pruebas inyectar reloj, ids, repositorios, etc.
+ *   `overrides` permite a las pruebas inyectar pool, reloj, ids, hasher, etc.
  */
 export async function construirApp({ config, overrides = {} }) {
-  const fastify = Fastify({ logger: config.LOG_LEVEL === 'silent' ? false : { level: config.LOG_LEVEL } });
+  const fastify = Fastify({
+    logger: config.LOG_LEVEL === 'silent' ? false : { level: config.LOG_LEVEL },
+    bodyLimit: 256 * 1024,
+  });
 
   const pool = overrides.pool ?? (config.DATABASE_URL ? crearPool({ connectionString: config.DATABASE_URL }) : null);
   const reloj = overrides.reloj ?? relojSistema;
@@ -44,32 +71,62 @@ export async function construirApp({ config, overrides = {} }) {
   const eventBus = overrides.eventBus ?? new NodeEventBus({ logger, reloj });
   const repos = { ...crearRepositorios(pool), ...overrides.repositorios };
 
-  const produccion = crearModuloProduccion({ ordenRepository: repos.ordenRepository, eventBus, reloj, ids });
-  const inventario = crearModuloInventario({
-    materialRepository: repos.materialRepository,
-    productoTerminadoRepository: repos.productoTerminadoRepository,
+  const auth = crearModuloAuth({
+    usuarios: repos.usuarios,
+    sesiones: repos.sesiones,
+    hasher: overrides.hasher ?? crearHasherScrypt(),
+    tokens: tokensSesion,
+    reloj,
+    ids,
+    duracionSesionHoras: config.SESION_HORAS ?? 12,
+  });
+
+  // Ventas y Producción se consultan entre sí solo por sus interfaces públicas.
+  // Se enlazan de forma diferida porque cada una necesita a la otra.
+  let produccion;
+  const ventas = crearModuloVentas({
+    clientes: repos.clientes,
+    reloj,
+    ids,
+    resumenOrdenes: () => produccion.resumenPorCliente(),
+  });
+  produccion = crearModuloProduccion({
+    ordenes: repos.ordenes,
     eventBus,
     reloj,
     ids,
+    obtenerCliente: (id) => ventas.casosUso.obtenerCliente(id),
     logger,
   });
-  const ventas = crearModuloVentas();
+  const inventario = crearModuloInventario({ materiales: repos.materiales, productos: repos.productos, eventBus, reloj, ids, logger });
+  const notificaciones = crearModuloNotificaciones({ notificaciones: repos.notificaciones, eventBus, reloj, ids });
 
   fastify.setErrorHandler(manejadorErrores);
-  await fastify.register(usuarioPlugin);
+  await fastify.register(sesionPlugin, {
+    resolverSesion: auth.resolverSesion,
+    cookieSegura: config.COOKIE_SEGURA ?? false,
+    duracionHoras: config.SESION_HORAS ?? 12,
+  });
   fastify.get('/salud', async () => ({ estado: 'ok', persistencia: pool ? 'postgres' : 'memoria' }));
 
-  await fastify.register(ventas.plugin);
-  await fastify.register(produccion.plugin);
-  await fastify.register(inventario.plugin);
+  await registrarApi(fastify, {
+    ...auth.manejadores,
+    ...ventas.manejadores,
+    ...produccion.manejadores,
+    ...inventario.manejadores,
+    ...notificaciones.manejadores,
+  });
+  await fastify.register(produccion.rutasTiempoReal);
 
   fastify.addHook('onClose', async () => {
+    produccion.desuscribir();
     inventario.desuscribir();
+    notificaciones.desuscribir();
     await eventBus.esperarInactividad?.();
     if (pool && !overrides.pool) await pool.end();
   });
 
-  fastify.decorate('modulos', { produccion, inventario, ventas });
+  fastify.decorate('modulos', { auth, ventas, produccion, inventario, notificaciones });
   fastify.decorate('eventBus', eventBus);
   return fastify;
 }

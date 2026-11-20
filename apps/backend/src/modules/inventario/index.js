@@ -1,62 +1,61 @@
 // API pública del módulo de Inventario.
 import { implementaPuerto, PUERTOS } from '../../shared/application/ports.js';
-import { MATERIAL_REPOSITORY_PORT, PRODUCTO_TERMINADO_REPOSITORY_PORT } from './application/ports/repositorios.js';
+import { actorDe } from '../../shared/application/actor.js';
+import { DomainError } from '../../shared/domain/errors.js';
+import { EVENTOS } from '../../shared/events/catalogo.js';
 import {
-  crearCrearMaterial,
-  crearRegistrarEntradaMaterial,
-  crearDescontarMaterialesOrden,
-  crearListarMateriales,
-  crearListarMovimientosMaterial,
-} from './application/casos-uso/materiales.js';
-import {
-  crearRegistrarIngresoProductoTerminado,
-  crearRegistrarEntregaProductoTerminado,
-  crearListarPendientesEntrega,
-} from './application/casos-uso/productosTerminados.js';
-import { registrarSuscriptoresInventario } from './application/suscriptores.js';
-import { inventarioRoutes } from './infra/rutas.js';
+  MATERIAL_REPOSITORY_PORT,
+  PRODUCTO_REPOSITORY_PORT,
+  crearCasosUsoInventario,
+} from './application/casosUso.js';
 
-export { InMemoryMaterialRepository, InMemoryProductoTerminadoRepository } from './infra/inMemoryRepositorios.js';
-export { PostgresMaterialRepository, PostgresProductoTerminadoRepository } from './infra/postgresRepositorios.js';
+export {
+  MaterialRepositoryMemoria,
+  MaterialRepositoryPostgres,
+  ProductoTerminadoRepositoryMemoria,
+  ProductoTerminadoRepositoryPostgres,
+} from './infra/repositorios.js';
 
 const loggerNulo = { info() {}, warn() {}, error() {} };
 
-export function crearModuloInventario({
-  materialRepository,
-  productoTerminadoRepository,
-  eventBus,
-  reloj,
-  ids,
-  logger = loggerNulo,
-}) {
-  const deps = {
-    materialRepository: implementaPuerto('MaterialRepository', MATERIAL_REPOSITORY_PORT, materialRepository),
-    productoTerminadoRepository: implementaPuerto(
-      'ProductoTerminadoRepository',
-      PRODUCTO_TERMINADO_REPOSITORY_PORT,
-      productoTerminadoRepository,
-    ),
+export function crearModuloInventario({ materiales, productos, eventBus, reloj, ids, logger = loggerNulo }) {
+  const casosUso = crearCasosUsoInventario({
+    materiales: implementaPuerto('MaterialRepository', MATERIAL_REPOSITORY_PORT, materiales),
+    productos: implementaPuerto('ProductoTerminadoRepository', PRODUCTO_REPOSITORY_PORT, productos),
     eventBus: implementaPuerto('EventBus', PUERTOS.EventBus, eventBus),
     reloj: implementaPuerto('Clock', PUERTOS.Clock, reloj),
     ids: implementaPuerto('IdGenerator', PUERTOS.IdGenerator, ids),
-  };
-
-  const casosUso = Object.freeze({
-    crearMaterial: crearCrearMaterial(deps),
-    registrarEntradaMaterial: crearRegistrarEntradaMaterial(deps),
-    descontarMaterialesOrden: crearDescontarMaterialesOrden(deps),
-    listarMateriales: crearListarMateriales(deps),
-    listarMovimientosMaterial: crearListarMovimientosMaterial(deps),
-    registrarIngresoProductoTerminado: crearRegistrarIngresoProductoTerminado(deps),
-    registrarEntregaProductoTerminado: crearRegistrarEntregaProductoTerminado(deps),
-    listarPendientesEntrega: crearListarPendientesEntrega(deps),
   });
 
-  const desuscribir = registrarSuscriptoresInventario({ eventBus, casosUso, logger });
+  const suscripciones = [
+    // Orden creada -> descuento de materias primas (si la ficha las indica).
+    eventBus.suscribir(EVENTOS.ORDEN_CREADA, async ({ payload }) => {
+      try {
+        await casosUso.descontarMaterialesOrden(payload);
+      } catch (err) {
+        if (!(err instanceof DomainError)) throw err;
+        logger.warn({ ordenId: payload.ordenId, codigo: err.codigo }, 'No se pudieron descontar materiales');
+        eventBus.publicar(EVENTOS.DESCUENTO_MATERIALES_FALLIDO, {
+          ordenId: payload.ordenId,
+          codigoError: err.codigo,
+          mensaje: err.message,
+          detalles: err.detalles,
+        });
+      }
+    }),
+    // Orden empaquetada -> ingresa al almacén pendiente de entrega.
+    eventBus.suscribir(EVENTOS.ORDEN_EMPAQUETADA, ({ payload }) => casosUso.ingresarProductoTerminado(payload)),
+  ];
 
-  async function plugin(fastify) {
-    await fastify.register(inventarioRoutes, { prefix: '/v1/inventario', casosUso });
-  }
+  const manejadores = {
+    listarMateriales: ({ query }) => casosUso.listarMateriales(query),
+    crearMaterial: ({ body }) => casosUso.crearMaterial(body),
+    listarMovimientos: ({ query }) => casosUso.listarMovimientos(query),
+    registrarMovimiento: ({ body, usuario }) => casosUso.registrarMovimiento({ ...body, actor: actorDe(usuario) }),
+    listarProductosTerminados: ({ query }) => casosUso.listarProductosTerminados(query),
+    registrarEntrega: ({ params, body, usuario }) =>
+      casosUso.registrarEntrega({ id: params.id, ...body, actor: actorDe(usuario) }),
+  };
 
-  return { casosUso, plugin, desuscribir };
+  return { casosUso, manejadores, desuscribir: () => suscripciones.forEach((quitar) => quitar()) };
 }

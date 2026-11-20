@@ -1,98 +1,119 @@
 # Backend — Print MIS / ERP Markenny C.A.
 
-Monolito modular con arquitectura hexagonal (Ports & Adapters) y EventBus interno.
-Stack: Node.js ≥ 20 · JavaScript (ES Modules) · Fastify 4 · PostgreSQL 16 · Zod 3 · Vitest.
+Monolito modular con arquitectura hexagonal (Ports & Adapters) y EventBus
+interno. Implementa el contrato de la API de `packages/contrato`.
+
+**Stack:** Node.js ≥ 20.12 · JavaScript (ES Modules) · Fastify 4 · PostgreSQL ≥ 13
+(probado con 16) · Zod 3 · Vitest.
+
+## Arranque rápido
+
+```bash
+npm install                    # desde la raíz del repositorio (instala el monorepo)
+cp apps/backend/.env.example apps/backend/.env   # y ajusta DATABASE_URL
+npm run migrate                # crea las tablas (ver docs/BASE-DE-DATOS.md)
+npm run dev:backend            # http://localhost:3000
+```
+
+Sin `DATABASE_URL` el backend arranca con **repositorios en memoria**: sirve para
+probar, pero los datos se pierden al reiniciar.
+
+Primer uso: `POST /api/v1/auth/setup-admin` registra el administrador maestro
+(una sola vez). Después, el administrador crea a los vendedores y operarios desde
+*Empleados*.
+
+## Pruebas
+
+```bash
+cd apps/backend
+npm test                                         # dominio, arquitectura, API en memoria, eventos y SSE
+TEST_DATABASE_URL=postgres://…/markenny_test npm test   # además, la API completa contra PostgreSQL
+```
+
+`TEST_DATABASE_URL` debe apuntar a una base **desechable**: las pruebas recrean
+su esquema `public`.
 
 ## Estructura
 
 ```
 src/
-├── server.js                 # Punto de entrada
-├── app.js                    # Composition root: cablea puertos con adaptadores
+├── server.js                 # Punto de entrada (carga .env)
+├── app.js                    # Composition root: conecta puertos con adaptadores
 ├── config/env.js             # Variables de entorno validadas con Zod
-├── shared/                   # Kernel compartido
-│   ├── domain/               # Errores base, usuario actor, inmutabilidad (código puro)
-│   ├── application/          # Puertos transversales, validación de contratos Zod
-│   ├── events/               # EventBus (EventEmitter) + catálogo de eventos con Zod
-│   ├── db/                   # Pool pg, transacciones, migraciones SQL
-│   ├── http/                 # Manejador de errores, identificación de usuario
-│   └── infra/                # Adaptadores de reloj e IDs
+├── shared/
+│   ├── domain/               # Errores, actor auditado, inmutabilidad (código puro)
+│   ├── application/          # Validación Zod de casos de uso, puertos transversales
+│   ├── events/               # EventBus (EventEmitter) y catálogo de eventos internos
+│   ├── db/                   # Pool pg, transacciones, migraciones y SQL de referencia
+│   └── http/                 # Registro de la API desde el contrato, sesión por cookie, errores
 └── modules/
-    ├── produccion/           # Órdenes de producción + máquina de estados de calidad
-    ├── inventario/           # Materias primas + stock de sellos / productos terminados
-    └── ventas/               # (esqueleto) pedidos, cotizaciones, clientes
-        ├── domain/           # Lógica pura: SIN fastify, pg, zod ni node:*
-        ├── application/      # Casos de uso + puertos (ports/)
-        ├── infra/            # Adaptadores: memoria, PostgreSQL, rutas Fastify
-        ├── schemas/          # Contratos Zod de entrada/salida
-        └── index.js          # API pública del módulo
+    ├── auth/                 # Administrador maestro, login, sesiones y empleados
+    ├── ventas/               # Clientes
+    ├── produccion/           # Órdenes de trabajo, 4 fases de calidad, tiempo real (SSE)
+    ├── inventario/           # Materiales, kardex, sellos y productos pendientes de entrega
+    └── notificaciones/       # Campana: avisos por rol y por vendedor
+        ├── domain/           # Reglas puras: sin Fastify, pg ni Zod
+        ├── application/      # Casos de uso (con contrato Zod) y puertos
+        ├── infra/            # Adaptadores: memoria y PostgreSQL
+        └── index.js          # API pública del módulo y manejadores HTTP
 ```
 
-Las reglas de dependencia se verifican automáticamente en `test/arquitectura.test.js`:
-el dominio solo importa dominio, ningún módulo importa internos de otro y la capa de
-aplicación no depende de infraestructura.
+Las reglas se verifican en `test/arquitectura.test.js`:
+- el dominio solo importa dominio y las reglas puras del contrato (`@markenny/contrato/dominio`);
+- ningún módulo importa a otro;
+- la capa de aplicación no depende de infraestructura.
 
-## Producción: máquina de estados de control de calidad
+## Cómo se garantiza el contrato
 
-```
-EN_PROCESO ──► EN_REVISION ──► FINALIZADO ──► EMPAQUETADO (terminal)
-     ▲              │
-     └── rechazo QC ┘  (exige motivo)
-```
+`src/shared/http/api.js` registra **todas** las rutas a partir de la tabla
+`ENDPOINTS` del contrato:
 
-- No se pueden saltar etapas ni retroceder salvo el rechazo de calidad.
-- Cada transición genera un registro de auditoría inmutable: `secuencia, desde, hacia,
-  usuario {id, nombre, rol}, fecha, motivo`. En PostgreSQL vive en
-  `produccion_auditoria_transiciones`, protegida por triggers contra UPDATE/DELETE/TRUNCATE.
-- Bloqueo optimista por `version` (dos operarios no pueden pisarse cambios).
+1. comprueba sesión y rol (`roles` del endpoint) → 401 / 403;
+2. valida params, query y body con los esquemas del contrato → 400;
+3. valida la respuesta antes de enviarla (si no cumple, 500 y log: nunca sale
+   algo que el frontend no espera);
+4. usa el código de éxito declarado (200, 201 o 204).
 
-## Eventos entre módulos
+Si falta implementar un endpoint del contrato, o sobra uno, la app no arranca.
 
-| Evento | Publica | Consume | Efecto |
-|---|---|---|---|
-| `produccion.orden_trabajo.aprobada` | Producción | Inventario | Descuenta materias primas (todo o nada, idempotente) |
-| `produccion.orden.empaquetada` | Producción | Inventario | Ingresa el lote al almacén como `PENDIENTE_ENTREGA` |
-| `produccion.orden.estado_cambiado` | Producción | — (futuro: SSE Kanban) | |
-| `inventario.materiales.descontados` | Inventario | — | |
-| `inventario.descuento_materiales.fallido` | Inventario | — (futuro: alertas) | Stock insuficiente, etc. |
+## Reglas de negocio
 
-El bus despacha de forma asíncrona (`setImmediate`), aísla fallos de cada manejador y
-valida los payloads con Zod al publicar.
+| Regla | Dónde vive |
+|---|---|
+| Un único administrador maestro; un login fallido no revela qué correos existen | `auth/application/casosUso.js`, `auth/infra/postgres.js` (cerrojo transaccional) |
+| Contraseñas con scrypt y sal; sesión en cookie httpOnly con token guardado como SHA-256 | `auth/infra/seguridad.js`, `shared/http/sesion.js` |
+| Desactivar un usuario o cambiar su contraseña cierra sus sesiones | `auth/application/casosUso.js` |
+| 4 fases secuenciales; retrabajo `EN_REVISION → EN_PROCESO` con motivo; solo Producción/Admin | `produccion/domain/ordenTrabajo.js` + `@markenny/contrato/dominio` |
+| Bloqueo optimista por `version` en órdenes, materiales y entregas | repositorios + `CONFLICTO_CONCURRENCIA` |
+| Cada vendedor ve solo sus órdenes y sus avisos | `produccion/domain/ordenTrabajo.js` (`puedeVer`), `notificaciones/domain` |
+| Stock nunca negativo; descuento por orden todo o nada e idempotente | `inventario/domain/inventario.js` + `CHECK` en BD |
+| Auditoría de fases y kardex de solo inserción | triggers en la migración |
 
-## API HTTP (v1)
+## Comunicación entre módulos (EventBus)
 
-El usuario actor se toma provisionalmente de las cabeceras `x-usuario-id`,
-`x-usuario-nombre`, `x-usuario-rol` (se sustituirá por autenticación).
-
-| Método | Ruta | Descripción |
+| Evento | Publica | Consume |
 |---|---|---|
-| POST | `/v1/produccion/ordenes` | Aprobar orden de trabajo (crea orden EN_PROCESO) |
-| GET | `/v1/produccion/ordenes?estado=` | Listar órdenes |
-| GET | `/v1/produccion/ordenes/:id` | Consultar orden |
-| POST | `/v1/produccion/ordenes/:id/transiciones` | `{ hacia, motivo?, versionEsperada? }` |
-| GET | `/v1/produccion/ordenes/:id/historial` | Auditoría de transiciones |
-| POST | `/v1/inventario/materiales` | Registrar materia prima |
-| GET | `/v1/inventario/materiales?categoria=` | Listar con indicador `bajoMinimo` |
-| POST | `/v1/inventario/materiales/:id/entradas` | Entrada de stock |
-| GET | `/v1/inventario/materiales/:id/movimientos` | Kardex del material |
-| GET | `/v1/inventario/productos-terminados/pendientes?tipoProducto=SELLO` | Stock pendiente de entrega |
-| POST | `/v1/inventario/productos-terminados/:id/entregas` | Entrega total o parcial |
+| `produccion.orden.creada` | Producción | Inventario (descuento de materiales), Notificaciones |
+| `produccion.orden.actualizada` | Producción | Notificaciones, flujo SSE |
+| `produccion.orden.empaquetada` | Producción | Inventario (ingreso al almacén) |
+| `inventario.producto.entregado` | Inventario | Producción (`estadoEntrega` de la orden) |
+| `inventario.descuento_materiales.fallido` | Inventario | Notificaciones |
 
-Errores: 400 contrato inválido · 401 sin usuario · 404 no encontrado ·
-409 transición no permitida / conflicto de versión / stock insuficiente · 422 otra regla de negocio.
+Ventas y Producción se consultan entre sí solo por funciones públicas inyectadas
+en `app.js`: el cliente de una orden y el resumen de órdenes por cliente.
 
-## Uso
+## Conexión con el frontend
 
-```bash
-npm install
-npm test                      # pruebas (las de PostgreSQL se omiten sin TEST_DATABASE_URL)
-npm run dev                   # sin DATABASE_URL usa repositorios en memoria
-```
+El frontend (rama `Frontend`) debe usar `packages/cliente-http` y un proxy de
+Vite, `/api → http://localhost:3000`. Así frontend y API comparten origen y la
+cookie de sesión funciona sin CORS.
 
-Con PostgreSQL:
+## Pendiente
 
-```bash
-cp .env.example .env          # ajustar DATABASE_URL
-DATABASE_URL=postgres://... npm run migrate
-TEST_DATABASE_URL=postgres://.../markenny_test npm test   # BD desechable: se recrea el esquema
-```
+- Las fichas de OT del frontend no indican las materias primas a consumir. El
+  descuento automático ya está implementado (`materiales` en la orden), pero hoy
+  ninguna orden lo usa.
+- Módulo de pagos: el `saldoPendiente` de un cliente es provisional (ver
+  `docs/BASE-DE-DATOS.md`).
+- Guardar los eventos en la base antes de publicarlos (patrón *outbox*), para no
+  perder avisos si el proceso se cae justo después de guardar.

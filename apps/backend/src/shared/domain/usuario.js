@@ -1,17 +1,31 @@
-// Referencia al usuario que ejecuta una acción (actor de auditoría). Código puro.
+// Actor: usuario autenticado que ejecuta una acción auditada. Código puro.
+import { ROLES } from '@markenny/contrato/dominio';
 import { DomainError } from './errors.js';
 
 /**
- * @typedef {{ id: string, nombre?: string, rol?: string }} UsuarioRef
+ * @typedef {{ id: string, nombre: string, rol: import('@markenny/contrato/dominio').Rol }} Actor
  */
 
-/** Normaliza y congela la referencia del usuario actor. */
-export function crearUsuarioRef(usuario) {
-  if (!usuario || typeof usuario.id !== 'string' || usuario.id.trim() === '') {
-    throw new DomainError('Toda acción auditada requiere un usuario identificado', { codigo: 'USUARIO_REQUERIDO' });
+/** Valida y congela al actor. Toda acción auditada exige id, nombre y rol. */
+export function crearActor(actor) {
+  if (
+    !actor ||
+    typeof actor.id !== 'string' ||
+    !actor.id.trim() ||
+    typeof actor.nombre !== 'string' ||
+    !actor.nombre.trim() ||
+    !ROLES.includes(actor.rol)
+  ) {
+    throw new DomainError('Toda acción auditada requiere un usuario identificado', { codigo: 'NO_AUTENTICADO' });
   }
-  const ref = { id: usuario.id.trim() };
-  if (usuario.nombre) ref.nombre = usuario.nombre;
-  if (usuario.rol) ref.rol = usuario.rol;
-  return Object.freeze(ref);
+  return Object.freeze({ id: actor.id, nombre: actor.nombre.trim(), rol: actor.rol });
+}
+
+/** Exige que el actor tenga uno de los roles indicados (regla de negocio, no solo HTTP). */
+export function exigirRol(actor, roles, accion) {
+  const valido = crearActor(actor);
+  if (!roles.includes(valido.rol)) {
+    throw new DomainError(`Tu rol no permite ${accion}`, { codigo: 'SIN_PERMISO' });
+  }
+  return valido;
 }

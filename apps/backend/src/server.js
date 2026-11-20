@@ -1,7 +1,8 @@
 // Punto de entrada del backend.
-import { cargarConfig } from './config/env.js';
+import { cargarArchivoEnv, cargarConfig } from './config/env.js';
 import { construirApp } from './app.js';
 
+cargarArchivoEnv();
 const config = cargarConfig();
 const app = await construirApp({ config });
 

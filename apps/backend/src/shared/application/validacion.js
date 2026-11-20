@@ -1,4 +1,4 @@
-// Validación de contratos de entrada/salida de casos de uso con Zod.
+// Validación de contratos de entrada/salida de los casos de uso con Zod.
 
 export class ContratoInvalidoError extends Error {
   constructor(contrato, issues) {
@@ -10,24 +10,14 @@ export class ContratoInvalidoError extends Error {
   }
 }
 
-/**
- * Parsea `datos` con el esquema Zod; lanza ContratoInvalidoError si no cumple.
- * @template {import('zod').ZodTypeAny} S
- * @param {S} esquema
- * @param {unknown} datos
- * @param {string} contrato nombre legible del contrato (para errores)
- * @returns {import('zod').infer<S>}
- */
+/** Parsea `datos` con el esquema Zod; lanza ContratoInvalidoError si no cumple. */
 export function validarContrato(esquema, datos, contrato) {
   const r = esquema.safeParse(datos);
   if (!r.success) throw new ContratoInvalidoError(contrato, r.error.issues);
   return r.data;
 }
 
-/**
- * Envuelve un caso de uso: valida la entrada y la salida contra sus contratos.
- * La validación de salida evita filtrar datos internos y detecta regresiones.
- */
+/** Envuelve un caso de uso: valida la entrada y, si se indica, la salida. */
 export function casoDeUso({ nombre, entrada, salida, ejecutar }) {
   const fn = async (datos) => {
     const comando = validarContrato(entrada, datos, `${nombre}:entrada`);
