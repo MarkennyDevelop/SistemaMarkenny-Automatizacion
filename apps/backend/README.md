@@ -12,15 +12,29 @@ interno. Implementa el contrato de la API de `packages/contrato`.
 npm install                    # desde la raíz del repositorio (instala el monorepo)
 cp apps/backend/.env.example apps/backend/.env   # y ajusta DATABASE_URL
 npm run migrate                # crea las tablas (ver docs/BASE-DE-DATOS.md)
+npm run seed:demo              # opcional: cuentas, clientes, materiales y órdenes de prueba
 npm run dev:backend            # http://localhost:3000
 ```
 
 Sin `DATABASE_URL` el backend arranca con **repositorios en memoria**: sirve para
 probar, pero los datos se pierden al reiniciar.
 
-Primer uso: `POST /api/v1/auth/setup-admin` registra el administrador maestro
-(una sola vez). Después, el administrador crea a los vendedores y operarios desde
-*Empleados*.
+Primer uso: `POST /api/v1/auth/setup-admin` (pantalla `/setup-admin` del
+frontend) registra el administrador maestro una sola vez. Después, el
+administrador crea a los vendedores y operarios desde *Empleados*.
+
+`npm run seed:demo` carga una demostración **solo sobre una base vacía**: no
+mezcla datos de prueba con datos reales. Se crea con los mismos casos de uso
+que la API, así que auditoría, almacén y notificaciones quedan coherentes.
+
+| Rol | Correo | Contraseña |
+|---|---|---|
+| Administrador | `admin@markenny.com` | `Markenny2026` |
+| Vendedor | `valeria@markenny.com` | `Ventas2026` |
+| Producción | `luis@markenny.com` | `Planta2026` |
+
+Para empezar de cero: borrar y crear de nuevo la base, `npm run migrate` y,
+si se quiere, `npm run seed:demo`.
 
 ## Pruebas
 
@@ -104,9 +118,10 @@ en `app.js`: el cliente de una orden y el resumen de órdenes por cliente.
 
 ## Conexión con el frontend
 
-El frontend (rama `Frontend`) debe usar `packages/cliente-http` y un proxy de
-Vite, `/api → http://localhost:3000`. Así frontend y API comparten origen y la
-cookie de sesión funciona sin CORS.
+El frontend (rama `Frontend`) usa `packages/cliente-http` y el proxy de Vite
+`/api → http://localhost:3000`: frontend y API comparten origen y la cookie de
+sesión funciona sin CORS. Instrucciones para abrir ambos en el README de la
+rama `Frontend` ("Cómo abrir el sistema completo").
 
 ## Pendiente
 

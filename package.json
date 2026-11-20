@@ -10,7 +10,8 @@
     "test": "npm run test --workspaces --if-present",
     "dev:backend": "npm run dev --workspace apps/backend",
     "migrate": "npm run migrate --workspace apps/backend",
-    "openapi": "npm run openapi --workspace packages/contrato"
+    "openapi": "npm run openapi --workspace packages/contrato",
+    "seed:demo": "npm run seed:demo --workspace apps/backend"
   },
   "engines": {
     "node": ">=20"
