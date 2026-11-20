@@ -1,0 +1,4725 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Markenny Print MIS — API",
+    "version": "1.0.0",
+    "description": "Contrato entre el frontend (React) y el backend (Fastify). Generado desde @markenny/contrato; no editar a mano."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000",
+      "description": "Desarrollo"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "cookieSesion": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "markenny_sesion"
+      }
+    },
+    "schemas": {
+      "ErrorApi": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          },
+          "mensaje": {
+            "type": "string"
+          },
+          "detalles": {}
+        },
+        "required": [
+          "error",
+          "mensaje"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "paths": {
+    "/api/v1/auth/estado": {
+      "get": {
+        "operationId": "estadoInstalacion",
+        "summary": "Indica si ya existe el administrador maestro",
+        "tags": [
+          "auth"
+        ],
+        "security": [],
+        "x-roles": "público",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "hayAdministrador": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "hayAdministrador"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/setup-admin": {
+      "post": {
+        "operationId": "registrarAdministrador",
+        "summary": "Registro único del administrador maestro",
+        "description": "Solo funciona mientras no exista ningún administrador; inicia la sesión.",
+        "tags": [
+          "auth"
+        ],
+        "security": [],
+        "x-roles": "público",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "nombre": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 80
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "maxLength": 150
+                  },
+                  "telefono": {
+                    "type": "string",
+                    "minLength": 10,
+                    "maxLength": 24
+                  },
+                  "cargo": {
+                    "type": "string",
+                    "maxLength": 60
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 8,
+                    "maxLength": 72,
+                    "allOf": [
+                      {
+                        "pattern": "[A-Za-z]"
+                      },
+                      {
+                        "pattern": "\\d"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "nombre",
+                  "email",
+                  "telefono",
+                  "password"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "nombre": {
+                      "type": "string"
+                    },
+                    "email": {
+                      "type": "string"
+                    },
+                    "telefono": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "cargo": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "rol": {
+                      "type": "string",
+                      "enum": [
+                        "ADMIN",
+                        "VENDEDOR",
+                        "PRODUCCION"
+                      ]
+                    },
+                    "activo": {
+                      "type": "boolean"
+                    },
+                    "creadoEn": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "ultimoAcceso": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true
+                    },
+                    "creadoPor": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "nombre",
+                    "email",
+                    "telefono",
+                    "cargo",
+                    "rol",
+                    "activo",
+                    "creadoEn",
+                    "ultimoAcceso",
+                    "creadoPor"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "CONTRATO_INVALIDO",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "ADMIN_YA_REGISTRADO, EMAIL_DUPLICADO",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/login": {
+      "post": {
+        "operationId": "login",
+        "summary": "Inicia sesión y emite la cookie de sesión",
+        "description": "Correo inexistente, contraseña errónea o cuenta inactiva responden igual.",
+        "tags": [
+          "auth"
+        ],
+        "security": [],
+        "x-roles": "público",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "maxLength": 150
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 72
+                  }
+                },
+                "required": [
+                  "email",
+                  "password"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "nombre": {
+                      "type": "string"
+                    },
+                    "email": {
+                      "type": "string"
+                    },
+                    "telefono": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "cargo": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "rol": {
+                      "type": "string",
+                      "enum": [
+                        "ADMIN",
+                        "VENDEDOR",
+                        "PRODUCCION"
+                      ]
+                    },
+                    "activo": {
+                      "type": "boolean"
+                    },
+                    "creadoEn": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "ultimoAcceso": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true
+                    },
+                    "creadoPor": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "nombre",
+                    "email",
+                    "telefono",
+                    "cargo",
+                    "rol",
+                    "activo",
+                    "creadoEn",
+                    "ultimoAcceso",
+                    "creadoPor"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "CONTRATO_INVALIDO",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "CREDENCIALES_INVALIDAS",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/logout": {
+      "post": {
+        "operationId": "logout",
+        "summary": "Cierra la sesión actual",
+        "tags": [
+          "auth"
+        ],
+        "security": [
+          {
+            "cookieSesion": []
+          }
+        ],
+        "x-roles": [
+          "ADMIN",
+          "VENDEDOR",
+          "PRODUCCION"
+        ],
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": "Sin contenido"
+          },
+          "401": {
+            "description": "NO_AUTENTICADO",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/sesion": {
+      "get": {
+        "operationId": "sesionActual",
+        "summary": "Usuario de la sesión actual",
+        "tags": [
+          "auth"
+        ],
+        "security": [
+          {
+            "cookieSesion": []
+          }
+        ],
+        "x-roles": [
+          "ADMIN",
+          "VENDEDOR",
+          "PRODUCCION"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "nombre": {
+                      "type": "string"
+                    },
+                    "email": {
+                      "type": "string"
+                    },
+                    "telefono": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "cargo": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "rol": {
+                      "type": "string",
+                      "enum": [
+                        "ADMIN",
+                        "VENDEDOR",
+                        "PRODUCCION"
+                      ]
+                    },
+                    "activo": {
+                      "type": "boolean"
+                    },
+                    "creadoEn": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "ultimoAcceso": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true
+                    },
+                    "creadoPor": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "nombre",
+                    "email",
+                    "telefono",
+                    "cargo",
+                    "rol",
+                    "activo",
+                    "creadoEn",
+                    "ultimoAcceso",
+                    "creadoPor"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "NO_AUTENTICADO",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/usuarios": {
+      "get": {
+        "operationId": "listarUsuarios",
+        "summary": "Lista todas las cuentas",
+        "tags": [
+          "usuarios"
+        ],
+        "security": [
+          {
+            "cookieSesion": []
+          }
+        ],
+        "x-roles": [
+          "ADMIN"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "nombre": {
+                        "type": "string"
+                      },
+                      "email": {
+                        "type": "string"
+                      },
+                      "telefono": {
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "cargo": {
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "rol": {
+                        "type": "string",
+                        "enum": [
+                          "ADMIN",
+                          "VENDEDOR",
+                          "PRODUCCION"
+                        ]
+                      },
+                      "activo": {
+                        "type": "boolean"
+                      },
+                      "creadoEn": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "ultimoAcceso": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                      },
+                      "creadoPor": {
+                        "type": "string",
+                        "nullable": true
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "nombre",
+                      "email",
+                      "telefono",
+                      "cargo",
+                      "rol",
+                      "activo",
+                      "creadoEn",
+                      "ultimoAcceso",
+                      "creadoPor"
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "NO_AUTENTICADO",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "SIN_PERMISO",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "crearEmpleado",
+        "summary": "Crea una cuenta de Vendedor o Producción",
+        "tags": [
+          "usuarios"
+        ],
+        "security": [
+          {
+            "cookieSesion": []
+          }
+        ],
+        "x-roles": [
+          "ADMIN"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "nombre": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 80
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "maxLength": 150
+                  },
+                  "telefono": {
+                    "type": "string",
+                    "maxLength": 24
+                  },
+                  "cargo": {
+                    "type": "string",
+                    "maxLength": 60
+                  },
+                  "rol": {
+                    "type": "string",
+                    "enum": [
+                      "VENDEDOR",
+                      "PRODUCCION"
+                    ]
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 8,
+                    "maxLength": 72,
+                    "allOf": [
+                      {
+                        "pattern": "[A-Za-z]"
+                      },
+                      {
+                        "pattern": "\\d"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "nombre",
+                  "email",
+                  "rol",
+                  "password"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "nombre": {
+                      "type": "string"
+                    },
+                    "email": {
+                      "type": "string"
+                    },
+                    "telefono": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "cargo": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "rol": {
+                      "type": "string",
+                      "enum": [
+                        "ADMIN",
+                        "VENDEDOR",
+                        "PRODUCCION"
+                      ]
+                    },
+                    "activo": {
+                      "type": "boolean"
+                    },
+                    "creadoEn": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "ultimoAcceso": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true
+                    },
+                    "creadoPor": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "nombre",
+                    "email",
+                    "telefono",
+                    "cargo",
+                    "rol",
+                    "activo",
+                    "creadoEn",
+                    "ultimoAcceso",
+                    "creadoPor"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "CONTRATO_INVALIDO",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "NO_AUTENTICADO",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "SIN_PERMISO",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "EMAIL_DUPLICADO",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/usuarios/{id}/estado": {
+      "patch": {
+        "operationId": "cambiarEstadoUsuario",
+        "summary": "Activa o desactiva una cuenta",
+        "description": "No se puede desactivar la propia cuenta ni al último administrador activo.",
+        "tags": [
+          "usuarios"
+        ],
+        "security": [
+          {
+            "cookieSesion": []
+          }
+        ],
+        "x-roles": [
+          "ADMIN"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "activo": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "activo"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "nombre": {
+                      "type": "string"
+                    },
+                    "email": {
+                      "type": "string"
+                    },
+                    "telefono": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "cargo": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "rol": {
+                      "type": "string",
+                      "enum": [
+                        "ADMIN",
+                        "VENDEDOR",
+                        "PRODUCCION"
+                      ]
+                    },
+                    "activo": {
+                      "type": "boolean"
+                    },
+                    "creadoEn": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "ultimoAcceso": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true
+                    },
+                    "creadoPor": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "nombre",
+                    "email",
+                    "telefono",
+                    "cargo",
+                    "rol",
+                    "activo",
+                    "creadoEn",
+                    "ultimoAcceso",
+                    "creadoPor"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "CONTRATO_INVALIDO",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "NO_AUTENTICADO",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "SIN_PERMISO",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NO_ENCONTRADO",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "REGLA_NEGOCIO",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/usuarios/{id}/password": {
+      "post": {
+        "operationId": "restablecerPassword",
+        "summary": "Asigna una nueva contraseña y cierra las sesiones de ese usuario",
+        "tags": [
+          "usuarios"
+        ],
+        "security": [
+          {
+            "cookieSesion": []
+          }
+        ],
+        "x-roles": [
+          "ADMIN"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "password": {
+                    "type": "string",
+                    "minLength": 8,
+                    "maxLength": 72,
+                    "allOf": [
+                      {
+                        "pattern": "[A-Za-z]"
+                      },
+                      {
+                        "pattern": "\\d"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "password"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Sin contenido"
+          },
+          "400": {
+            "description": "CONTRATO_INVALIDO",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "NO_AUTENTICADO",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "SIN_PERMISO",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NO_ENCONTRADO",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/clientes": {
+      "get": {
+        "operationId": "listarClientes",
+        "summary": "Cartera de clientes",
+        "tags": [
+          "clientes"
+        ],
+        "security": [
+          {
+            "cookieSesion": []
+          }
+        ],
+        "x-roles": [
+          "ADMIN",
+          "VENDEDOR"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "nombre": {
+                        "type": "string"
+                      },
+                      "rif": {
+                        "type": "string"
+                      },
+                      "contacto": {
+                        "type": "string"
+                      },
+                      "telefono": {
+                        "type": "string"
+                      },
+                      "email": {
+                        "type": "string"
+                      },
+                      "ciudad": {
+                        "type": "string"
+                      },
+                      "ordenesActivas": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "saldoPendiente": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 100000000
+                      },
+                      "creadoEn": {
+                        "type": "string",
+                        "format": "date-time"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "nombre",
+                      "rif",
+                      "contacto",
+                      "telefono",
+                      "email",
+                      "ciudad",
+                      "ordenesActivas",
+                      "saldoPendiente",
+                      "creadoEn"
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "NO_AUTENTICADO",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "SIN_PERMISO",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "crearCliente",
+        "summary": "Registra un cliente",
+        "tags": [
+          "clientes"
+        ],
+        "security": [
+          {
+            "cookieSesion": []
+          }
+        ],
+        "x-roles": [
+          "ADMIN",
+          "VENDEDOR"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "nombre": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 150
+                  },
+                  "rif": {
+                    "type": "string",
+                    "pattern": "^[VJEGP]-?\\d{6,9}-?\\d?$"
+                  },
+                  "contacto": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 120
+                  },
+                  "telefono": {
+                    "type": "string",
+                    "minLength": 10,
+                    "maxLength": 24
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "maxLength": 150
+                  },
+                  "ciudad": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 80
+                  }
+                },
+                "required": [
+                  "nombre",
+                  "rif",
+                  "contacto",
+                  "telefono",
+                  "email",
+                  "ciudad"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "nombre": {
+                      "type": "string"
+                    },
+                    "rif": {
+                      "type": "string"
+                    },
+                    "contacto": {
+                      "type": "string"
+                    },
+                    "telefono": {
+                      "type": "string"
+                    },
+                    "email": {
+                      "type": "string"
+                    },
+                    "ciudad": {
+                      "type": "string"
+                    },
+                    "ordenesActivas": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "saldoPendiente": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 100000000
+                    },
+                    "creadoEn": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "nombre",
+                    "rif",
+                    "contacto",
+                    "telefono",
+                    "email",
+                    "ciudad",
+                    "ordenesActivas",
+                    "saldoPendiente",
+                    "creadoEn"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "CONTRATO_INVALIDO",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "NO_AUTENTICADO",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "SIN_PERMISO",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CODIGO_DUPLICADO",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/ordenes": {
+      "get": {
+        "operationId": "listarOrdenes",
+        "summary": "Órdenes de trabajo",
+        "description": "Un Vendedor solo recibe las órdenes que él creó; Admin y Producción, todas.",
+        "tags": [
+          "ordenes"
+        ],
+        "security": [
+          {
+            "cookieSesion": []
+          }
+        ],
+        "x-roles": [
+          "ADMIN",
+          "VENDEDOR",
+          "PRODUCCION"
+        ],
+        "parameters": [
+          {
+            "name": "fase",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "EN_PROCESO",
+                "EN_REVISION",
+                "FINALIZADO",
+                "EMPAQUETADO"
+              ]
+            }
+          },
+          {
+            "name": "categoria",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "PAPELERIA",
+                "GRAN_FORMATO",
+                "GENERAL"
+              ]
+            }
+          },
+          {
+            "name": "estadoEntrega",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "NO_APLICA",
+                "PENDIENTE",
+                "PARCIAL",
+                "ENTREGADO"
+              ]
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 80
+            }
+          },
+          {
+            "name": "limite",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 200
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "codigo": {
+                        "type": "string",
+                        "pattern": "^OT-\\d{4}-\\d{4,}$"
+                      },
+                      "clienteId": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "clienteNombre": {
+                        "type": "string"
+                      },
+                      "producto": {
+                        "type": "string"
+                      },
+                      "descripcion": {
+                        "type": "string"
+                      },
+                      "tecnologia": {
+                        "type": "string",
+                        "enum": [
+                          "OFFSET",
+                          "DIGITAL",
+                          "GRAN_FORMATO",
+                          "FLEXOGRAFIA"
+                        ]
+                      },
+                      "categoriaTrabajo": {
+                        "type": "string",
+                        "enum": [
+                          "PAPELERIA",
+                          "GRAN_FORMATO",
+                          "GENERAL"
+                        ]
+                      },
+                      "prioridad": {
+                        "type": "string",
+                        "enum": [
+                          "BAJA",
+                          "MEDIA",
+                          "ALTA",
+                          "URGENTE"
+                        ]
+                      },
+                      "maquina": {
+                        "type": "string"
+                      },
+                      "operador": {
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "cantidad": {
+                        "type": "integer",
+                        "exclusiveMinimum": true,
+                        "minimum": 0
+                      },
+                      "sustrato": {
+                        "type": "string"
+                      },
+                      "tintas": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "acabados": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "especificaciones": {
+                        "type": "object",
+                        "properties": {
+                          "tipoPapeleria": {
+                            "type": "string",
+                            "enum": [
+                              "FACTURA",
+                              "TALONARIO",
+                              "RECIPE",
+                              "NOTA",
+                              "ORDEN_COMPRA",
+                              "RECIBO",
+                              "CARTA",
+                              "OTRO"
+                            ]
+                          },
+                          "partes": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 6
+                          },
+                          "numeracionDesde": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "numeracionHasta": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "numeracionPrefijo": {
+                            "type": "string",
+                            "maxLength": 12
+                          },
+                          "tipoGranFormato": {
+                            "type": "string",
+                            "enum": [
+                              "PENDON",
+                              "STICKER",
+                              "VINIL",
+                              "LONA",
+                              "BACKING",
+                              "ROTULO",
+                              "OTRO"
+                            ]
+                          },
+                          "ancho": {
+                            "type": "number",
+                            "exclusiveMinimum": true,
+                            "minimum": 0,
+                            "maximum": 10000
+                          },
+                          "alto": {
+                            "type": "number",
+                            "exclusiveMinimum": true,
+                            "minimum": 0,
+                            "maximum": 10000
+                          },
+                          "unidadDimension": {
+                            "type": "string",
+                            "enum": [
+                              "cm",
+                              "m"
+                            ]
+                          },
+                          "resolucionDpi": {
+                            "type": "integer",
+                            "minimum": 72,
+                            "maximum": 1440
+                          },
+                          "tintasTiro": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 8
+                          },
+                          "tintasRetiro": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 8
+                          },
+                          "gramaje": {
+                            "type": "number",
+                            "exclusiveMinimum": true,
+                            "minimum": 0,
+                            "maximum": 2000
+                          },
+                          "pantones": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 40
+                            },
+                            "maxItems": 20
+                          },
+                          "observaciones": {
+                            "type": "string",
+                            "maxLength": 500
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      "montoTotal": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 100000000
+                      },
+                      "fase": {
+                        "type": "string",
+                        "enum": [
+                          "EN_PROCESO",
+                          "EN_REVISION",
+                          "FINALIZADO",
+                          "EMPAQUETADO"
+                        ]
+                      },
+                      "avance": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 100
+                      },
+                      "estadoEntrega": {
+                        "type": "string",
+                        "enum": [
+                          "NO_APLICA",
+                          "PENDIENTE",
+                          "PARCIAL",
+                          "ENTREGADO"
+                        ]
+                      },
+                      "vendedorId": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "vendedor": {
+                        "type": "string"
+                      },
+                      "fechaCreacion": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "fechaEntrega": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "version": {
+                        "type": "integer",
+                        "exclusiveMinimum": true,
+                        "minimum": 0
+                      },
+                      "historial": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "fase": {
+                              "type": "string",
+                              "enum": [
+                                "EN_PROCESO",
+                                "EN_REVISION",
+                                "FINALIZADO",
+                                "EMPAQUETADO"
+                              ]
+                            },
+                            "anterior": {
+                              "type": "string",
+                              "enum": [
+                                "EN_PROCESO",
+                                "EN_REVISION",
+                                "FINALIZADO",
+                                "EMPAQUETADO"
+                              ],
+                              "nullable": true
+                            },
+                            "usuarioId": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "usuario": {
+                              "type": "string"
+                            },
+                            "rol": {
+                              "type": "string",
+                              "enum": [
+                                "ADMIN",
+                                "VENDEDOR",
+                                "PRODUCCION"
+                              ]
+                            },
+                            "fecha": {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            "nota": {
+                              "type": "string",
+                              "nullable": true
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "fase",
+                            "anterior",
+                            "usuarioId",
+                            "usuario",
+                            "rol",
+                            "fecha",
+                            "nota"
+                          ],
+                          "additionalProperties": false
+                        }
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "codigo",
+                      "clienteId",
+                      "clienteNombre",
+                      "producto",
+                      "descripcion",
+                      "tecnologia",
+                      "categoriaTrabajo",
+                      "prioridad",
+                      "maquina",
+                      "operador",
+                      "cantidad",
+                      "sustrato",
+                      "tintas",
+                      "acabados",
+                      "especificaciones",
+                      "montoTotal",
+                      "fase",
+                      "avance",
+                      "estadoEntrega",
+                      "vendedorId",
+                      "vendedor",
+                      "fechaCreacion",
+                      "fechaEntrega",
+                      "version",
+                      "historial"
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "CONTRATO_INVALIDO",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "NO_AUTENTICADO",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "crearOrden",
+        "summary": "Crea una orden de trabajo y la envía a planta (EN_PROCESO)",
+        "description": "Notifica a Producción y Admin. Publica el evento interno de orden aprobada (descuento de materiales).",
+        "tags": [
+          "ordenes"
+        ],
+        "security": [
+          {
+            "cookieSesion": []
+          }
+        ],
+        "x-roles": [
+          "ADMIN",
+          "VENDEDOR"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "clienteId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "producto": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 120
+                  },
+                  "descripcion": {
+                    "type": "string",
+                    "maxLength": 280,
+                    "default": ""
+                  },
+                  "tecnologia": {
+                    "type": "string",
+                    "enum": [
+                      "OFFSET",
+                      "DIGITAL",
+                      "GRAN_FORMATO",
+                      "FLEXOGRAFIA"
+                    ]
+                  },
+                  "categoriaTrabajo": {
+                    "type": "string",
+                    "enum": [
+                      "PAPELERIA",
+                      "GRAN_FORMATO",
+                      "GENERAL"
+                    ]
+                  },
+                  "prioridad": {
+                    "type": "string",
+                    "enum": [
+                      "BAJA",
+                      "MEDIA",
+                      "ALTA",
+                      "URGENTE"
+                    ]
+                  },
+                  "maquina": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 80
+                  },
+                  "cantidad": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1000000
+                  },
+                  "sustrato": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 120
+                  },
+                  "tintas": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 40
+                    },
+                    "maxItems": 20
+                  },
+                  "acabados": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 60
+                    },
+                    "maxItems": 20
+                  },
+                  "especificaciones": {
+                    "type": "object",
+                    "properties": {
+                      "tipoPapeleria": {
+                        "type": "string",
+                        "enum": [
+                          "FACTURA",
+                          "TALONARIO",
+                          "RECIPE",
+                          "NOTA",
+                          "ORDEN_COMPRA",
+                          "RECIBO",
+                          "CARTA",
+                          "OTRO"
+                        ]
+                      },
+                      "partes": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 6
+                      },
+                      "numeracionDesde": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "numeracionHasta": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "numeracionPrefijo": {
+                        "type": "string",
+                        "maxLength": 12
+                      },
+                      "tipoGranFormato": {
+                        "type": "string",
+                        "enum": [
+                          "PENDON",
+                          "STICKER",
+                          "VINIL",
+                          "LONA",
+                          "BACKING",
+                          "ROTULO",
+                          "OTRO"
+                        ]
+                      },
+                      "ancho": {
+                        "type": "number",
+                        "exclusiveMinimum": true,
+                        "minimum": 0,
+                        "maximum": 10000
+                      },
+                      "alto": {
+                        "type": "number",
+                        "exclusiveMinimum": true,
+                        "minimum": 0,
+                        "maximum": 10000
+                      },
+                      "unidadDimension": {
+                        "type": "string",
+                        "enum": [
+                          "cm",
+                          "m"
+                        ]
+                      },
+                      "resolucionDpi": {
+                        "type": "integer",
+                        "minimum": 72,
+                        "maximum": 1440
+                      },
+                      "tintasTiro": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 8
+                      },
+                      "tintasRetiro": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 8
+                      },
+                      "gramaje": {
+                        "type": "number",
+                        "exclusiveMinimum": true,
+                        "minimum": 0,
+                        "maximum": 2000
+                      },
+                      "pantones": {
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 40
+                        },
+                        "maxItems": 20
+                      },
+                      "observaciones": {
+                        "type": "string",
+                        "maxLength": 500
+                      }
+                    },
+                    "additionalProperties": false,
+                    "default": {}
+                  },
+                  "montoTotal": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 100000000
+                  },
+                  "fechaEntrega": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                },
+                "required": [
+                  "clienteId",
+                  "producto",
+                  "tecnologia",
+                  "categoriaTrabajo",
+                  "prioridad",
+                  "maquina",
+                  "cantidad",
+                  "sustrato",
+                  "tintas",
+                  "acabados",
+                  "montoTotal",
+                  "fechaEntrega"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "codigo": {
+                      "type": "string",
+                      "pattern": "^OT-\\d{4}-\\d{4,}$"
+                    },
+                    "clienteId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "clienteNombre": {
+                      "type": "string"
+                    },
+                    "producto": {
+                      "type": "string"
+                    },
+                    "descripcion": {
+                      "type": "string"
+                    },
+                    "tecnologia": {
+                      "type": "string",
+                      "enum": [
+                        "OFFSET",
+                        "DIGITAL",
+                        "GRAN_FORMATO",
+                        "FLEXOGRAFIA"
+                      ]
+                    },
+                    "categoriaTrabajo": {
+                      "type": "string",
+                      "enum": [
+                        "PAPELERIA",
+                        "GRAN_FORMATO",
+                        "GENERAL"
+                      ]
+                    },
+                    "prioridad": {
+                      "type": "string",
+                      "enum": [
+                        "BAJA",
+                        "MEDIA",
+                        "ALTA",
+                        "URGENTE"
+                      ]
+                    },
+                    "maquina": {
+                      "type": "string"
+                    },
+                    "operador": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "cantidad": {
+                      "type": "integer",
+                      "exclusiveMinimum": true,
+                      "minimum": 0
+                    },
+                    "sustrato": {
+                      "type": "string"
+                    },
+                    "tintas": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "acabados": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "especificaciones": {
+                      "type": "object",
+                      "properties": {
+                        "tipoPapeleria": {
+                          "type": "string",
+                          "enum": [
+                            "FACTURA",
+                            "TALONARIO",
+                            "RECIPE",
+                            "NOTA",
+                            "ORDEN_COMPRA",
+                            "RECIBO",
+                            "CARTA",
+                            "OTRO"
+                          ]
+                        },
+                        "partes": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 6
+                        },
+                        "numeracionDesde": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "numeracionHasta": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "numeracionPrefijo": {
+                          "type": "string",
+                          "maxLength": 12
+                        },
+                        "tipoGranFormato": {
+                          "type": "string",
+                          "enum": [
+                            "PENDON",
+                            "STICKER",
+                            "VINIL",
+                            "LONA",
+                            "BACKING",
+                            "ROTULO",
+                            "OTRO"
+                          ]
+                        },
+                        "ancho": {
+                          "type": "number",
+                          "exclusiveMinimum": true,
+                          "minimum": 0,
+                          "maximum": 10000
+                        },
+                        "alto": {
+                          "type": "number",
+                          "exclusiveMinimum": true,
+                          "minimum": 0,
+                          "maximum": 10000
+                        },
+                        "unidadDimension": {
+                          "type": "string",
+                          "enum": [
+                            "cm",
+                            "m"
+                          ]
+                        },
+                        "resolucionDpi": {
+                          "type": "integer",
+                          "minimum": 72,
+                          "maximum": 1440
+                        },
+                        "tintasTiro": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 8
+                        },
+                        "tintasRetiro": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 8
+                        },
+                        "gramaje": {
+                          "type": "number",
+                          "exclusiveMinimum": true,
+                          "minimum": 0,
+                          "maximum": 2000
+                        },
+                        "pantones": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 40
+                          },
+                          "maxItems": 20
+                        },
+                        "observaciones": {
+                          "type": "string",
+                          "maxLength": 500
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    "montoTotal": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 100000000
+                    },
+                    "fase": {
+                      "type": "string",
+                      "enum": [
+                        "EN_PROCESO",
+                        "EN_REVISION",
+                        "FINALIZADO",
+                        "EMPAQUETADO"
+                      ]
+                    },
+                    "avance": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 100
+                    },
+                    "estadoEntrega": {
+                      "type": "string",
+                      "enum": [
+                        "NO_APLICA",
+                        "PENDIENTE",
+                        "PARCIAL",
+                        "ENTREGADO"
+                      ]
+                    },
+                    "vendedorId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "vendedor": {
+                      "type": "string"
+                    },
+                    "fechaCreacion": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "fechaEntrega": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "version": {
+                      "type": "integer",
+                      "exclusiveMinimum": true,
+                      "minimum": 0
+                    },
+                    "historial": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "fase": {
+                            "type": "string",
+                            "enum": [
+                              "EN_PROCESO",
+                              "EN_REVISION",
+                              "FINALIZADO",
+                              "EMPAQUETADO"
+                            ]
+                          },
+                          "anterior": {
+                            "type": "string",
+                            "enum": [
+                              "EN_PROCESO",
+                              "EN_REVISION",
+                              "FINALIZADO",
+                              "EMPAQUETADO"
+                            ],
+                            "nullable": true
+                          },
+                          "usuarioId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "usuario": {
+                            "type": "string"
+                          },
+                          "rol": {
+                            "type": "string",
+                            "enum": [
+                              "ADMIN",
+                              "VENDEDOR",
+                              "PRODUCCION"
+                            ]
+                          },
+                          "fecha": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "nota": {
+                            "type": "string",
+                            "nullable": true
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "fase",
+                          "anterior",
+                          "usuarioId",
+                          "usuario",
+                          "rol",
+                          "fecha",
+                          "nota"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "codigo",
+                    "clienteId",
+                    "clienteNombre",
+                    "producto",
+                    "descripcion",
+                    "tecnologia",
+                    "categoriaTrabajo",
+                    "prioridad",
+                    "maquina",
+                    "operador",
+                    "cantidad",
+                    "sustrato",
+                    "tintas",
+                    "acabados",
+                    "especificaciones",
+                    "montoTotal",
+                    "fase",
+                    "avance",
+                    "estadoEntrega",
+                    "vendedorId",
+                    "vendedor",
+                    "fechaCreacion",
+                    "fechaEntrega",
+                    "version",
+                    "historial"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "CONTRATO_INVALIDO",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "NO_AUTENTICADO",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "SIN_PERMISO",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NO_ENCONTRADO",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/ordenes/{id}": {
+      "get": {
+        "operationId": "obtenerOrden",
+        "summary": "Detalle de una orden con su historial auditado",
+        "description": "Un Vendedor recibe 404 si la orden no es suya.",
+        "tags": [
+          "ordenes"
+        ],
+        "security": [
+          {
+            "cookieSesion": []
+          }
+        ],
+        "x-roles": [
+          "ADMIN",
+          "VENDEDOR",
+          "PRODUCCION"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "codigo": {
+                      "type": "string",
+                      "pattern": "^OT-\\d{4}-\\d{4,}$"
+                    },
+                    "clienteId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "clienteNombre": {
+                      "type": "string"
+                    },
+                    "producto": {
+                      "type": "string"
+                    },
+                    "descripcion": {
+                      "type": "string"
+                    },
+                    "tecnologia": {
+                      "type": "string",
+                      "enum": [
+                        "OFFSET",
+                        "DIGITAL",
+                        "GRAN_FORMATO",
+                        "FLEXOGRAFIA"
+                      ]
+                    },
+                    "categoriaTrabajo": {
+                      "type": "string",
+                      "enum": [
+                        "PAPELERIA",
+                        "GRAN_FORMATO",
+                        "GENERAL"
+                      ]
+                    },
+                    "prioridad": {
+                      "type": "string",
+                      "enum": [
+                        "BAJA",
+                        "MEDIA",
+                        "ALTA",
+                        "URGENTE"
+                      ]
+                    },
+                    "maquina": {
+                      "type": "string"
+                    },
+                    "operador": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "cantidad": {
+                      "type": "integer",
+                      "exclusiveMinimum": true,
+                      "minimum": 0
+                    },
+                    "sustrato": {
+                      "type": "string"
+                    },
+                    "tintas": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "acabados": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "especificaciones": {
+                      "type": "object",
+                      "properties": {
+                        "tipoPapeleria": {
+                          "type": "string",
+                          "enum": [
+                            "FACTURA",
+                            "TALONARIO",
+                            "RECIPE",
+                            "NOTA",
+                            "ORDEN_COMPRA",
+                            "RECIBO",
+                            "CARTA",
+                            "OTRO"
+                          ]
+                        },
+                        "partes": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 6
+                        },
+                        "numeracionDesde": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "numeracionHasta": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "numeracionPrefijo": {
+                          "type": "string",
+                          "maxLength": 12
+                        },
+                        "tipoGranFormato": {
+                          "type": "string",
+                          "enum": [
+                            "PENDON",
+                            "STICKER",
+                            "VINIL",
+                            "LONA",
+                            "BACKING",
+                            "ROTULO",
+                            "OTRO"
+                          ]
+                        },
+                        "ancho": {
+                          "type": "number",
+                          "exclusiveMinimum": true,
+                          "minimum": 0,
+                          "maximum": 10000
+                        },
+                        "alto": {
+                          "type": "number",
+                          "exclusiveMinimum": true,
+                          "minimum": 0,
+                          "maximum": 10000
+                        },
+                        "unidadDimension": {
+                          "type": "string",
+                          "enum": [
+                            "cm",
+                            "m"
+                          ]
+                        },
+                        "resolucionDpi": {
+                          "type": "integer",
+                          "minimum": 72,
+                          "maximum": 1440
+                        },
+                        "tintasTiro": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 8
+                        },
+                        "tintasRetiro": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 8
+                        },
+                        "gramaje": {
+                          "type": "number",
+                          "exclusiveMinimum": true,
+                          "minimum": 0,
+                          "maximum": 2000
+                        },
+                        "pantones": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 40
+                          },
+                          "maxItems": 20
+                        },
+                        "observaciones": {
+                          "type": "string",
+                          "maxLength": 500
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    "montoTotal": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 100000000
+                    },
+                    "fase": {
+                      "type": "string",
+                      "enum": [
+                        "EN_PROCESO",
+                        "EN_REVISION",
+                        "FINALIZADO",
+                        "EMPAQUETADO"
+                      ]
+                    },
+                    "avance": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 100
+                    },
+                    "estadoEntrega": {
+                      "type": "string",
+                      "enum": [
+                        "NO_APLICA",
+                        "PENDIENTE",
+                        "PARCIAL",
+                        "ENTREGADO"
+                      ]
+                    },
+                    "vendedorId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "vendedor": {
+                      "type": "string"
+                    },
+                    "fechaCreacion": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "fechaEntrega": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "version": {
+                      "type": "integer",
+                      "exclusiveMinimum": true,
+                      "minimum": 0
+                    },
+                    "historial": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "fase": {
+                            "type": "string",
+                            "enum": [
+                              "EN_PROCESO",
+                              "EN_REVISION",
+                              "FINALIZADO",
+                              "EMPAQUETADO"
+                            ]
+                          },
+                          "anterior": {
+                            "type": "string",
+                            "enum": [
+                              "EN_PROCESO",
+                              "EN_REVISION",
+                              "FINALIZADO",
+                              "EMPAQUETADO"
+                            ],
+                            "nullable": true
+                          },
+                          "usuarioId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "usuario": {
+                            "type": "string"
+                          },
+                          "rol": {
+                            "type": "string",
+                            "enum": [
+                              "ADMIN",
+                              "VENDEDOR",
+                              "PRODUCCION"
+                            ]
+                          },
+                          "fecha": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "nota": {
+                            "type": "string",
+                            "nullable": true
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "fase",
+                          "anterior",
+                          "usuarioId",
+                          "usuario",
+                          "rol",
+                          "fecha",
+                          "nota"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "codigo",
+                    "clienteId",
+                    "clienteNombre",
+                    "producto",
+                    "descripcion",
+                    "tecnologia",
+                    "categoriaTrabajo",
+                    "prioridad",
+                    "maquina",
+                    "operador",
+                    "cantidad",
+                    "sustrato",
+                    "tintas",
+                    "acabados",
+                    "especificaciones",
+                    "montoTotal",
+                    "fase",
+                    "avance",
+                    "estadoEntrega",
+                    "vendedorId",
+                    "vendedor",
+                    "fechaCreacion",
+                    "fechaEntrega",
+                    "version",
+                    "historial"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "CONTRATO_INVALIDO",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "NO_AUTENTICADO",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NO_ENCONTRADO",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/ordenes/{id}/transiciones": {
+      "post": {
+        "operationId": "cambiarFaseOrden",
+        "summary": "Avanza (o devuelve a retrabajo) una orden en el control de calidad",
+        "description": "Solo se avanza a la fase siguiente. EN_REVISION -> EN_PROCESO es el retrabajo y exige nota. Al llegar a FINALIZADO o EMPAQUETADO se notifica al vendedor; EMPAQUETADO ingresa el producto al almacén.",
+        "tags": [
+          "ordenes"
+        ],
+        "security": [
+          {
+            "cookieSesion": []
+          }
+        ],
+        "x-roles": [
+          "ADMIN",
+          "PRODUCCION"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "fase": {
+                    "type": "string",
+                    "enum": [
+                      "EN_PROCESO",
+                      "EN_REVISION",
+                      "FINALIZADO",
+                      "EMPAQUETADO"
+                    ]
+                  },
+                  "nota": {
+                    "type": "string",
+                    "maxLength": 500
+                  },
+                  "versionEsperada": {
+                    "type": "integer",
+                    "exclusiveMinimum": true,
+                    "minimum": 0
+                  }
+                },
+                "required": [
+                  "fase"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "codigo": {
+                      "type": "string",
+                      "pattern": "^OT-\\d{4}-\\d{4,}$"
+                    },
+                    "clienteId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "clienteNombre": {
+                      "type": "string"
+                    },
+                    "producto": {
+                      "type": "string"
+                    },
+                    "descripcion": {
+                      "type": "string"
+                    },
+                    "tecnologia": {
+                      "type": "string",
+                      "enum": [
+                        "OFFSET",
+                        "DIGITAL",
+                        "GRAN_FORMATO",
+                        "FLEXOGRAFIA"
+                      ]
+                    },
+                    "categoriaTrabajo": {
+                      "type": "string",
+                      "enum": [
+                        "PAPELERIA",
+                        "GRAN_FORMATO",
+                        "GENERAL"
+                      ]
+                    },
+                    "prioridad": {
+                      "type": "string",
+                      "enum": [
+                        "BAJA",
+                        "MEDIA",
+                        "ALTA",
+                        "URGENTE"
+                      ]
+                    },
+                    "maquina": {
+                      "type": "string"
+                    },
+                    "operador": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "cantidad": {
+                      "type": "integer",
+                      "exclusiveMinimum": true,
+                      "minimum": 0
+                    },
+                    "sustrato": {
+                      "type": "string"
+                    },
+                    "tintas": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "acabados": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "especificaciones": {
+                      "type": "object",
+                      "properties": {
+                        "tipoPapeleria": {
+                          "type": "string",
+                          "enum": [
+                            "FACTURA",
+                            "TALONARIO",
+                            "RECIPE",
+                            "NOTA",
+                            "ORDEN_COMPRA",
+                            "RECIBO",
+                            "CARTA",
+                            "OTRO"
+                          ]
+                        },
+                        "partes": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 6
+                        },
+                        "numeracionDesde": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "numeracionHasta": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "numeracionPrefijo": {
+                          "type": "string",
+                          "maxLength": 12
+                        },
+                        "tipoGranFormato": {
+                          "type": "string",
+                          "enum": [
+                            "PENDON",
+                            "STICKER",
+                            "VINIL",
+                            "LONA",
+                            "BACKING",
+                            "ROTULO",
+                            "OTRO"
+                          ]
+                        },
+                        "ancho": {
+                          "type": "number",
+                          "exclusiveMinimum": true,
+                          "minimum": 0,
+                          "maximum": 10000
+                        },
+                        "alto": {
+                          "type": "number",
+                          "exclusiveMinimum": true,
+                          "minimum": 0,
+                          "maximum": 10000
+                        },
+                        "unidadDimension": {
+                          "type": "string",
+                          "enum": [
+                            "cm",
+                            "m"
+                          ]
+                        },
+                        "resolucionDpi": {
+                          "type": "integer",
+                          "minimum": 72,
+                          "maximum": 1440
+                        },
+                        "tintasTiro": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 8
+                        },
+                        "tintasRetiro": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 8
+                        },
+                        "gramaje": {
+                          "type": "number",
+                          "exclusiveMinimum": true,
+                          "minimum": 0,
+                          "maximum": 2000
+                        },
+                        "pantones": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 40
+                          },
+                          "maxItems": 20
+                        },
+                        "observaciones": {
+                          "type": "string",
+                          "maxLength": 500
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    "montoTotal": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 100000000
+                    },
+                    "fase": {
+                      "type": "string",
+                      "enum": [
+                        "EN_PROCESO",
+                        "EN_REVISION",
+                        "FINALIZADO",
+                        "EMPAQUETADO"
+                      ]
+                    },
+                    "avance": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 100
+                    },
+                    "estadoEntrega": {
+                      "type": "string",
+                      "enum": [
+                        "NO_APLICA",
+                        "PENDIENTE",
+                        "PARCIAL",
+                        "ENTREGADO"
+                      ]
+                    },
+                    "vendedorId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "vendedor": {
+                      "type": "string"
+                    },
+                    "fechaCreacion": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "fechaEntrega": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "version": {
+                      "type": "integer",
+                      "exclusiveMinimum": true,
+                      "minimum": 0
+                    },
+                    "historial": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "fase": {
+                            "type": "string",
+                            "enum": [
+                              "EN_PROCESO",
+                              "EN_REVISION",
+                              "FINALIZADO",
+                              "EMPAQUETADO"
+                            ]
+                          },
+                          "anterior": {
+                            "type": "string",
+                            "enum": [
+                              "EN_PROCESO",
+                              "EN_REVISION",
+                              "FINALIZADO",
+                              "EMPAQUETADO"
+                            ],
+                            "nullable": true
+                          },
+                          "usuarioId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "usuario": {
+                            "type": "string"
+                          },
+                          "rol": {
+                            "type": "string",
+                            "enum": [
+                              "ADMIN",
+                              "VENDEDOR",
+                              "PRODUCCION"
+                            ]
+                          },
+                          "fecha": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "nota": {
+                            "type": "string",
+                            "nullable": true
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "fase",
+                          "anterior",
+                          "usuarioId",
+                          "usuario",
+                          "rol",
+                          "fecha",
+                          "nota"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "codigo",
+                    "clienteId",
+                    "clienteNombre",
+                    "producto",
+                    "descripcion",
+                    "tecnologia",
+                    "categoriaTrabajo",
+                    "prioridad",
+                    "maquina",
+                    "operador",
+                    "cantidad",
+                    "sustrato",
+                    "tintas",
+                    "acabados",
+                    "especificaciones",
+                    "montoTotal",
+                    "fase",
+                    "avance",
+                    "estadoEntrega",
+                    "vendedorId",
+                    "vendedor",
+                    "fechaCreacion",
+                    "fechaEntrega",
+                    "version",
+                    "historial"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "CONTRATO_INVALIDO",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "NO_AUTENTICADO",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "SIN_PERMISO",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NO_ENCONTRADO",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "TRANSICION_NO_PERMITIDA, CONFLICTO_CONCURRENCIA",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "MOTIVO_REQUERIDO",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/inventario/materiales": {
+      "get": {
+        "operationId": "listarMateriales",
+        "summary": "Existencias de materiales",
+        "tags": [
+          "inventario"
+        ],
+        "security": [
+          {
+            "cookieSesion": []
+          }
+        ],
+        "x-roles": [
+          "ADMIN",
+          "PRODUCCION"
+        ],
+        "parameters": [
+          {
+            "name": "categoria",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "PAPEL",
+                "TINTAS",
+                "PLANCHAS",
+                "VINILOS",
+                "SELLOS",
+                "ALMACEN"
+              ]
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 80
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "sku": {
+                        "type": "string"
+                      },
+                      "nombre": {
+                        "type": "string"
+                      },
+                      "categoria": {
+                        "type": "string",
+                        "enum": [
+                          "PAPEL",
+                          "TINTAS",
+                          "PLANCHAS",
+                          "VINILOS",
+                          "SELLOS",
+                          "ALMACEN"
+                        ]
+                      },
+                      "unidad": {
+                        "type": "string",
+                        "enum": [
+                          "resma",
+                          "pliego",
+                          "kg",
+                          "litro",
+                          "unidad",
+                          "rollo",
+                          "caja"
+                        ]
+                      },
+                      "stock": {
+                        "type": "number",
+                        "minimum": 0
+                      },
+                      "stockMinimo": {
+                        "type": "number",
+                        "minimum": 0
+                      },
+                      "costoUnitario": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 100000000
+                      },
+                      "ubicacion": {
+                        "type": "string"
+                      },
+                      "proveedor": {
+                        "type": "string"
+                      },
+                      "lote": {
+                        "type": "string"
+                      },
+                      "actualizadoEn": {
+                        "type": "string",
+                        "format": "date-time"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "sku",
+                      "nombre",
+                      "categoria",
+                      "unidad",
+                      "stock",
+                      "stockMinimo",
+                      "costoUnitario",
+                      "ubicacion",
+                      "proveedor",
+                      "lote",
+                      "actualizadoEn"
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "CONTRATO_INVALIDO",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "NO_AUTENTICADO",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "SIN_PERMISO",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "crearMaterial",
+        "summary": "Registra un material (stock inicial 0; se carga con una ENTRADA)",
+        "tags": [
+          "inventario"
+        ],
+        "security": [
+          {
+            "cookieSesion": []
+          }
+        ],
+        "x-roles": [
+          "ADMIN"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "sku": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 50
+                  },
+                  "nombre": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  "categoria": {
+                    "type": "string",
+                    "enum": [
+                      "PAPEL",
+                      "TINTAS",
+                      "PLANCHAS",
+                      "VINILOS",
+                      "SELLOS",
+                      "ALMACEN"
+                    ]
+                  },
+                  "unidad": {
+                    "type": "string",
+                    "enum": [
+                      "resma",
+                      "pliego",
+                      "kg",
+                      "litro",
+                      "unidad",
+                      "rollo",
+                      "caja"
+                    ]
+                  },
+                  "stockMinimo": {
+                    "type": "number",
+                    "minimum": 0,
+                    "default": 0
+                  },
+                  "costoUnitario": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 100000000,
+                    "default": 0
+                  },
+                  "ubicacion": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "default": ""
+                  },
+                  "proveedor": {
+                    "type": "string",
+                    "maxLength": 120,
+                    "default": ""
+                  },
+                  "lote": {
+                    "type": "string",
+                    "maxLength": 60,
+                    "default": ""
+                  }
+                },
+                "required": [
+                  "sku",
+                  "nombre",
+                  "categoria",
+                  "unidad"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "sku": {
+                      "type": "string"
+                    },
+                    "nombre": {
+                      "type": "string"
+                    },
+                    "categoria": {
+                      "type": "string",
+                      "enum": [
+                        "PAPEL",
+                        "TINTAS",
+                        "PLANCHAS",
+                        "VINILOS",
+                        "SELLOS",
+                        "ALMACEN"
+                      ]
+                    },
+                    "unidad": {
+                      "type": "string",
+                      "enum": [
+                        "resma",
+                        "pliego",
+                        "kg",
+                        "litro",
+                        "unidad",
+                        "rollo",
+                        "caja"
+                      ]
+                    },
+                    "stock": {
+                      "type": "number",
+                      "minimum": 0
+                    },
+                    "stockMinimo": {
+                      "type": "number",
+                      "minimum": 0
+                    },
+                    "costoUnitario": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 100000000
+                    },
+                    "ubicacion": {
+                      "type": "string"
+                    },
+                    "proveedor": {
+                      "type": "string"
+                    },
+                    "lote": {
+                      "type": "string"
+                    },
+                    "actualizadoEn": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "sku",
+                    "nombre",
+                    "categoria",
+                    "unidad",
+                    "stock",
+                    "stockMinimo",
+                    "costoUnitario",
+                    "ubicacion",
+                    "proveedor",
+                    "lote",
+                    "actualizadoEn"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "CONTRATO_INVALIDO",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "NO_AUTENTICADO",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "SIN_PERMISO",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CODIGO_DUPLICADO",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/inventario/movimientos": {
+      "get": {
+        "operationId": "listarMovimientos",
+        "summary": "Movimientos auditados, del más reciente al más antiguo",
+        "tags": [
+          "inventario"
+        ],
+        "security": [
+          {
+            "cookieSesion": []
+          }
+        ],
+        "x-roles": [
+          "ADMIN",
+          "PRODUCCION"
+        ],
+        "parameters": [
+          {
+            "name": "materialId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "limite",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "materialId": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "materialNombre": {
+                        "type": "string"
+                      },
+                      "tipo": {
+                        "type": "string",
+                        "enum": [
+                          "ENTRADA",
+                          "SALIDA",
+                          "AJUSTE",
+                          "RESERVA"
+                        ]
+                      },
+                      "cantidad": {
+                        "type": "number",
+                        "exclusiveMinimum": true,
+                        "minimum": 0
+                      },
+                      "stockResultante": {
+                        "type": "number",
+                        "minimum": 0
+                      },
+                      "motivo": {
+                        "type": "string"
+                      },
+                      "ordenId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true
+                      },
+                      "usuarioId": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "usuario": {
+                        "type": "string"
+                      },
+                      "fecha": {
+                        "type": "string",
+                        "format": "date-time"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "materialId",
+                      "materialNombre",
+                      "tipo",
+                      "cantidad",
+                      "stockResultante",
+                      "motivo",
+                      "ordenId",
+                      "usuarioId",
+                      "usuario",
+                      "fecha"
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "CONTRATO_INVALIDO",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "NO_AUTENTICADO",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "SIN_PERMISO",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "registrarMovimiento",
+        "summary": "Registra una entrada, salida, ajuste o reserva",
+        "description": "El responsable es el usuario de la sesión. Rechaza movimientos que dejen stock negativo.",
+        "tags": [
+          "inventario"
+        ],
+        "security": [
+          {
+            "cookieSesion": []
+          }
+        ],
+        "x-roles": [
+          "ADMIN",
+          "PRODUCCION"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "materialId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "tipo": {
+                    "type": "string",
+                    "enum": [
+                      "ENTRADA",
+                      "SALIDA",
+                      "AJUSTE",
+                      "RESERVA"
+                    ]
+                  },
+                  "cantidad": {
+                    "type": "number",
+                    "exclusiveMinimum": true,
+                    "minimum": 0,
+                    "maximum": 10000000
+                  },
+                  "motivo": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 160
+                  },
+                  "ordenId": {
+                    "type": "string",
+                    "format": "uuid"
+                  }
+                },
+                "required": [
+                  "materialId",
+                  "tipo",
+                  "cantidad",
+                  "motivo"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "materialId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "materialNombre": {
+                      "type": "string"
+                    },
+                    "tipo": {
+                      "type": "string",
+                      "enum": [
+                        "ENTRADA",
+                        "SALIDA",
+                        "AJUSTE",
+                        "RESERVA"
+                      ]
+                    },
+                    "cantidad": {
+                      "type": "number",
+                      "exclusiveMinimum": true,
+                      "minimum": 0
+                    },
+                    "stockResultante": {
+                      "type": "number",
+                      "minimum": 0
+                    },
+                    "motivo": {
+                      "type": "string"
+                    },
+                    "ordenId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    },
+                    "usuarioId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "usuario": {
+                      "type": "string"
+                    },
+                    "fecha": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "materialId",
+                    "materialNombre",
+                    "tipo",
+                    "cantidad",
+                    "stockResultante",
+                    "motivo",
+                    "ordenId",
+                    "usuarioId",
+                    "usuario",
+                    "fecha"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "CONTRATO_INVALIDO",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "NO_AUTENTICADO",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "SIN_PERMISO",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NO_ENCONTRADO",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "STOCK_INSUFICIENTE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/inventario/productos-terminados": {
+      "get": {
+        "operationId": "listarProductosTerminados",
+        "summary": "Sellos y productos terminados en almacén",
+        "tags": [
+          "inventario"
+        ],
+        "security": [
+          {
+            "cookieSesion": []
+          }
+        ],
+        "x-roles": [
+          "ADMIN",
+          "PRODUCCION"
+        ],
+        "parameters": [
+          {
+            "name": "tipo",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "SELLO",
+                "PRODUCTO_TERMINADO"
+              ]
+            }
+          },
+          {
+            "name": "soloPendientes",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ],
+              "default": "true"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "tipo": {
+                        "type": "string",
+                        "enum": [
+                          "SELLO",
+                          "PRODUCTO_TERMINADO"
+                        ]
+                      },
+                      "ordenId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true
+                      },
+                      "codigoOrden": {
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "clienteId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true
+                      },
+                      "clienteNombre": {
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "descripcion": {
+                        "type": "string"
+                      },
+                      "cantidad": {
+                        "type": "integer",
+                        "exclusiveMinimum": true,
+                        "minimum": 0
+                      },
+                      "cantidadEntregada": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "cantidadPendiente": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "ubicacion": {
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "estadoEntrega": {
+                        "type": "string",
+                        "enum": [
+                          "PENDIENTE",
+                          "PARCIAL",
+                          "ENTREGADO"
+                        ]
+                      },
+                      "ingresadoEn": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "entregas": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "cantidad": {
+                              "type": "integer",
+                              "exclusiveMinimum": true,
+                              "minimum": 0
+                            },
+                            "recibidoPor": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "usuarioId": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "usuario": {
+                              "type": "string"
+                            },
+                            "fecha": {
+                              "type": "string",
+                              "format": "date-time"
+                            }
+                          },
+                          "required": [
+                            "cantidad",
+                            "recibidoPor",
+                            "usuarioId",
+                            "usuario",
+                            "fecha"
+                          ],
+                          "additionalProperties": false
+                        }
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "tipo",
+                      "ordenId",
+                      "codigoOrden",
+                      "clienteId",
+                      "clienteNombre",
+                      "descripcion",
+                      "cantidad",
+                      "cantidadEntregada",
+                      "cantidadPendiente",
+                      "ubicacion",
+                      "estadoEntrega",
+                      "ingresadoEn",
+                      "entregas"
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "CONTRATO_INVALIDO",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "NO_AUTENTICADO",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "SIN_PERMISO",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/inventario/productos-terminados/{id}/entregas": {
+      "post": {
+        "operationId": "registrarEntrega",
+        "summary": "Entrega total o parcial al cliente",
+        "description": "Al completar la entrega, la orden asociada pasa a estadoEntrega ENTREGADO.",
+        "tags": [
+          "inventario"
+        ],
+        "security": [
+          {
+            "cookieSesion": []
+          }
+        ],
+        "x-roles": [
+          "ADMIN",
+          "PRODUCCION"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "cantidad": {
+                    "type": "integer",
+                    "exclusiveMinimum": true,
+                    "minimum": 0
+                  },
+                  "recibidoPor": {
+                    "type": "string",
+                    "maxLength": 120
+                  }
+                },
+                "required": [
+                  "cantidad"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "tipo": {
+                      "type": "string",
+                      "enum": [
+                        "SELLO",
+                        "PRODUCTO_TERMINADO"
+                      ]
+                    },
+                    "ordenId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    },
+                    "codigoOrden": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "clienteId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    },
+                    "clienteNombre": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "descripcion": {
+                      "type": "string"
+                    },
+                    "cantidad": {
+                      "type": "integer",
+                      "exclusiveMinimum": true,
+                      "minimum": 0
+                    },
+                    "cantidadEntregada": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "cantidadPendiente": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "ubicacion": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "estadoEntrega": {
+                      "type": "string",
+                      "enum": [
+                        "PENDIENTE",
+                        "PARCIAL",
+                        "ENTREGADO"
+                      ]
+                    },
+                    "ingresadoEn": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "entregas": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "cantidad": {
+                            "type": "integer",
+                            "exclusiveMinimum": true,
+                            "minimum": 0
+                          },
+                          "recibidoPor": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "usuarioId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "usuario": {
+                            "type": "string"
+                          },
+                          "fecha": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        },
+                        "required": [
+                          "cantidad",
+                          "recibidoPor",
+                          "usuarioId",
+                          "usuario",
+                          "fecha"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "tipo",
+                    "ordenId",
+                    "codigoOrden",
+                    "clienteId",
+                    "clienteNombre",
+                    "descripcion",
+                    "cantidad",
+                    "cantidadEntregada",
+                    "cantidadPendiente",
+                    "ubicacion",
+                    "estadoEntrega",
+                    "ingresadoEn",
+                    "entregas"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "CONTRATO_INVALIDO",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "NO_AUTENTICADO",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "SIN_PERMISO",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NO_ENCONTRADO",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "ENTREGA_INVALIDA",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/notificaciones": {
+      "get": {
+        "operationId": "listarNotificaciones",
+        "summary": "Notificaciones dirigidas al rol del usuario de la sesión",
+        "tags": [
+          "notificaciones"
+        ],
+        "security": [
+          {
+            "cookieSesion": []
+          }
+        ],
+        "x-roles": [
+          "ADMIN",
+          "VENDEDOR",
+          "PRODUCCION"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "tipo": {
+                        "type": "string",
+                        "enum": [
+                          "PEDIDO_LISTO",
+                          "FASE",
+                          "STOCK",
+                          "SISTEMA"
+                        ]
+                      },
+                      "titulo": {
+                        "type": "string"
+                      },
+                      "detalle": {
+                        "type": "string"
+                      },
+                      "ordenId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true
+                      },
+                      "codigo": {
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "leida": {
+                        "type": "boolean"
+                      },
+                      "creadaEn": {
+                        "type": "string",
+                        "format": "date-time"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "tipo",
+                      "titulo",
+                      "detalle",
+                      "ordenId",
+                      "codigo",
+                      "leida",
+                      "creadaEn"
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "NO_AUTENTICADO",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/notificaciones/{id}/leida": {
+      "post": {
+        "operationId": "marcarNotificacionLeida",
+        "summary": "Marca una notificación como leída por el usuario de la sesión",
+        "tags": [
+          "notificaciones"
+        ],
+        "security": [
+          {
+            "cookieSesion": []
+          }
+        ],
+        "x-roles": [
+          "ADMIN",
+          "VENDEDOR",
+          "PRODUCCION"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "tipo": {
+                      "type": "string",
+                      "enum": [
+                        "PEDIDO_LISTO",
+                        "FASE",
+                        "STOCK",
+                        "SISTEMA"
+                      ]
+                    },
+                    "titulo": {
+                      "type": "string"
+                    },
+                    "detalle": {
+                      "type": "string"
+                    },
+                    "ordenId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    },
+                    "codigo": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "leida": {
+                      "type": "boolean"
+                    },
+                    "creadaEn": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "tipo",
+                    "titulo",
+                    "detalle",
+                    "ordenId",
+                    "codigo",
+                    "leida",
+                    "creadaEn"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "CONTRATO_INVALIDO",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "NO_AUTENTICADO",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NO_ENCONTRADO",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/notificaciones/leidas": {
+      "post": {
+        "operationId": "marcarNotificacionesLeidas",
+        "summary": "Marca como leídas todas las notificaciones del usuario",
+        "tags": [
+          "notificaciones"
+        ],
+        "security": [
+          {
+            "cookieSesion": []
+          }
+        ],
+        "x-roles": [
+          "ADMIN",
+          "VENDEDOR",
+          "PRODUCCION"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "marcadas": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  },
+                  "required": [
+                    "marcadas"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "NO_AUTENTICADO",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/produccion/eventos": {
+      "get": {
+        "operationId": "eventosProduccion",
+        "summary": "Flujo en tiempo real de cambios de fase (Server-Sent Events)",
+        "description": "Cada mensaje tiene `event: orden.actualizada`. Un Vendedor solo recibe sus órdenes.",
+        "tags": [
+          "produccion"
+        ],
+        "security": [
+          {
+            "cookieSesion": []
+          }
+        ],
+        "x-roles": [
+          "ADMIN",
+          "VENDEDOR",
+          "PRODUCCION"
+        ],
+        "responses": {
+          "200": {
+            "description": "Flujo SSE",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ordenId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "codigo": {
+                      "type": "string"
+                    },
+                    "fase": {
+                      "type": "string",
+                      "enum": [
+                        "EN_PROCESO",
+                        "EN_REVISION",
+                        "FINALIZADO",
+                        "EMPAQUETADO"
+                      ]
+                    },
+                    "anterior": {
+                      "type": "string",
+                      "enum": [
+                        "EN_PROCESO",
+                        "EN_REVISION",
+                        "FINALIZADO",
+                        "EMPAQUETADO"
+                      ],
+                      "nullable": true
+                    },
+                    "version": {
+                      "type": "integer",
+                      "exclusiveMinimum": true,
+                      "minimum": 0
+                    },
+                    "usuario": {
+                      "type": "string"
+                    },
+                    "fecha": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  },
+                  "required": [
+                    "ordenId",
+                    "codigo",
+                    "fase",
+                    "anterior",
+                    "version",
+                    "usuario",
+                    "fecha"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
