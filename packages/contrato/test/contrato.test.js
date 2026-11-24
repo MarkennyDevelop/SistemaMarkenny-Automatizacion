@@ -67,12 +67,13 @@ describe('esquemas', () => {
     maquina: 'Heidelberg SM 52',
     cantidad: 1000,
     sustrato: 'Bond 75 g',
-    tintas: ['Pantone 032 C'],
+    tintas: ['Negro'],
     acabados: ['Numerado'],
     especificaciones: {
       nombreDocumento: 'Factura', tipoDocumento: 'F', formato: 'TALONARIO', partes: 2, numeracionDesde: 1,
-      numeracionHasta: 1000, numeracionPrefijo: '00-', tipoPapel: 'QUIMICO', tamano: 'MEDIA_CARTA',
-      coloresTinta: ['PANTONE'], pantone: 'Pantone 032 C',
+      numeracionHasta: 1000, numeroControlPrefijo: '00-', numeroControlDesde: 1, numeroControlHasta: 1000,
+      orientacion: 'VERTICAL', perforacion: true, tipoPapel: 'QUIMICO', tamano: 'MEDIA_CARTA',
+      coloresTinta: ['NEGRO', 'OTRO'], colorTintaOtro: 'Dorado',
     },
     montoTotal: 120.5,
     fechaEntrega: '2026-11-25T16:00:00.000Z',
@@ -99,8 +100,32 @@ describe('esquemas', () => {
     const r = NuevaOrdenSchema.safeParse({ ...orden, especificaciones: { partes: 2 } });
     expect(r.success).toBe(false);
     expect(r.error.issues.map((i) => i.path.at(-1))).toEqual(expect.arrayContaining(['tipoDocumento', 'formato', 'tipoPapel', 'tamano']));
-    const pantoneSinCodigo = NuevaOrdenSchema.safeParse({ ...orden, especificaciones: { ...orden.especificaciones, pantone: undefined } });
-    expect(pantoneSinCodigo.error.issues[0].path).toEqual(['especificaciones', 'pantone']);
+    const otroSinNombre = NuevaOrdenSchema.safeParse({ ...orden, especificaciones: { ...orden.especificaciones, colorTintaOtro: undefined } });
+    expect(otroSinNombre.error.issues[0].path).toEqual(['especificaciones', 'colorTintaOtro']);
+  });
+
+  it('valida el número de control del pie de página por separado', () => {
+    const r = NuevaOrdenSchema.safeParse({
+      ...orden,
+      especificaciones: { ...orden.especificaciones, numeroControlDesde: 900, numeroControlHasta: 10 },
+    });
+    expect(r.error.issues[0].path).toEqual(['especificaciones', 'numeroControlHasta']);
+  });
+
+  it('el engomado solo aplica a blocks', () => {
+    const talonario = { ...orden, especificaciones: { ...orden.especificaciones, engomado: 'ARRIBA' } };
+    expect(NuevaOrdenSchema.safeParse(talonario).success).toBe(false);
+    const block = { ...orden, especificaciones: { ...orden.especificaciones, formato: 'BLOCK', engomado: 'IZQUIERDA' } };
+    expect(NuevaOrdenSchema.safeParse(block).success).toBe(true);
+  });
+
+  it('las tarjetas de presentación no exigen talonario/block ni partes, y admiten tamaño tabloide', () => {
+    const tarjetas = {
+      ...orden,
+      especificaciones: { nombreDocumento: 'Tarjetas', tipoDocumento: 'TARJETAS', tipoPapel: 'BRISTOL', tamano: 'TABLOIDE', coloresTinta: ['A_COLOR'] },
+    };
+    expect(NuevaOrdenSchema.safeParse(tarjetas).success).toBe(true);
+    expect(productoTerminadoDe('PAPELERIA', tarjetas.especificaciones)).toBe('TARJETAS_PRESENTACION');
   });
 
   it('pendones y stickers solo admiten laminado mate, brillante y corte con plotter', () => {

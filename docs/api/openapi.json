@@ -1588,6 +1588,7 @@
                           "PLIEGO_STICKERS",
                           "TALONARIO",
                           "BLOCK",
+                          "TARJETAS_PRESENTACION",
                           "SELLO_PERSONALIZADO",
                           "PENDON",
                           "VINIL_ROTULACION"
@@ -1647,6 +1648,7 @@
                               "NE",
                               "RM",
                               "F",
+                              "TARJETAS",
                               "OTRO"
                             ]
                           },
@@ -1683,15 +1685,29 @@
                             "type": "string",
                             "maxLength": 12
                           },
-                          "perforacion": {
-                            "type": "boolean"
+                          "numeroControlDesde": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9007199254740991
                           },
-                          "perforacionOrientacion": {
+                          "numeroControlHasta": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9007199254740991
+                          },
+                          "numeroControlPrefijo": {
+                            "type": "string",
+                            "maxLength": 12
+                          },
+                          "orientacion": {
                             "type": "string",
                             "enum": [
                               "HORIZONTAL",
                               "VERTICAL"
                             ]
+                          },
+                          "perforacion": {
+                            "type": "boolean"
                           },
                           "engomado": {
                             "type": "string",
@@ -1710,12 +1726,11 @@
                             ]
                           },
                           "coloresTinta": {
-                            "maxItems": 7,
+                            "maxItems": 6,
                             "type": "array",
                             "items": {
                               "type": "string",
                               "enum": [
-                                "PANTONE",
                                 "NEGRO",
                                 "AZUL",
                                 "VERDE",
@@ -1724,10 +1739,6 @@
                                 "OTRO"
                               ]
                             }
-                          },
-                          "pantone": {
-                            "type": "string",
-                            "maxLength": 40
                           },
                           "colorTintaOtro": {
                             "type": "string",
@@ -1755,6 +1766,7 @@
                               "CUARTO_CARTA",
                               "MEDIA_CARTA",
                               "CARTA",
+                              "TABLOIDE",
                               "OTRO"
                             ]
                           },
@@ -2139,6 +2151,7 @@
                       "PLIEGO_STICKERS",
                       "TALONARIO",
                       "BLOCK",
+                      "TARJETAS_PRESENTACION",
                       "SELLO_PERSONALIZADO",
                       "PENDON",
                       "VINIL_ROTULACION"
@@ -2200,6 +2213,7 @@
                           "NE",
                           "RM",
                           "F",
+                          "TARJETAS",
                           "OTRO"
                         ]
                       },
@@ -2236,15 +2250,29 @@
                         "type": "string",
                         "maxLength": 12
                       },
-                      "perforacion": {
-                        "type": "boolean"
+                      "numeroControlDesde": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991
                       },
-                      "perforacionOrientacion": {
+                      "numeroControlHasta": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991
+                      },
+                      "numeroControlPrefijo": {
+                        "type": "string",
+                        "maxLength": 12
+                      },
+                      "orientacion": {
                         "type": "string",
                         "enum": [
                           "HORIZONTAL",
                           "VERTICAL"
                         ]
+                      },
+                      "perforacion": {
+                        "type": "boolean"
                       },
                       "engomado": {
                         "type": "string",
@@ -2263,12 +2291,11 @@
                         ]
                       },
                       "coloresTinta": {
-                        "maxItems": 7,
+                        "maxItems": 6,
                         "type": "array",
                         "items": {
                           "type": "string",
                           "enum": [
-                            "PANTONE",
                             "NEGRO",
                             "AZUL",
                             "VERDE",
@@ -2277,10 +2304,6 @@
                             "OTRO"
                           ]
                         }
-                      },
-                      "pantone": {
-                        "type": "string",
-                        "maxLength": 40
                       },
                       "colorTintaOtro": {
                         "type": "string",
@@ -2308,6 +2331,7 @@
                           "CUARTO_CARTA",
                           "MEDIA_CARTA",
                           "CARTA",
+                          "TABLOIDE",
                           "OTRO"
                         ]
                       },
@@ -2467,6 +2491,7 @@
                         "PLIEGO_STICKERS",
                         "TALONARIO",
                         "BLOCK",
+                        "TARJETAS_PRESENTACION",
                         "SELLO_PERSONALIZADO",
                         "PENDON",
                         "VINIL_ROTULACION"
@@ -2526,6 +2551,7 @@
                             "NE",
                             "RM",
                             "F",
+                            "TARJETAS",
                             "OTRO"
                           ]
                         },
@@ -2562,15 +2588,29 @@
                           "type": "string",
                           "maxLength": 12
                         },
-                        "perforacion": {
-                          "type": "boolean"
+                        "numeroControlDesde": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
                         },
-                        "perforacionOrientacion": {
+                        "numeroControlHasta": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "numeroControlPrefijo": {
+                          "type": "string",
+                          "maxLength": 12
+                        },
+                        "orientacion": {
                           "type": "string",
                           "enum": [
                             "HORIZONTAL",
                             "VERTICAL"
                           ]
+                        },
+                        "perforacion": {
+                          "type": "boolean"
                         },
                         "engomado": {
                           "type": "string",
@@ -2589,12 +2629,11 @@
                           ]
                         },
                         "coloresTinta": {
-                          "maxItems": 7,
+                          "maxItems": 6,
                           "type": "array",
                           "items": {
                             "type": "string",
                             "enum": [
-                              "PANTONE",
                               "NEGRO",
                               "AZUL",
                               "VERDE",
@@ -2603,10 +2642,6 @@
                               "OTRO"
                             ]
                           }
-                        },
-                        "pantone": {
-                          "type": "string",
-                          "maxLength": 40
                         },
                         "colorTintaOtro": {
                           "type": "string",
@@ -2634,6 +2669,7 @@
                             "CUARTO_CARTA",
                             "MEDIA_CARTA",
                             "CARTA",
+                            "TABLOIDE",
                             "OTRO"
                           ]
                         },
@@ -3066,6 +3102,7 @@
                         "PLIEGO_STICKERS",
                         "TALONARIO",
                         "BLOCK",
+                        "TARJETAS_PRESENTACION",
                         "SELLO_PERSONALIZADO",
                         "PENDON",
                         "VINIL_ROTULACION"
@@ -3125,6 +3162,7 @@
                             "NE",
                             "RM",
                             "F",
+                            "TARJETAS",
                             "OTRO"
                           ]
                         },
@@ -3161,15 +3199,29 @@
                           "type": "string",
                           "maxLength": 12
                         },
-                        "perforacion": {
-                          "type": "boolean"
+                        "numeroControlDesde": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
                         },
-                        "perforacionOrientacion": {
+                        "numeroControlHasta": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "numeroControlPrefijo": {
+                          "type": "string",
+                          "maxLength": 12
+                        },
+                        "orientacion": {
                           "type": "string",
                           "enum": [
                             "HORIZONTAL",
                             "VERTICAL"
                           ]
+                        },
+                        "perforacion": {
+                          "type": "boolean"
                         },
                         "engomado": {
                           "type": "string",
@@ -3188,12 +3240,11 @@
                           ]
                         },
                         "coloresTinta": {
-                          "maxItems": 7,
+                          "maxItems": 6,
                           "type": "array",
                           "items": {
                             "type": "string",
                             "enum": [
-                              "PANTONE",
                               "NEGRO",
                               "AZUL",
                               "VERDE",
@@ -3202,10 +3253,6 @@
                               "OTRO"
                             ]
                           }
-                        },
-                        "pantone": {
-                          "type": "string",
-                          "maxLength": 40
                         },
                         "colorTintaOtro": {
                           "type": "string",
@@ -3233,6 +3280,7 @@
                             "CUARTO_CARTA",
                             "MEDIA_CARTA",
                             "CARTA",
+                            "TABLOIDE",
                             "OTRO"
                           ]
                         },
@@ -3688,6 +3736,7 @@
                         "PLIEGO_STICKERS",
                         "TALONARIO",
                         "BLOCK",
+                        "TARJETAS_PRESENTACION",
                         "SELLO_PERSONALIZADO",
                         "PENDON",
                         "VINIL_ROTULACION"
@@ -3747,6 +3796,7 @@
                             "NE",
                             "RM",
                             "F",
+                            "TARJETAS",
                             "OTRO"
                           ]
                         },
@@ -3783,15 +3833,29 @@
                           "type": "string",
                           "maxLength": 12
                         },
-                        "perforacion": {
-                          "type": "boolean"
+                        "numeroControlDesde": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
                         },
-                        "perforacionOrientacion": {
+                        "numeroControlHasta": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "numeroControlPrefijo": {
+                          "type": "string",
+                          "maxLength": 12
+                        },
+                        "orientacion": {
                           "type": "string",
                           "enum": [
                             "HORIZONTAL",
                             "VERTICAL"
                           ]
+                        },
+                        "perforacion": {
+                          "type": "boolean"
                         },
                         "engomado": {
                           "type": "string",
@@ -3810,12 +3874,11 @@
                           ]
                         },
                         "coloresTinta": {
-                          "maxItems": 7,
+                          "maxItems": 6,
                           "type": "array",
                           "items": {
                             "type": "string",
                             "enum": [
-                              "PANTONE",
                               "NEGRO",
                               "AZUL",
                               "VERDE",
@@ -3824,10 +3887,6 @@
                               "OTRO"
                             ]
                           }
-                        },
-                        "pantone": {
-                          "type": "string",
-                          "maxLength": 40
                         },
                         "colorTintaOtro": {
                           "type": "string",
@@ -3855,6 +3914,7 @@
                             "CUARTO_CARTA",
                             "MEDIA_CARTA",
                             "CARTA",
+                            "TABLOIDE",
                             "OTRO"
                           ]
                         },
@@ -4332,6 +4392,7 @@
                         "PLIEGO_STICKERS",
                         "TALONARIO",
                         "BLOCK",
+                        "TARJETAS_PRESENTACION",
                         "SELLO_PERSONALIZADO",
                         "PENDON",
                         "VINIL_ROTULACION"
@@ -4391,6 +4452,7 @@
                             "NE",
                             "RM",
                             "F",
+                            "TARJETAS",
                             "OTRO"
                           ]
                         },
@@ -4427,15 +4489,29 @@
                           "type": "string",
                           "maxLength": 12
                         },
-                        "perforacion": {
-                          "type": "boolean"
+                        "numeroControlDesde": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
                         },
-                        "perforacionOrientacion": {
+                        "numeroControlHasta": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "numeroControlPrefijo": {
+                          "type": "string",
+                          "maxLength": 12
+                        },
+                        "orientacion": {
                           "type": "string",
                           "enum": [
                             "HORIZONTAL",
                             "VERTICAL"
                           ]
+                        },
+                        "perforacion": {
+                          "type": "boolean"
                         },
                         "engomado": {
                           "type": "string",
@@ -4454,12 +4530,11 @@
                           ]
                         },
                         "coloresTinta": {
-                          "maxItems": 7,
+                          "maxItems": 6,
                           "type": "array",
                           "items": {
                             "type": "string",
                             "enum": [
-                              "PANTONE",
                               "NEGRO",
                               "AZUL",
                               "VERDE",
@@ -4468,10 +4543,6 @@
                               "OTRO"
                             ]
                           }
-                        },
-                        "pantone": {
-                          "type": "string",
-                          "maxLength": 40
                         },
                         "colorTintaOtro": {
                           "type": "string",
@@ -4499,6 +4570,7 @@
                             "CUARTO_CARTA",
                             "MEDIA_CARTA",
                             "CARTA",
+                            "TABLOIDE",
                             "OTRO"
                           ]
                         },
@@ -5761,6 +5833,7 @@
                 "PLIEGO_STICKERS",
                 "TALONARIO",
                 "BLOCK",
+                "TARJETAS_PRESENTACION",
                 "SELLO_PERSONALIZADO",
                 "PENDON",
                 "VINIL_ROTULACION"
@@ -5808,6 +5881,7 @@
                           "PLIEGO_STICKERS",
                           "TALONARIO",
                           "BLOCK",
+                          "TARJETAS_PRESENTACION",
                           "SELLO_PERSONALIZADO",
                           "PENDON",
                           "VINIL_ROTULACION"
@@ -6055,6 +6129,7 @@
                         "PLIEGO_STICKERS",
                         "TALONARIO",
                         "BLOCK",
+                        "TARJETAS_PRESENTACION",
                         "SELLO_PERSONALIZADO",
                         "PENDON",
                         "VINIL_ROTULACION"

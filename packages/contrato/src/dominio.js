@@ -86,21 +86,30 @@ export const TIPOS_GRAN_FORMATO = Object.freeze(/** @type {const} */ ([
 export const UNIDADES_DIMENSION = Object.freeze(/** @type {const} */ (['cm', 'm']));
 
 /** Datos fiscales impresos en la orden de trabajo. */
-export const EMPRESA = Object.freeze({ nombre: 'MARKENNY, C.A.', rif: 'J-50106023-1' });
+export const EMPRESA = Object.freeze({
+  nombre: 'MARKENNY, C.A.',
+  rif: 'J-50106023-1',
+  domicilioFiscal: 'Calle Las Mercedes, local nro S/N, sector Los Tamarindos, Nº 32, Valencia, Carabobo, zona postal 2003',
+  email: 'markennyca@gmail.com',
+  telefono: '0424-417.91.20',
+  instagram: '@markennyca',
+});
 
 /* ---- Formato físico de la Orden de Trabajo de papelería corporativa ---- */
 
-/** Tipo de documento: NE. (nota de entrega), RM. (récipe médico), F. (factura) u otro. */
-export const TIPOS_DOCUMENTO = Object.freeze(/** @type {const} */ (['NE', 'RM', 'F', 'OTRO']));
+/** Tipo de trabajo: NE. (nota de entrega), RM. (récipe médico), F. (factura), tarjetas de presentación u otro. */
+export const TIPOS_DOCUMENTO = Object.freeze(/** @type {const} */ (['NE', 'RM', 'F', 'TARJETAS', 'OTRO']));
 /** Presentación: talonario o block. */
 export const FORMATOS_PAPELERIA = Object.freeze(/** @type {const} */ (['TALONARIO', 'BLOCK']));
-export const ORIENTACIONES_PERFORACION = Object.freeze(/** @type {const} */ (['HORIZONTAL', 'VERTICAL']));
+/** Vista del trabajo (orientación de la hoja). */
+export const ORIENTACIONES = Object.freeze(/** @type {const} */ (['HORIZONTAL', 'VERTICAL']));
 export const LUGARES_ENGOMADO = Object.freeze(/** @type {const} */ (['ARRIBA', 'ABAJO', 'DERECHA', 'IZQUIERDA']));
 export const LAMINADOS = Object.freeze(/** @type {const} */ (['BRILLANTE', 'MATE']));
-export const COLORES_TINTA = Object.freeze(/** @type {const} */ (['PANTONE', 'NEGRO', 'AZUL', 'VERDE', 'ROJO', 'A_COLOR', 'OTRO']));
+/** Color de tinta (columna "Pantone" del formato). */
+export const COLORES_TINTA = Object.freeze(/** @type {const} */ (['NEGRO', 'AZUL', 'VERDE', 'ROJO', 'A_COLOR', 'OTRO']));
 /** Papeles que Markenny maneja en almacén (subtipo de los materiales PAPEL). */
 export const TIPOS_PAPEL = Object.freeze(/** @type {const} */ (['QUIMICO', 'BOND', 'GLASSE', 'BRISTOL', 'OPALINA', 'FOTOGRAFICO']));
-export const TAMANOS_PAPELERIA = Object.freeze(/** @type {const} */ (['CUARTO_CARTA', 'MEDIA_CARTA', 'CARTA', 'OTRO']));
+export const TAMANOS_PAPELERIA = Object.freeze(/** @type {const} */ (['CUARTO_CARTA', 'MEDIA_CARTA', 'CARTA', 'TABLOIDE', 'OTRO']));
 
 /** Únicos acabados del servicio de pendones y stickers (impresión y corte con plotter). */
 export const ACABADOS_GRAN_FORMATO = Object.freeze(/** @type {const} */ (['Laminado mate', 'Laminado brillante', 'Corte con plotter']));
@@ -128,7 +137,7 @@ export function stockTrasMovimiento(stock, tipo, cantidad) {
 
 /** Productos terminados que se fabrican con esos insumos y esperan entrega en almacén. */
 export const TIPOS_PRODUCTO_TERMINADO = Object.freeze(/** @type {const} */ ([
-  'PLIEGO_STICKERS', 'TALONARIO', 'BLOCK', 'SELLO_PERSONALIZADO', 'PENDON', 'VINIL_ROTULACION',
+  'PLIEGO_STICKERS', 'TALONARIO', 'BLOCK', 'TARJETAS_PRESENTACION', 'SELLO_PERSONALIZADO', 'PENDON', 'VINIL_ROTULACION',
 ]));
 
 /**
@@ -136,7 +145,10 @@ export const TIPOS_PRODUCTO_TERMINADO = Object.freeze(/** @type {const} */ ([
  * papelería -> talonario o block; pendones y stickers según la pieza.
  */
 export function productoTerminadoDe(categoriaTrabajo, especificaciones = {}) {
-  if (categoriaTrabajo === 'PAPELERIA') return especificaciones.formato === 'BLOCK' ? 'BLOCK' : 'TALONARIO';
+  if (categoriaTrabajo === 'PAPELERIA') {
+    if (especificaciones.tipoDocumento === 'TARJETAS') return 'TARJETAS_PRESENTACION';
+    return especificaciones.formato === 'BLOCK' ? 'BLOCK' : 'TALONARIO';
+  }
   if (categoriaTrabajo === 'GRAN_FORMATO') {
     if (especificaciones.tipoGranFormato === 'STICKER') return 'PLIEGO_STICKERS';
     if (especificaciones.tipoGranFormato === 'PENDON' || especificaciones.tipoGranFormato === 'LONA') return 'PENDON';
