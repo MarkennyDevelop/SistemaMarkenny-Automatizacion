@@ -23,7 +23,7 @@ import {
   TIPOS_PRODUCTO_TERMINADO,
   TIPOS_DOCUMENTO,
   FORMATOS_PAPELERIA,
-  ORIENTACIONES_PERFORACION,
+  ORIENTACIONES,
   LUGARES_ENGOMADO,
   LAMINADOS,
   COLORES_TINTA,
@@ -169,16 +169,21 @@ export const EspecificacionesSchema = z
     dobleCara: z.boolean().optional(),
     /** 1 a 4 partes, u "Otros" hasta 10. */
     partes: z.number().int().min(1).max(10).optional(),
+    /** "N°" del encabezado de cada hoja. */
     numeracionDesde: z.number().int().min(0).optional(),
     numeracionHasta: z.number().int().min(0).optional(),
     numeracionPrefijo: textoOpcional(12),
+    /** Número de control del pie de página ("00-"). */
+    numeroControlDesde: z.number().int().min(0).optional(),
+    numeroControlHasta: z.number().int().min(0).optional(),
+    numeroControlPrefijo: textoOpcional(12),
+    /** Vista del trabajo: horizontal o vertical. */
+    orientacion: z.enum(ORIENTACIONES).optional(),
     perforacion: z.boolean().optional(),
-    perforacionOrientacion: z.enum(ORIENTACIONES_PERFORACION).optional(),
+    /** Solo en blocks. */
     engomado: z.enum(LUGARES_ENGOMADO).optional(),
     laminado: z.enum(LAMINADOS).optional(),
     coloresTinta: z.array(z.enum(COLORES_TINTA)).max(COLORES_TINTA.length).optional(),
-    /** Referencia Pantone cuando se marca "Pantone". */
-    pantone: textoOpcional(40),
     colorTintaOtro: textoOpcional(40),
     tipoPapel: z.enum([...TIPOS_PAPEL, 'OTRO']).optional(),
     tipoPapelOtro: textoOpcional(60),
@@ -210,9 +215,13 @@ export const EspecificacionesSchema = z
     exigir(e.tipoDocumento === 'OTRO' && !e.tipoDocumentoOtro, 'tipoDocumentoOtro', 'Indica qué documento es');
     exigir(e.tipoPapel === 'OTRO' && !e.tipoPapelOtro, 'tipoPapelOtro', 'Indica qué papel');
     exigir(e.tamano === 'OTRO' && !e.tamanoOtro, 'tamanoOtro', 'Indica el tamaño');
-    exigir(Boolean(e.coloresTinta?.includes('PANTONE')) && !e.pantone, 'pantone', 'Indica la referencia Pantone');
     exigir(Boolean(e.coloresTinta?.includes('OTRO')) && !e.colorTintaOtro, 'colorTintaOtro', 'Indica el color');
-    exigir(e.perforacion === true && !e.perforacionOrientacion, 'perforacionOrientacion', 'Indica si es horizontal o vertical');
+    exigir(
+      e.numeroControlDesde !== undefined && e.numeroControlHasta !== undefined && e.numeroControlHasta < e.numeroControlDesde,
+      'numeroControlHasta',
+      'El número de control final debe ser mayor o igual al inicial',
+    );
+    exigir(e.engomado !== undefined && e.formato !== 'BLOCK', 'engomado', 'El engomado solo aplica a blocks');
   });
 
 export const EventoOrdenSchema = z.object({
@@ -321,7 +330,11 @@ export const NuevaOrdenSchema = z
       }
     }
     if (o.categoriaTrabajo === 'PAPELERIA') {
-      for (const campo of ['tipoDocumento', 'formato', 'partes', 'tipoPapel', 'tamano']) {
+      // Las tarjetas de presentación no son talonario ni block.
+      const obligatorios = o.especificaciones?.tipoDocumento === 'TARJETAS'
+        ? ['tipoDocumento', 'tipoPapel', 'tamano']
+        : ['tipoDocumento', 'formato', 'partes', 'tipoPapel', 'tamano'];
+      for (const campo of obligatorios) {
         if (o.especificaciones?.[campo] === undefined) {
           ctx.addIssue({ code: 'custom', path: ['especificaciones', campo], message: 'Campo obligatorio de la orden de papelería' });
         }
