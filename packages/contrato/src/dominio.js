@@ -18,13 +18,16 @@ export const FASES = Object.freeze(/** @type {const} */ (['EN_PROCESO', 'EN_REVI
 export const FASE_INICIAL = 'EN_PROCESO';
 
 /**
- * Transiciones permitidas. Se avanza de una en una; la única vuelta atrás es
- * el rechazo de calidad EN_REVISION -> EN_PROCESO (retrabajo), que exige motivo.
+ * Transiciones permitidas. Se avanza de una en una. La única vuelta atrás es
+ * el retrabajo hacia EN_PROCESO: desde EN_REVISION (calidad rechaza) o desde
+ * FINALIZADO (se detecta un defecto o daño antes de empaquetar). El retrabajo
+ * exige motivo y solo lo autorizan Producción o Administración; la orden debe
+ * volver a pasar por revisión antes de finalizar otra vez.
  */
 export const TRANSICIONES = Object.freeze({
   EN_PROCESO: Object.freeze(/** @type {const} */ (['EN_REVISION'])),
   EN_REVISION: Object.freeze(/** @type {const} */ (['FINALIZADO', 'EN_PROCESO'])),
-  FINALIZADO: Object.freeze(/** @type {const} */ (['EMPAQUETADO'])),
+  FINALIZADO: Object.freeze(/** @type {const} */ (['EMPAQUETADO', 'EN_PROCESO'])),
   EMPAQUETADO: Object.freeze(/** @type {const} */ ([])),
 });
 
@@ -33,10 +36,18 @@ export function transicionPermitida(desde, hacia) {
   return Object.hasOwn(TRANSICIONES, desde) && TRANSICIONES[desde].includes(hacia);
 }
 
-/** Retrabajo: vuelve a planta y exige el motivo del rechazo. */
-export function requiereMotivo(desde, hacia) {
-  return desde === 'EN_REVISION' && hacia === 'EN_PROCESO';
+/** Retrabajo: la orden vuelve a EN_PROCESO desde una fase posterior. */
+export function esRetrabajo(desde, hacia) {
+  return hacia === 'EN_PROCESO' && (desde === 'EN_REVISION' || desde === 'FINALIZADO');
 }
+
+/** Todo retrabajo exige el motivo (defecto, daño o rechazo de calidad). */
+export function requiereMotivo(desde, hacia) {
+  return esRetrabajo(desde, hacia);
+}
+
+/** Roles que pueden cambiar la fase de una orden (avanzar o devolver a retrabajo). */
+export const ROLES_CAMBIO_FASE = Object.freeze(/** @type {const} */ (['PRODUCCION', 'ADMIN']));
 
 /** Fase siguiente del camino normal, o `null` si la orden ya está empaquetada. */
 export function siguienteFase(fase) {
@@ -69,24 +80,41 @@ export const ESTADOS_ENTREGA = Object.freeze(/** @type {const} */ (['NO_APLICA',
 export const TECNOLOGIAS = Object.freeze(/** @type {const} */ (['OFFSET', 'DIGITAL', 'GRAN_FORMATO', 'FLEXOGRAFIA']));
 export const PRIORIDADES = Object.freeze(/** @type {const} */ (['BAJA', 'MEDIA', 'ALTA', 'URGENTE']));
 export const CATEGORIAS_TRABAJO = Object.freeze(/** @type {const} */ (['PAPELERIA', 'GRAN_FORMATO', 'GENERAL']));
-export const TIPOS_PAPELERIA = Object.freeze(/** @type {const} */ ([
-  'FACTURA', 'TALONARIO', 'RECIPE', 'NOTA', 'ORDEN_COMPRA', 'RECIBO', 'CARTA', 'OTRO',
-]));
 export const TIPOS_GRAN_FORMATO = Object.freeze(/** @type {const} */ ([
   'PENDON', 'STICKER', 'VINIL', 'LONA', 'BACKING', 'ROTULO', 'OTRO',
 ]));
 export const UNIDADES_DIMENSION = Object.freeze(/** @type {const} */ (['cm', 'm']));
 
+/** Datos fiscales impresos en la orden de trabajo. */
+export const EMPRESA = Object.freeze({ nombre: 'MARKENNY, C.A.', rif: 'J-50106023-1' });
+
+/* ---- Formato físico de la Orden de Trabajo de papelería corporativa ---- */
+
+/** Tipo de documento: NE. (nota de entrega), RM. (récipe médico), F. (factura) u otro. */
+export const TIPOS_DOCUMENTO = Object.freeze(/** @type {const} */ (['NE', 'RM', 'F', 'OTRO']));
+/** Presentación: talonario o block. */
+export const FORMATOS_PAPELERIA = Object.freeze(/** @type {const} */ (['TALONARIO', 'BLOCK']));
+export const ORIENTACIONES_PERFORACION = Object.freeze(/** @type {const} */ (['HORIZONTAL', 'VERTICAL']));
+export const LUGARES_ENGOMADO = Object.freeze(/** @type {const} */ (['ARRIBA', 'ABAJO', 'DERECHA', 'IZQUIERDA']));
+export const LAMINADOS = Object.freeze(/** @type {const} */ (['BRILLANTE', 'MATE']));
+export const COLORES_TINTA = Object.freeze(/** @type {const} */ (['PANTONE', 'NEGRO', 'AZUL', 'VERDE', 'ROJO', 'A_COLOR', 'OTRO']));
+/** Papeles que Markenny maneja en almacén (subtipo de los materiales PAPEL). */
+export const TIPOS_PAPEL = Object.freeze(/** @type {const} */ (['QUIMICO', 'BOND', 'GLASSE', 'BRISTOL', 'OPALINA', 'FOTOGRAFICO']));
+export const TAMANOS_PAPELERIA = Object.freeze(/** @type {const} */ (['CUARTO_CARTA', 'MEDIA_CARTA', 'CARTA', 'OTRO']));
+
+/** Únicos acabados del servicio de pendones y stickers (impresión y corte con plotter). */
+export const ACABADOS_GRAN_FORMATO = Object.freeze(/** @type {const} */ (['Laminado mate', 'Laminado brillante', 'Corte con plotter']));
+
 /* ------------------------------------------------------------------ */
 /* Inventario                                                          */
 /* ------------------------------------------------------------------ */
 
-export const CATEGORIAS_INVENTARIO = Object.freeze(/** @type {const} */ ([
-  'PAPEL', 'TINTAS', 'PLANCHAS', 'VINILOS', 'SELLOS', 'ALMACEN',
-]));
-export const UNIDADES_MEDIDA = Object.freeze(/** @type {const} */ ([
-  'resma', 'pliego', 'kg', 'litro', 'unidad', 'rollo', 'caja',
-]));
+/**
+ * Materias primas de Markenny. El inventario NO registra maquinaria ni
+ * equipos (impresoras, plotters...): solo insumos que se consumen.
+ */
+export const CATEGORIAS_INVENTARIO = Object.freeze(/** @type {const} */ (['PAPEL', 'VINIL', 'LONA', 'SELLO']));
+export const UNIDADES_MEDIDA = Object.freeze(/** @type {const} */ (['resma', 'pliego', 'unidad', 'rollo', 'metro', 'caja']));
 export const TIPOS_MOVIMIENTO = Object.freeze(/** @type {const} */ (['ENTRADA', 'SALIDA', 'AJUSTE', 'RESERVA']));
 
 /**
@@ -98,8 +126,24 @@ export function stockTrasMovimiento(stock, tipo, cantidad) {
   return tipo === 'ENTRADA' ? stock + cantidad : stock - cantidad;
 }
 
-/** Productos guardados en almacén a la espera de entrega. */
-export const TIPOS_PRODUCTO_TERMINADO = Object.freeze(/** @type {const} */ (['SELLO', 'PRODUCTO_TERMINADO']));
+/** Productos terminados que se fabrican con esos insumos y esperan entrega en almacén. */
+export const TIPOS_PRODUCTO_TERMINADO = Object.freeze(/** @type {const} */ ([
+  'PLIEGO_STICKERS', 'TALONARIO', 'BLOCK', 'SELLO_PERSONALIZADO', 'PENDON', 'VINIL_ROTULACION',
+]));
+
+/**
+ * Producto terminado que resulta de una orden cuando la ficha no lo indica:
+ * papelería -> talonario o block; pendones y stickers según la pieza.
+ */
+export function productoTerminadoDe(categoriaTrabajo, especificaciones = {}) {
+  if (categoriaTrabajo === 'PAPELERIA') return especificaciones.formato === 'BLOCK' ? 'BLOCK' : 'TALONARIO';
+  if (categoriaTrabajo === 'GRAN_FORMATO') {
+    if (especificaciones.tipoGranFormato === 'STICKER') return 'PLIEGO_STICKERS';
+    if (especificaciones.tipoGranFormato === 'PENDON' || especificaciones.tipoGranFormato === 'LONA') return 'PENDON';
+    return 'VINIL_ROTULACION';
+  }
+  return 'TALONARIO';
+}
 
 /* ------------------------------------------------------------------ */
 /* Notificaciones                                                      */

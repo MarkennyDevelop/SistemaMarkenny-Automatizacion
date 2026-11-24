@@ -15,6 +15,10 @@ import {
   transicionPermitida,
   FiltroProductosTerminadosSchema,
   LoginSchema,
+  ROLES_CAMBIO_FASE,
+  NuevoMaterialSchema,
+  productoTerminadoDe,
+  CATEGORIAS_INVENTARIO,
 } from '../src/index.js';
 import { generarOpenApi } from '../src/openapi.js';
 
@@ -26,15 +30,20 @@ describe('reglas de fases', () => {
     expect(Object.keys(TRANSICIONES)).toEqual(FASES);
   });
 
-  it('solo se avanza de una en una; el único retroceso es el retrabajo', () => {
+  it('solo se avanza de una en una; el único retroceso es el retrabajo hacia EN_PROCESO', () => {
     const permitidas = FASES.flatMap((d) => FASES.filter((h) => transicionPermitida(d, h)).map((h) => `${d}>${h}`));
     expect(permitidas).toEqual([
       'EN_PROCESO>EN_REVISION',
       'EN_REVISION>EN_PROCESO',
       'EN_REVISION>FINALIZADO',
+      'FINALIZADO>EN_PROCESO',
       'FINALIZADO>EMPAQUETADO',
     ]);
     expect(requiereMotivo('EN_REVISION', 'EN_PROCESO')).toBe(true);
+    expect(requiereMotivo('FINALIZADO', 'EN_PROCESO')).toBe(true);
+    expect(transicionPermitida('FINALIZADO', 'EN_REVISION')).toBe(false);
+    expect(transicionPermitida('EMPAQUETADO', 'EN_PROCESO')).toBe(false);
+    expect(ROLES_CAMBIO_FASE).toEqual(['PRODUCCION', 'ADMIN']);
     expect(requiereMotivo('EN_PROCESO', 'EN_REVISION')).toBe(false);
     expect(siguienteFase('FINALIZADO')).toBe('EMPAQUETADO');
     expect(siguienteFase('EMPAQUETADO')).toBeNull();
@@ -60,7 +69,11 @@ describe('esquemas', () => {
     sustrato: 'Bond 75 g',
     tintas: ['Pantone 032 C'],
     acabados: ['Numerado'],
-    especificaciones: { tipoPapeleria: 'FACTURA', partes: 2, numeracionDesde: 1, numeracionHasta: 1000 },
+    especificaciones: {
+      nombreDocumento: 'Factura', tipoDocumento: 'F', formato: 'TALONARIO', partes: 2, numeracionDesde: 1,
+      numeracionHasta: 1000, numeracionPrefijo: '00-', tipoPapel: 'QUIMICO', tamano: 'MEDIA_CARTA',
+      coloresTinta: ['PANTONE'], pantone: 'Pantone 032 C',
+    },
     montoTotal: 120.5,
     fechaEntrega: '2026-11-25T16:00:00.000Z',
   };
@@ -77,9 +90,40 @@ describe('esquemas', () => {
   it('valida la numeración de talonarios', () => {
     const r = NuevaOrdenSchema.safeParse({
       ...orden,
-      especificaciones: { numeracionDesde: 500, numeracionHasta: 10 },
+      especificaciones: { ...orden.especificaciones, numeracionDesde: 500, numeracionHasta: 10 },
     });
     expect(r.success).toBe(false);
+  });
+
+  it('la orden de papelería exige los campos del formato físico', () => {
+    const r = NuevaOrdenSchema.safeParse({ ...orden, especificaciones: { partes: 2 } });
+    expect(r.success).toBe(false);
+    expect(r.error.issues.map((i) => i.path.at(-1))).toEqual(expect.arrayContaining(['tipoDocumento', 'formato', 'tipoPapel', 'tamano']));
+    const pantoneSinCodigo = NuevaOrdenSchema.safeParse({ ...orden, especificaciones: { ...orden.especificaciones, pantone: undefined } });
+    expect(pantoneSinCodigo.error.issues[0].path).toEqual(['especificaciones', 'pantone']);
+  });
+
+  it('pendones y stickers solo admiten laminado mate, brillante y corte con plotter', () => {
+    const gf = { ...orden, categoriaTrabajo: 'GRAN_FORMATO', especificaciones: { tipoGranFormato: 'PENDON' } };
+    expect(NuevaOrdenSchema.safeParse({ ...gf, acabados: ['Corte con plotter', 'Laminado mate'] }).success).toBe(true);
+    expect(NuevaOrdenSchema.safeParse({ ...gf, acabados: ['Ojales metálicos'] }).success).toBe(false);
+  });
+
+  it('el inventario solo admite materias primas; el papel lleva su tipo', () => {
+    expect(CATEGORIAS_INVENTARIO).toEqual(['PAPEL', 'VINIL', 'LONA', 'SELLO']);
+    const base = { sku: 'PAP-1', nombre: 'Bond 75', categoria: 'PAPEL', unidad: 'resma' };
+    expect(NuevoMaterialSchema.safeParse(base).success).toBe(false);
+    expect(NuevoMaterialSchema.safeParse({ ...base, subtipo: 'BOND' }).success).toBe(true);
+    expect(NuevoMaterialSchema.safeParse({ ...base, categoria: 'PLANCHAS', subtipo: 'BOND' }).success).toBe(false);
+    expect(NuevoMaterialSchema.safeParse({ ...base, categoria: 'VINIL', subtipo: 'BOND' }).success).toBe(false);
+  });
+
+  it('deduce el producto terminado de la ficha', () => {
+    expect(productoTerminadoDe('PAPELERIA', { formato: 'BLOCK' })).toBe('BLOCK');
+    expect(productoTerminadoDe('PAPELERIA', {})).toBe('TALONARIO');
+    expect(productoTerminadoDe('GRAN_FORMATO', { tipoGranFormato: 'STICKER' })).toBe('PLIEGO_STICKERS');
+    expect(productoTerminadoDe('GRAN_FORMATO', { tipoGranFormato: 'PENDON' })).toBe('PENDON');
+    expect(productoTerminadoDe('GRAN_FORMATO', { tipoGranFormato: 'VINIL' })).toBe('VINIL_ROTULACION');
   });
 
   it('rechaza fechas sin zona horaria (ambiguas)', () => {
@@ -142,6 +186,8 @@ describe('tabla de endpoints', () => {
   });
 
   it('respeta el alcance de cada rol', () => {
+    expect(ENDPOINTS.agregarNotaOrden.roles).toEqual(['ADMIN', 'VENDEDOR', 'PRODUCCION']);
+    expect(ENDPOINTS.disponibilidadInventario.roles).toContain('VENDEDOR');
     expect(ENDPOINTS.crearOrden.roles).toEqual(['ADMIN', 'VENDEDOR']);
     expect(ENDPOINTS.cambiarFaseOrden.roles).toEqual(['ADMIN', 'PRODUCCION']);
     expect(ENDPOINTS.listarMateriales.roles).not.toContain('VENDEDOR');
