@@ -175,7 +175,7 @@ export function crearCasosUsoProduccion({ ordenes, eventBus, reloj, ids, obtener
             codigoError: 'SIN_RENDIMIENTO',
             mensaje:
               `${orden.codigo}: «${calculo.nombre}» no tiene rendimiento (m² por ${calculo.unidad}) configurado en Inventario; ` +
-              `no se descontaron ${calculo.m2.toFixed(2)} m² del almacén.`,
+              `no se descontaron ${calculo.m2.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} m² del almacén.`,
             detalles: { materialId, m2: calculo.m2 },
           });
         }

@@ -260,3 +260,58 @@ frontend 27 + typecheck + build; navegador contra el backend real (casillas en
 rojo con check, sustratos con existencia, corte con plotter, OT creada,
 Producto Terminado con solo las órdenes empaquetadas, salida al entregar,
 sin desborde en móvil).
+
+## Descuento automático de inventario — 24/11/2026 (cuarta revisión)
+
+Decisiones del dueño: rendimiento en m² por rollo para cada vinil/lona, merma
+configurable por material, solo gran formato por ahora (papelería en una
+segunda etapa) y **bloquear** la orden si no alcanza el stock.
+
+### Cómo funciona
+
+1. La ficha de pendones, stickers y viniles envía `materialId` (el sustrato
+   elegido del almacén).
+2. El servidor calcula: `m² = ancho × alto × cantidad`, y
+   `consumo = m² × (1 + merma %) ÷ rendimiento`, redondeado **hacia arriba** a
+   3 decimales (nunca se descuenta menos de lo usado). Ej.: 20 stickers de
+   30 × 45 cm en vinil holográfico (61 m²/rollo, merma 8 %) = 2,70 m² →
+   2,916 m² → **0,048 rollo**.
+3. En **una sola transacción** toma el número de OT, guarda la orden y
+   registra la SALIDA en el kardex (`Consumo OT-2026-XXXX`). Si no alcanza:
+   **409** `Stock insuficiente. «Vinil clear»: la orden necesita 1,378 rollo y
+   hay 0,917.` y no queda orden, movimiento ni número de OT gastado. Probado
+   con dos ventas simultáneas: una entra, la otra recibe 409.
+4. Material sin rendimiento: la orden se crea **sin descontar** y Producción y
+   Administración reciben el aviso "Orden creada sin descontar el sustrato:
+   falta su rendimiento".
+
+### Dónde se ve
+
+- **Ficha de venta**: cada sustrato muestra existencia y consumo estimado
+  ("usa 0,048 rollo para 2,70 m²"); los que no alcanzan se deshabilitan y, si
+  el elegido deja de alcanzar al cambiar medidas, aparece el aviso. El
+  resumen incluye "Consumo".
+- **Inventario** (Admin y Producción): cada vinil/lona muestra
+  "61 m²/rollo · merma 8 %" o, en rojo, "Sin rendimiento". El botón de regla
+  abre el diálogo para cargarlo directo o con ancho × largo del rollo
+  (1,52 × 50 = 76 m²). API: `PATCH /inventario/materiales/:id/consumo`.
+- **Planta y seguimiento**: "Descontado del almacén" en el detalle de la orden.
+
+### Técnica
+
+- Migración `004_descuento_sustrato.sql`: stock y movimientos pasan a
+  `NUMERIC(14,3)`; `rendimiento` y `merma_porcentaje` en materiales;
+  `material_id` y `consumo_sustrato` en órdenes.
+- Unidad de trabajo (`shared/db/transaccion.js`): con `AsyncLocalStorage`, los
+  repositorios de Producción e Inventario comparten la conexión dentro de la
+  transacción y sus transacciones internas pasan a `SAVEPOINT`. Los módulos
+  siguen sin conocerse: Producción usa la interfaz `sustratos` de Inventario.
+  En memoria, las unidades de trabajo se ejecutan en cola.
+- Los rendimientos de la semilla demo (vinil 1,22 × 50 m = 61 m²; lona
+  1,60 × 50 m = 80 m²) son de ejemplo: **cárgalos con los rollos reales**.
+
+Verificación: contrato 30, cliente HTTP 9, backend 109 (memoria y
+PostgreSQL, 3 corridas seguidas), frontend 28 + typecheck + build; navegador
+contra PostgreSQL (estimación, sustrato deshabilitado, descuento real
+2 → 1,952 rollos, bloqueo 409 sin orden, configuración con ancho × largo,
+aviso sin rendimiento).
