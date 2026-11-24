@@ -1,7 +1,9 @@
+import { EMPRESA } from "@markenny/contrato/dominio";
+
 export const SISTEMA = {
   nombre: "Markenny Print MIS",
-  empresa: "Artes Gráficas Markenny C.A.",
-  rif: "J-40.512.336-7",
+  empresa: EMPRESA.nombre,
+  rif: EMPRESA.rif,
   telefono: "+58 424-651-2044",
   email: "produccion@markenny.com",
   direccion: "Caracas, Venezuela",

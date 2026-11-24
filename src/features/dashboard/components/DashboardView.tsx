@@ -47,7 +47,7 @@ export function DashboardView({ data, fecha }: DashboardViewProps) {
       <PageHeader
         eyebrow={fecha ?? "Centro de producción"}
         title="Control de planta"
-        description="Vista consolidada de ventas, producción e inventario de Artes Gráficas Markenny C.A."
+        description="Vista consolidada de ventas, producción e inventario de MARKENNY, C.A."
         actions={
           <>
             <Button variant="outline" asChild>

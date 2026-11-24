@@ -21,7 +21,7 @@ import { diasHasta } from "@/lib/fechas";
 import { cn, formatCurrency, formatDate, formatNumber } from "@/lib/utils";
 import { useOrdenesTrabajo } from "@/features/ventas";
 import { mensajeDeError } from "@/shared/api/cliente";
-import type { MaterialInventario, ProductoTerminado } from "@/shared/domain";
+import { PRODUCTO_TERMINADO_LABEL, type MaterialInventario, type ProductoTerminado } from "@/shared/domain";
 import { RegistrarEntregaDialog } from "./RegistrarEntregaDialog";
 import { RegistrarMovimientoDialog } from "./RegistrarMovimientoDialog";
 import {
@@ -46,7 +46,7 @@ export function SellosPage() {
   const [materialInicial, setMaterialInicial] = useState<string | undefined>();
 
   const sellos = useMemo(
-    () => materiales.filter((material) => material.categoria === "SELLOS"),
+    () => materiales.filter((material) => material.categoria === "SELLO"),
     [materiales],
   );
 
@@ -119,7 +119,7 @@ export function SellosPage() {
       <PageHeader
         eyebrow="Almacén · Producto terminado"
         title="Sellos y entregas"
-        description="Auditoría visual de sellos y productos empaquetados que siguen en almacén pendientes de entrega al cliente."
+        description="Productos terminados de Markenny en almacén sin entregar: pliegos de stickers, talonarios, blocks, sellos personalizados, pendones y viniles de rotulación."
         actions={
           <>
             <Button variant="outline" asChild>
@@ -344,7 +344,10 @@ export function SellosPage() {
                             : "Lista para entrega"}
                       </Badge>
                     </div>
-                    <p className="mt-2 line-clamp-2 text-[12.5px] font-semibold leading-snug">
+                    <p className="mt-2 text-[9px] font-semibold uppercase tracking-widest text-muted-foreground">
+                      {PRODUCTO_TERMINADO_LABEL[producto.tipo]}
+                    </p>
+                    <p className="mt-0.5 line-clamp-2 text-[12.5px] font-semibold leading-snug">
                       {producto.descripcion}
                     </p>
                     <p className="mt-0.5 truncate text-[10.5px] text-muted-foreground">

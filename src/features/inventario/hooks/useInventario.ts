@@ -17,10 +17,7 @@ export function useInventario() {
       acc[material.categoria] += 1;
       return acc;
     },
-    { PAPEL: 0, TINTAS: 0, PLANCHAS: 0, VINILOS: 0, SELLOS: 0, ALMACEN: 0 } as Record<
-      CategoriaInventario,
-      number
-    >,
+    { PAPEL: 0, VINIL: 0, LONA: 0, SELLO: 0 } as Record<CategoriaInventario, number>,
   );
 
   const criticos = materiales.filter(

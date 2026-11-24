@@ -16,7 +16,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn, formatCurrency, formatNumber } from "@/lib/utils";
-import type { CategoriaInventario, MaterialInventario } from "@/shared/domain";
+import { CATEGORIAS_INVENTARIO, type CategoriaInventario, type MaterialInventario } from "@/shared/domain";
 import { CATEGORIA_LABEL, InventarioTable } from "./InventarioTable";
 import { MovimientosPanel } from "./MovimientosPanel";
 import { RegistrarMovimientoDialog } from "./RegistrarMovimientoDialog";
@@ -25,15 +25,8 @@ import type { MovimientoFormValues } from "../types/schema";
 
 type FiltroCategoria = CategoriaInventario | "TODAS";
 
-const CATEGORIAS: FiltroCategoria[] = [
-  "TODAS",
-  "PAPEL",
-  "TINTAS",
-  "PLANCHAS",
-  "VINILOS",
-  "SELLOS",
-  "ALMACEN",
-];
+/** Solo materias primas de Markenny: el inventario no registra maquinaria ni equipos. */
+const CATEGORIAS: FiltroCategoria[] = ["TODAS", ...CATEGORIAS_INVENTARIO];
 
 export function InventarioPage() {
   const { materiales, porCategoria, criticos, valorInventario, isLoading, isError, refetch } =
@@ -60,7 +53,7 @@ export function InventarioPage() {
     });
   }, [materiales, categoria, busqueda]);
 
-  const sellos = materiales.filter((material) => material.categoria === "SELLOS");
+  const sellos = materiales.filter((material) => material.categoria === "SELLO");
   const sellosValor = sellos.reduce(
     (total, material) => total + material.stock * material.costoUnitario,
     0,
@@ -98,7 +91,7 @@ export function InventarioPage() {
       <PageHeader
         eyebrow="Almacén · Existencias"
         title="Inventario"
-        description="Control de papel, tintas, planchas CTP, vinilos y lonas, además del producto terminado pendiente de entrega."
+        description="Materias primas de Markenny: papeles, viniles, lonas y sellos. Sin maquinaria ni equipos."
         actions={
           <>
             <Button variant="outline" asChild>
@@ -214,9 +207,9 @@ export function InventarioPage() {
                 </button>
               );
             })}
-            {categoria === "SELLOS" && (
+            {categoria === "SELLO" && (
               <Badge variant="solid" className="ml-auto shrink-0">
-                Producto terminado sin despachar
+                Sellos en almacén
               </Badge>
             )}
           </div>
@@ -238,7 +231,7 @@ export function InventarioPage() {
           )}
 
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-            {(["PAPEL", "TINTAS", "PLANCHAS", "VINILOS", "SELLOS", "ALMACEN"] as CategoriaInventario[]).map(
+            {CATEGORIAS_INVENTARIO.map(
               (categoriaItem) => {
                 const items = materiales.filter(
                   (material) => material.categoria === categoriaItem,

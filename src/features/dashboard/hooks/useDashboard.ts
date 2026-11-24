@@ -7,6 +7,7 @@ import {
   type FasePlanta,
   type MaterialInventario,
   type OrdenTrabajo,
+  SIN_MAQUINA,
 } from "@/shared/domain";
 
 export interface DashboardData {
@@ -44,7 +45,8 @@ async function cargarDashboard(): Promise<DashboardData> {
 
   const carga = new Map<string, number>();
   activas.forEach((orden) => {
-    carga.set(orden.maquina, (carga.get(orden.maquina) ?? 0) + 1);
+    const maquina = orden.maquina ?? SIN_MAQUINA;
+    carga.set(maquina, (carga.get(maquina) ?? 0) + 1);
   });
 
   return {

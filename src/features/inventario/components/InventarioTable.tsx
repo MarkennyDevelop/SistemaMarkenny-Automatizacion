@@ -13,18 +13,13 @@ import {
 } from "@/components/ui/table";
 import { cn, formatCurrency, formatNumber } from "@/lib/utils";
 import {
-  type CategoriaInventario,
   type MaterialInventario,
+  CATEGORIA_INVENTARIO_LABEL,
+  TIPO_PAPEL_LABEL,
 } from "@/shared/domain";
 
-export const CATEGORIA_LABEL: Record<CategoriaInventario, string> = {
-  PAPEL: "Papel",
-  TINTAS: "Tintas",
-  PLANCHAS: "Planchas CTP",
-  VINILOS: "Vinilos y lonas",
-  SELLOS: "Sellos / PT",
-  ALMACEN: "Almacén",
-};
+/** Etiquetas de categoría (re-exportadas desde shared/domain). */
+export const CATEGORIA_LABEL = CATEGORIA_INVENTARIO_LABEL;
 
 function estado(material: MaterialInventario) {
   if (material.stock <= material.stockMinimo) {
@@ -107,6 +102,11 @@ export function InventarioTable({
                 </TableCell>
                 <TableCell>
                   <Badge variant="outline">{CATEGORIA_LABEL[material.categoria]}</Badge>
+                  {material.subtipo && (
+                    <p className="mt-1 text-[10px] text-muted-foreground">
+                      {TIPO_PAPEL_LABEL[material.subtipo]}
+                    </p>
+                  )}
                 </TableCell>
                 <TableCell>
                   <p className="text-[10.5px] text-muted-foreground">{material.ubicacion}</p>
