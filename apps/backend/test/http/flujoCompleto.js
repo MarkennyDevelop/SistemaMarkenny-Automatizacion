@@ -287,6 +287,77 @@ export function probarFlujoCompleto(nombre, entorno) {
       expect((await estado.vendedor.get('/inventario/materiales')).estado).toBe(403);
     });
 
+    it('descuento automático: la orden de gran formato descuenta su sustrato o se bloquea', async () => {
+      const vinil = (await estado.admin.post('/inventario/materiales', {
+        sku: 'VIN-CLEAR', nombre: 'Vinil clear', categoria: 'VINIL', unidad: 'rollo', rendimiento: 61, mermaPorcentaje: 10,
+      })).cuerpo;
+      expect(vinil).toMatchObject({ rendimiento: 61, mermaPorcentaje: 10 });
+      await estado.planta.post('/inventario/movimientos', { materialId: vinil.id, tipo: 'ENTRADA', cantidad: 0.1, motivo: 'Compra' });
+
+      const orden = (extra = {}) => ({
+        clienteId: estado.clienteId, producto: 'Stickers redondos', categoriaTrabajo: 'GRAN_FORMATO', cantidad: 20,
+        sustrato: 'Vinil clear', tintas: [], acabados: ['Corte con plotter'], montoTotal: 50, fechaEntrega: '2026-11-27T16:00:00.000Z',
+        materialId: vinil.id, especificaciones: { tipoGranFormato: 'STICKER', ancho: 30, alto: 45, unidadDimension: 'cm' }, ...extra,
+      });
+
+      // 2,7 m² + 10 % merma = 2,97 m² ÷ 61 = 0,049 rollo
+      const creada = await estado.vendedor.post('/ordenes', orden());
+      expect(creada.estado, JSON.stringify(creada.cuerpo)).toBe(201);
+      expect(creada.cuerpo).toMatchObject({ materialId: vinil.id, consumoSustrato: 0.049 });
+      const kardex = (await estado.planta.get(`/inventario/movimientos?materialId=${vinil.id}`)).cuerpo;
+      expect(kardex[0]).toMatchObject({ tipo: 'SALIDA', cantidad: 0.049, stockResultante: 0.051, ordenId: creada.cuerpo.id });
+      expect(kardex[0].motivo).toBe(`Consumo ${creada.cuerpo.codigo}`);
+
+      // Sin stock: 409 con mensaje claro, sin orden nueva, sin movimiento y sin gastar código de OT
+      const antes = (await estado.admin.get('/ordenes')).cuerpo.length;
+      const bloqueada = await estado.vendedor.post('/ordenes', orden({ cantidad: 40 }));
+      expect(bloqueada.estado).toBe(409);
+      expect(bloqueada.cuerpo).toMatchObject({ error: 'STOCK_INSUFICIENTE' });
+      expect(bloqueada.cuerpo.mensaje).toMatch(/«Vinil clear»: la orden necesita 0,098 rollo y hay 0,051/);
+      expect((await estado.admin.get('/ordenes')).cuerpo).toHaveLength(antes);
+      expect((await estado.planta.get(`/inventario/movimientos?materialId=${vinil.id}`)).cuerpo).toHaveLength(2);
+      const siguiente = await estado.vendedor.post('/ordenes', orden({ cantidad: 1 }));
+      const numero = (codigo) => Number(codigo.split('-').at(-1));
+      expect(numero(siguiente.cuerpo.codigo)).toBe(numero(creada.cuerpo.codigo) + 1);
+
+      // Dos ventas simultáneas que caben por separado pero no juntas: una
+      // pasa y la otra se rechaza sin dejar orden, movimiento ni código usado.
+      const stockAntes = (await estado.planta.get('/inventario/materiales?categoria=VINIL')).cuerpo[0].stock;
+      await estado.planta.post('/inventario/movimientos', { materialId: vinil.id, tipo: 'ENTRADA', cantidad: 0.07 - stockAntes, motivo: 'Compra' });
+      const ordenesAntes = (await estado.admin.get('/ordenes')).cuerpo.length;
+      const [r1, r2] = await Promise.all([
+        estado.vendedor.post('/ordenes', orden()),
+        estado.vendedor.post('/ordenes', orden()),
+      ]);
+      expect([r1.estado, r2.estado].sort()).toEqual([201, 409]);
+      const ganadora = r1.estado === 201 ? r1 : r2;
+      expect((await estado.admin.get('/ordenes')).cuerpo).toHaveLength(ordenesAntes + 1);
+      expect((await estado.planta.get('/inventario/materiales?categoria=VINIL')).cuerpo[0].stock).toBe(0.021);
+      const otra = await estado.vendedor.post('/ordenes', orden({ cantidad: 1 }));
+      expect(numero(otra.cuerpo.codigo)).toBe(numero(ganadora.cuerpo.codigo) + 1);
+
+      // Solo vinil o lona; y solo en gran formato
+      const sello = (await estado.admin.get('/inventario/materiales?categoria=SELLO')).cuerpo[0];
+      expect((await estado.vendedor.post('/ordenes', orden({ materialId: sello.id }))).cuerpo.error).toBe('REGLA_NEGOCIO');
+      expect((await estado.vendedor.post('/ordenes', orden({ categoriaTrabajo: 'GENERAL' }))).estado).toBe(400);
+
+      // Configurar consumo: Admin y Producción, no Vendedor
+      const ruta = `/inventario/materiales/${vinil.id}/consumo`;
+      expect((await estado.vendedor.patch(ruta, { rendimiento: 50, mermaPorcentaje: 0 })).estado).toBe(403);
+      expect((await estado.planta.patch(ruta, { rendimiento: null, mermaPorcentaje: 0 })).cuerpo.rendimiento).toBeNull();
+
+      // Sin rendimiento: la orden se crea sin descontar y Producción recibe el aviso
+      const sinRendimiento = await estado.vendedor.post('/ordenes', orden({ cantidad: 1 }));
+      expect(sinRendimiento.estado).toBe(201);
+      expect(sinRendimiento.cuerpo).toMatchObject({ materialId: vinil.id, consumoSustrato: null });
+      const movimientosAntes = (await estado.planta.get(`/inventario/movimientos?materialId=${vinil.id}`)).cuerpo.length;
+      expect(movimientosAntes).toBe(6);
+      await esperarEventos();
+      const avisos = (await estado.planta.get('/notificaciones')).cuerpo;
+      expect(avisos.some((n) => n.titulo.includes('falta su rendimiento') && n.detalle.includes(sinRendimiento.cuerpo.codigo))).toBe(true);
+      expect((await estado.planta.patch(ruta, { rendimiento: 61, mermaPorcentaje: 10 })).estado).toBe(200);
+    });
+
     it('empleados: desactivar cierra la sesión al instante; reglas del último admin', async () => {
       const yo = (await estado.admin.get('/auth/sesion')).cuerpo;
       expect((await estado.admin.patch(`/usuarios/${yo.id}/estado`, { activo: false })).cuerpo.mensaje).toMatch(/propia cuenta/);

@@ -7,6 +7,7 @@ import { registrarApi } from './shared/http/api.js';
 import { sesionPlugin } from './shared/http/sesion.js';
 import { seguridadPlugin } from './shared/http/seguridad.js';
 import { crearPool } from './shared/db/pool.js';
+import { crearUnidadDeTrabajo, crearUnidadDeTrabajoEnMemoria, poolTransaccional } from './shared/db/transaccion.js';
 import {
   crearModuloAuth,
   crearHasherScrypt,
@@ -31,8 +32,10 @@ import {
   NotificacionRepositoryPostgres,
 } from './modules/notificaciones/index.js';
 
-function crearRepositorios(pool) {
-  if (pool) {
+function crearRepositorios(poolCrudo) {
+  if (poolCrudo) {
+    // Los repositorios participan de la unidad de trabajo activa (si la hay).
+    const pool = poolTransaccional(poolCrudo);
     return {
       usuarios: new UsuarioRepositoryPostgres(pool),
       sesiones: new SesionRepositoryPostgres(pool),
@@ -79,6 +82,7 @@ export async function construirApp({ config, overrides = {} }) {
   const logger = fastify.log;
   const eventBus = overrides.eventBus ?? new NodeEventBus({ logger, reloj });
   const repos = { ...crearRepositorios(pool), ...overrides.repositorios };
+  const unidadDeTrabajo = pool ? crearUnidadDeTrabajo(pool) : crearUnidadDeTrabajoEnMemoria();
 
   const auth = crearModuloAuth({
     usuarios: repos.usuarios,
@@ -93,6 +97,7 @@ export async function construirApp({ config, overrides = {} }) {
   // Ventas y Producción se consultan entre sí solo por sus interfaces públicas.
   // Se enlazan de forma diferida porque cada una necesita a la otra.
   let produccion;
+  let inventario;
   const ventas = crearModuloVentas({
     clientes: repos.clientes,
     reloj,
@@ -105,9 +110,15 @@ export async function construirApp({ config, overrides = {} }) {
     reloj,
     ids,
     obtenerCliente: (id) => ventas.casosUso.obtenerCliente(id),
+    // Inventario se crea después (necesita a Producción): enlace diferido.
+    sustratos: {
+      calcular: (p) => inventario.sustratos.calcular(p),
+      descontar: (p) => inventario.sustratos.descontar(p),
+    },
+    unidadDeTrabajo,
     logger,
   });
-  const inventario = crearModuloInventario({
+  inventario = crearModuloInventario({
     materiales: repos.materiales,
     productos: repos.productos,
     eventBus,

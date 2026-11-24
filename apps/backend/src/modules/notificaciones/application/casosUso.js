@@ -104,10 +104,13 @@ export function crearCasosUsoNotificaciones({ notificaciones, reloj, ids }) {
       });
     },
 
-    alFallarDescuento: ({ ordenId, mensaje }) =>
+    alFallarDescuento: ({ ordenId, mensaje, codigoError }) =>
       notificar({
         tipo: 'STOCK',
-        titulo: 'No se pudieron descontar materiales de una orden',
+        titulo:
+          codigoError === 'SIN_RENDIMIENTO'
+            ? 'Orden creada sin descontar el sustrato: falta su rendimiento'
+            : 'No se pudieron descontar materiales de una orden',
         detalle: mensaje,
         ordenId,
         roles: ['ADMIN', 'PRODUCCION'],

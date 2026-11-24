@@ -58,6 +58,7 @@ export function crearModuloInventario({ materiales, productos, eventBus, reloj, 
     listarMateriales: ({ query }) => casosUso.listarMateriales(query),
     disponibilidadInventario: () => casosUso.disponibilidad({}),
     crearMaterial: ({ body }) => casosUso.crearMaterial(body),
+    configurarConsumoMaterial: ({ params, body }) => casosUso.configurarConsumoMaterial({ id: params.id, ...body }),
     listarMovimientos: ({ query }) => casosUso.listarMovimientos(query),
     registrarMovimiento: ({ body, usuario }) => casosUso.registrarMovimiento({ ...body, actor: actorDe(usuario) }),
     listarProductosTerminados: ({ query }) => casosUso.listarProductosTerminados(query),
@@ -65,5 +66,14 @@ export function crearModuloInventario({ materiales, productos, eventBus, reloj, 
       casosUso.registrarEntrega({ id: params.id, ...body, actor: actorDe(usuario) }),
   };
 
-  return { casosUso, manejadores, desuscribir: () => suscripciones.forEach((quitar) => quitar()) };
+  return {
+    casosUso,
+    manejadores,
+    desuscribir: () => suscripciones.forEach((quitar) => quitar()),
+    /** Interfaz pública para Producción: consumo del sustrato de una orden. */
+    sustratos: {
+      calcular: casosUso.calcularConsumoSustrato,
+      descontar: casosUso.descontarMaterialesOrden,
+    },
+  };
 }

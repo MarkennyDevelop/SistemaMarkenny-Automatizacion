@@ -36,7 +36,12 @@ function crearEvento({ id, fase, anterior, actor, fecha, nota }) {
  * Crea la orden de trabajo en EN_PROCESO con su primer evento de auditoría.
  * Solo Vendedor o Administrador pueden crearla; el vendedor es quien la crea.
  */
-export function crearOrdenTrabajo({ id, codigo, eventoId, cliente, actor, datos, fecha }) {
+/**
+ * @param {object} p
+ * @param {{ materialId: string, cantidad: number | null } | null} [p.consumo]
+ *   Sustrato del almacén y cantidad descontada (null si no se descontó).
+ */
+export function crearOrdenTrabajo({ id, codigo, eventoId, cliente, actor, datos, fecha, consumo = null }) {
   const vendedor = exigirRol(actor, ['VENDEDOR', 'ADMIN'], 'crear órdenes de trabajo');
   invariante(/^OT-\d{4}-\d{4,}$/.test(codigo), 'Código de orden inválido', { codigo });
   invariante(cliente && cliente.id && cliente.nombre, 'La orden debe tener un cliente');
@@ -59,6 +64,8 @@ export function crearOrdenTrabajo({ id, codigo, eventoId, cliente, actor, datos,
     tecnologia: datos.tecnologia ?? tecnologiaPorDefecto,
     productoTerminado: datos.productoTerminado ?? productoTerminadoDe(datos.categoriaTrabajo, especificaciones),
     prioridad: datos.prioridad ?? 'MEDIA',
+    materialId: consumo?.materialId ?? null,
+    consumoSustrato: consumo?.cantidad ?? null,
     maquina: datos.maquina?.trim() || null,
     operador: null,
     cantidad: datos.cantidad,

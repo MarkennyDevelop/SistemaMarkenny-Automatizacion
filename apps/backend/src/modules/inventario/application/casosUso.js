@@ -1,6 +1,7 @@
 // Casos de uso del módulo de Inventario.
 import { z } from 'zod';
 import {
+  ConfiguracionConsumoSchema,
   DisponibilidadSchema,
   FiltroMaterialesSchema,
   FiltroMovimientosSchema,
@@ -22,7 +23,10 @@ import {
   crearMaterial,
   crearProductoTerminado,
   planificarDescuento,
+  verificarStock,
   registrarEntrega,
+  calcularConsumoSustrato,
+  configurarConsumo,
 } from '../domain/inventario.js';
 
 /**
@@ -44,7 +48,8 @@ import {
  * @property {(filtro: { tipo?: string, soloPendientes: boolean }) => Promise<object[]>} listar
  */
 export const MATERIAL_REPOSITORY_PORT = Object.freeze([
-  'listar', 'obtenerPorId', 'obtenerVarios', 'crear', 'aplicarMovimientos', 'existenSalidasDeOrden', 'listarMovimientos',
+  'listar', 'obtenerPorId', 'obtenerVarios', 'crear', 'guardarConfiguracion', 'aplicarMovimientos',
+  'existenSalidasDeOrden', 'listarMovimientos',
 ]);
 export const PRODUCTO_REPOSITORY_PORT = Object.freeze(['obtenerPorId', 'obtenerPorOrden', 'crear', 'registrarEntrega', 'listar']);
 
@@ -95,6 +100,39 @@ export function crearCasosUsoInventario({ materiales, productos, eventBus, reloj
         return aMaterialDTO(material);
       },
     }),
+
+    /** Rendimiento (m² por unidad) y merma de un vinil o lona. */
+    configurarConsumoMaterial: casoDeUso({
+      nombre: 'inventario.configurarConsumoMaterial',
+      entrada: ConfiguracionConsumoSchema.extend({ id: z.string().uuid() }),
+      salida: MaterialSchema,
+      async ejecutar({ id, rendimiento, mermaPorcentaje }) {
+        return conReintentos(async () => {
+          const material = await materiales.obtenerPorId(id);
+          if (!material) throw new RecursoNoEncontradoError('Material', id);
+          const actualizado = configurarConsumo(material, { rendimiento, mermaPorcentaje, fecha: reloj.ahora() });
+          await materiales.guardarConfiguracion(actualizado, material.version);
+          return aMaterialDTO(actualizado);
+        });
+      },
+    }),
+
+    /**
+     * Interfaz para Producción: cuánto consume una orden de gran formato del
+     * sustrato elegido. No modifica nada, pero rechaza con STOCK_INSUFICIENTE
+     * si hoy no alcanza (así no se reserva un código de OT en vano).
+     * @returns {Promise<{ materialId: string, nombre: string, unidad: string, m2: number, cantidad: number | null }>}
+     */
+    calcularConsumoSustrato: async ({ materialId, especificaciones, cantidad }) => {
+      const material = await materiales.obtenerPorId(materialId);
+      if (!material) throw new RecursoNoEncontradoError('Material', materialId);
+      const consumo = calcularConsumoSustrato(material, { especificaciones, cantidad });
+      if (consumo.cantidad !== null) {
+        // Validación sin efectos: misma regla y mensaje que el descuento real.
+        verificarStock([material], [{ materialId, cantidad: consumo.cantidad }]);
+      }
+      return { materialId, nombre: material.nombre, unidad: material.unidad, ...consumo };
+    },
 
     listarMovimientos: casoDeUso({
       nombre: 'inventario.listarMovimientos',

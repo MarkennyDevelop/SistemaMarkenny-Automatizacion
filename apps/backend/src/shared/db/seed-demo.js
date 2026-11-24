@@ -31,13 +31,13 @@ const MATERIALES = [
   { sku: 'PAP-BRISTOL-240', nombre: 'Cartulina Bristol 240 g', categoria: 'PAPEL', subtipo: 'BRISTOL', unidad: 'pliego', stockMinimo: 200, costoUnitario: 0.3, ubicacion: 'Estante A4', proveedor: 'Distribuidora Gráfica', lote: 'L-2590', stock: 900 },
   { sku: 'PAP-OPALINA-180', nombre: 'Opalina 180 g', categoria: 'PAPEL', subtipo: 'OPALINA', unidad: 'pliego', stockMinimo: 200, costoUnitario: 0.35, ubicacion: 'Estante A5', proveedor: 'Distribuidora Gráfica', lote: 'L-2593', stock: 0 },
   { sku: 'PAP-FOTO-200', nombre: 'Papel fotográfico 200 g', categoria: 'PAPEL', subtipo: 'FOTOGRAFICO', unidad: 'pliego', stockMinimo: 50, costoUnitario: 0.8, ubicacion: 'Estante A6', proveedor: 'Distribuidora Gráfica', lote: 'L-2601', stock: 120 },
-  { sku: 'VIN-ADH-BLANCO', nombre: 'Vinil adhesivo blanco brillante', categoria: 'VINIL', unidad: 'rollo', stockMinimo: 2, costoUnitario: 95, ubicacion: 'Rack G1', proveedor: 'Vinilos Andinos', lote: 'VA-81', stock: 4 },
-  { sku: 'VIN-ADH-HOLO', nombre: 'Vinil adhesivo holográfico', categoria: 'VINIL', unidad: 'rollo', stockMinimo: 1, costoUnitario: 135, ubicacion: 'Rack G2', proveedor: 'Vinilos Andinos', lote: 'VA-86', stock: 2 },
-  { sku: 'VIN-CLEAR', nombre: 'Vinil clear', categoria: 'VINIL', unidad: 'rollo', stockMinimo: 1, costoUnitario: 110, ubicacion: 'Rack G2', proveedor: 'Vinilos Andinos', lote: 'VA-84', stock: 1 },
-  { sku: 'VIN-MICROPERF', nombre: 'Vinil microperforado', categoria: 'VINIL', unidad: 'rollo', stockMinimo: 1, costoUnitario: 150, ubicacion: 'Rack G5', proveedor: 'Vinilos Andinos', lote: 'VA-88', stock: 2 },
-  { sku: 'VIN-MATE', nombre: 'Vinil mate', categoria: 'VINIL', unidad: 'rollo', stockMinimo: 1, costoUnitario: 98, ubicacion: 'Rack G5', proveedor: 'Vinilos Andinos', lote: 'VA-90', stock: 0 },
-  { sku: 'LON-FRONT-13', nombre: 'Lona front 13 oz', categoria: 'LONA', unidad: 'rollo', stockMinimo: 2, costoUnitario: 140, ubicacion: 'Rack G3', proveedor: 'Vinilos Andinos', lote: 'VA-77', stock: 6 },
-  { sku: 'LON-MESH', nombre: 'Lona mesh microperforada', categoria: 'LONA', unidad: 'rollo', stockMinimo: 1, costoUnitario: 160, ubicacion: 'Rack G4', proveedor: 'Vinilos Andinos', lote: 'VA-79', stock: 0 },
+  { sku: 'VIN-ADH-BLANCO', rendimiento: 61, mermaPorcentaje: 5, nombre: 'Vinil adhesivo blanco brillante', categoria: 'VINIL', unidad: 'rollo', stockMinimo: 2, costoUnitario: 95, ubicacion: 'Rack G1', proveedor: 'Vinilos Andinos', lote: 'VA-81', stock: 4 },
+  { sku: 'VIN-ADH-HOLO', rendimiento: 61, mermaPorcentaje: 8, nombre: 'Vinil adhesivo holográfico', categoria: 'VINIL', unidad: 'rollo', stockMinimo: 1, costoUnitario: 135, ubicacion: 'Rack G2', proveedor: 'Vinilos Andinos', lote: 'VA-86', stock: 2 },
+  { sku: 'VIN-CLEAR', rendimiento: 61, mermaPorcentaje: 5, nombre: 'Vinil clear', categoria: 'VINIL', unidad: 'rollo', stockMinimo: 1, costoUnitario: 110, ubicacion: 'Rack G2', proveedor: 'Vinilos Andinos', lote: 'VA-84', stock: 1 },
+  { sku: 'VIN-MICROPERF', rendimiento: 61, mermaPorcentaje: 10, nombre: 'Vinil microperforado', categoria: 'VINIL', unidad: 'rollo', stockMinimo: 1, costoUnitario: 150, ubicacion: 'Rack G5', proveedor: 'Vinilos Andinos', lote: 'VA-88', stock: 2 },
+  { sku: 'VIN-MATE', rendimiento: 61, mermaPorcentaje: 5, nombre: 'Vinil mate', categoria: 'VINIL', unidad: 'rollo', stockMinimo: 1, costoUnitario: 98, ubicacion: 'Rack G5', proveedor: 'Vinilos Andinos', lote: 'VA-90', stock: 0 },
+  { sku: 'LON-FRONT-13', rendimiento: 80, mermaPorcentaje: 3, nombre: 'Lona front 13 oz', categoria: 'LONA', unidad: 'rollo', stockMinimo: 2, costoUnitario: 140, ubicacion: 'Rack G3', proveedor: 'Vinilos Andinos', lote: 'VA-77', stock: 6 },
+  { sku: 'LON-MESH', rendimiento: 80, mermaPorcentaje: 3, nombre: 'Lona mesh microperforada', categoria: 'LONA', unidad: 'rollo', stockMinimo: 1, costoUnitario: 160, ubicacion: 'Rack G4', proveedor: 'Vinilos Andinos', lote: 'VA-79', stock: 0 },
   { sku: 'SEL-TRODAT-4911', nombre: 'Sello automático Trodat 4911', categoria: 'SELLO', unidad: 'unidad', stockMinimo: 10, costoUnitario: 7.5, ubicacion: 'Gaveta S1', proveedor: 'Trodat', lote: 'TR-4911', stock: 25 },
   { sku: 'SEL-TRODAT-4912', nombre: 'Sello automático Trodat 4912', categoria: 'SELLO', unidad: 'unidad', stockMinimo: 10, costoUnitario: 8.5, ubicacion: 'Gaveta S1', proveedor: 'Trodat', lote: 'TR-4912', stock: 40 },
   { sku: 'SEL-TRODAT-4913', nombre: 'Sello automático Trodat 4913', categoria: 'SELLO', unidad: 'unidad', stockMinimo: 10, costoUnitario: 9.5, ubicacion: 'Gaveta S2', proveedor: 'Trodat', lote: 'TR-4913', stock: 6 },
@@ -50,6 +50,11 @@ const dias = (n) => {
   fecha.setHours(12, 0, 0, 0);
   return fecha.toISOString();
 };
+
+/**
+ * Rendimientos de demostración: rollo de vinil 1,22 × 50 m = 61 m², rollo de
+ * lona 1,60 × 50 m = 80 m². Ajustarlos en Inventario a los rollos reales.
+ */
 
 /** Orden: cliente (índice), datos de la ficha y fases que se le harán avanzar. */
 const papeleria = (extra) => ({
@@ -89,8 +94,10 @@ export async function sembrarDemo(app) {
   const clientes = [];
   for (const c of CLIENTES) clientes.push(await ventas.casosUso.crearCliente({ ...c, actor: cuentas.VENDEDOR }));
 
+  const materialPorNombre = new Map();
   for (const { stock, ...m } of MATERIALES) {
     const material = await inventario.casosUso.crearMaterial(m);
+    materialPorNombre.set(material.nombre, material.id);
     // Los agotados (Opalina, lona mesh) quedan en 0: una entrada de 0 no es válida.
     if (stock === 0) continue;
     await inventario.casosUso.registrarMovimiento({
@@ -99,7 +106,11 @@ export async function sembrarDemo(app) {
   }
 
   for (const o of ORDENES) {
-    const orden = await produccion.casosUso.crearOrden({ ...o.datos, clienteId: clientes[o.cliente].id, actor: cuentas.VENDEDOR });
+    // Gran formato: el sustrato es un material real del almacén y se descuenta.
+    const materialId = o.datos.categoriaTrabajo === 'GRAN_FORMATO' ? materialPorNombre.get(o.datos.sustrato) : undefined;
+    const orden = await produccion.casosUso.crearOrden({
+      ...o.datos, ...(materialId ? { materialId } : {}), clienteId: clientes[o.cliente].id, actor: cuentas.VENDEDOR,
+    });
     for (const fase of o.fases) {
       await produccion.casosUso.cambiarFase({ id: orden.id, fase, nota: fase === 'FINALIZADO' ? 'Calidad aprobada' : undefined, actor: cuentas.PRODUCCION });
     }

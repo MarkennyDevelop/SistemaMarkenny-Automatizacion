@@ -29,6 +29,10 @@ export class MaterialRepositoryMemoria {
     if ([...this.#materiales.values()].some((m) => m.sku === material.sku)) throw skuDuplicado(material.sku);
     this.#materiales.set(material.id, material);
   }
+  async guardarConfiguracion(material, versionEsperada) {
+    if (this.#materiales.get(material.id)?.version !== versionEsperada) throw new ConflictoConcurrenciaError('El material', material.id);
+    this.#materiales.set(material.id, material);
+  }
   async aplicarMovimientos({ cambios, movimientos }) {
     for (const { material, versionEsperada } of cambios) {
       if (this.#materiales.get(material.id)?.version !== versionEsperada) throw new ConflictoConcurrenciaError('El material', material.id);
@@ -88,6 +92,8 @@ const aMaterial = (f) =>
     stock: f.stock_actual,
     stockMinimo: f.stock_minimo,
     costoUnitario: f.costo_unitario,
+    rendimiento: f.rendimiento,
+    mermaPorcentaje: f.merma_porcentaje,
     ubicacion: f.ubicacion,
     proveedor: f.proveedor,
     lote: f.lote,
@@ -139,14 +145,24 @@ export class MaterialRepositoryPostgres {
     try {
       await this.pool.query(
         `INSERT INTO materiales (id, codigo_sku, nombre, tipo, stock_actual, unidad_medida, stock_minimo,
-                                 costo_unitario, ubicacion, proveedor, lote, version, actualizado_en, subtipo)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
-        [m.id, m.sku, m.nombre, m.categoria, m.stock, m.unidad, m.stockMinimo, m.costoUnitario, m.ubicacion, m.proveedor, m.lote, m.version, m.actualizadoEn, m.subtipo],
+                                 costo_unitario, ubicacion, proveedor, lote, version, actualizado_en, subtipo,
+                                 rendimiento, merma_porcentaje)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)`,
+        [m.id, m.sku, m.nombre, m.categoria, m.stock, m.unidad, m.stockMinimo, m.costoUnitario, m.ubicacion, m.proveedor, m.lote, m.version, m.actualizadoEn, m.subtipo,
+          m.rendimiento, m.mermaPorcentaje],
       );
     } catch (err) {
       if (err.code === '23505') throw skuDuplicado(m.sku);
       throw err;
     }
+  }
+  async guardarConfiguracion(m, versionEsperada) {
+    const { rowCount } = await this.pool.query(
+      `UPDATE materiales SET rendimiento = $2, merma_porcentaje = $3, version = $4, actualizado_en = $5
+        WHERE id = $1 AND version = $6 AND NOT archivado`,
+      [m.id, m.rendimiento, m.mermaPorcentaje, m.version, m.actualizadoEn, versionEsperada],
+    );
+    if (rowCount !== 1) throw new ConflictoConcurrenciaError('El material', m.id);
   }
   async aplicarMovimientos({ cambios, movimientos }) {
     try {

@@ -110,6 +110,8 @@ function aOrden(f, historial, notas) {
     vendedor: f.vendedor_nombre,
     categoriaTrabajo: f.tipo_trabajo,
     productoTerminado: f.producto_terminado,
+    materialId: f.material_id,
+    consumoSustrato: f.consumo_sustrato === null ? null : Number(f.consumo_sustrato),
     producto: f.producto,
     descripcion: f.descripcion,
     tecnologia: f.tecnologia,
@@ -169,13 +171,15 @@ export class OrdenRepositoryPostgres {
            (id, codigo_orden, cliente_id, cliente_nombre, cliente_telefono, vendedor_id, tipo_trabajo, producto,
             descripcion, tecnologia, prioridad, maquina, operador, cantidad, sustrato, tintas, acabados,
             especificaciones, estado_produccion, estado_entrega, monto_total, observaciones, fecha_aprobacion,
-            fecha_estimada_entrega, fecha_finalizado, version, creado_en, producto_terminado)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$23,$27)`,
+            fecha_estimada_entrega, fecha_finalizado, version, creado_en, producto_terminado,
+            material_id, consumo_sustrato)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$23,$27,$28,$29)`,
         [
           o.id, o.codigo, o.clienteId, o.clienteNombre, o.clienteTelefono, o.vendedorId, o.categoriaTrabajo, o.producto,
           o.descripcion, o.tecnologia, o.prioridad, o.maquina, o.operador, o.cantidad, o.sustrato, o.tintas, o.acabados,
           JSON.stringify(especificaciones), o.fase, o.estadoEntrega, o.montoTotal, observaciones ?? null, o.fechaCreacion,
           o.fechaEntrega, o.fechaFinalizado, o.version, o.productoTerminado,
+          o.materialId ?? null, o.consumoSustrato ?? null,
         ],
       );
       await insertarEventos(c, o.id, o.historial);

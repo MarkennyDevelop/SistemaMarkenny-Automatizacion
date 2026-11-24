@@ -9,13 +9,16 @@ export { OrdenRepositoryMemoria, OrdenRepositoryPostgres } from './infra/reposit
 
 const LATIDO_MS = 25_000;
 
-export function crearModuloProduccion({ ordenes, eventBus, reloj, ids, obtenerCliente, logger }) {
+export function crearModuloProduccion({ ordenes, eventBus, reloj, ids, obtenerCliente, sustratos, unidadDeTrabajo, logger }) {
+  if (!sustratos) throw new TypeError('Producción necesita la interfaz de sustratos de Inventario');
   const casosUso = crearCasosUsoProduccion({
     ordenes: implementaPuerto('OrdenRepository', ORDEN_REPOSITORY_PORT, ordenes),
     eventBus: implementaPuerto('EventBus', PUERTOS.EventBus, eventBus),
     reloj: implementaPuerto('Clock', PUERTOS.Clock, reloj),
     ids: implementaPuerto('IdGenerator', PUERTOS.IdGenerator, ids),
     obtenerCliente,
+    sustratos,
+    unidadDeTrabajo,
   });
 
   // Almacén registra una entrega -> la orden refleja su estado de entrega.

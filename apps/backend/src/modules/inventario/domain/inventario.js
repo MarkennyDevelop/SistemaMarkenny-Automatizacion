@@ -2,6 +2,10 @@
 // terminados en almacén pendientes de entrega. Código puro.
 import {
   CATEGORIAS_INVENTARIO,
+  CATEGORIAS_POR_SUPERFICIE,
+  DECIMALES_STOCK,
+  areaImpresionM2,
+  consumoDeSustrato,
   TIPOS_MOVIMIENTO,
   TIPOS_PAPEL,
   TIPOS_PRODUCTO_TERMINADO,
@@ -12,8 +16,11 @@ import { DomainError } from '../../../shared/domain/errors.js';
 import { aIso, congelarProfundo } from '../../../shared/domain/inmutable.js';
 import { crearActor } from '../../../shared/domain/usuario.js';
 
-/** Las columnas son NUMERIC(12,2): todo se redondea a centésimas. */
+/** Montos (costos): NUMERIC(12,2), centésimas. */
 export const redondear = (n) => Math.round(n * 100) / 100;
+/** Stock y cantidades: NUMERIC(14,3), milésimas (fracciones de rollo). */
+const FACTOR_STOCK = 10 ** DECIMALES_STOCK;
+export const redondearCantidad = (n) => Math.round(n * FACTOR_STOCK) / FACTOR_STOCK;
 
 function invariante(condicion, mensaje, detalles) {
   if (!condicion) throw new DomainError(mensaje, { codigo: 'REGLA_NEGOCIO', detalles });
@@ -25,7 +32,7 @@ function invariante(condicion, mensaje, detalles) {
  * Materia prima de Markenny: papel (con su tipo), vinil, lona o sello. El
  * inventario no admite maquinaria ni equipos.
  */
-export function crearMaterial({ id, sku, nombre, categoria, subtipo = null, unidad, stockMinimo = 0, costoUnitario = 0, ubicacion = '', proveedor = '', lote = '', fecha }) {
+export function crearMaterial({ id, sku, nombre, categoria, subtipo = null, unidad, stockMinimo = 0, costoUnitario = 0, rendimiento = null, mermaPorcentaje = 0, ubicacion = '', proveedor = '', lote = '', fecha }) {
   invariante(sku?.trim() && nombre?.trim(), 'El material requiere SKU y nombre');
   invariante(
     CATEGORIAS_INVENTARIO.includes(categoria),
@@ -35,6 +42,7 @@ export function crearMaterial({ id, sku, nombre, categoria, subtipo = null, unid
   invariante(categoria === 'PAPEL' || !subtipo, 'El tipo de papel solo aplica a materiales PAPEL');
   invariante(UNIDADES_MEDIDA.includes(unidad), `Unidad inválida: ${unidad}`);
   invariante(stockMinimo >= 0 && costoUnitario >= 0, 'Stock mínimo y costo no pueden ser negativos');
+  validarConsumo(categoria, { rendimiento, mermaPorcentaje });
   return congelarProfundo({
     id,
     sku: sku.trim().toUpperCase(),
@@ -43,14 +51,52 @@ export function crearMaterial({ id, sku, nombre, categoria, subtipo = null, unid
     subtipo: categoria === 'PAPEL' ? subtipo : null,
     unidad,
     stock: 0,
-    stockMinimo: redondear(stockMinimo),
+    stockMinimo: redondearCantidad(stockMinimo),
     costoUnitario: redondear(costoUnitario),
+    rendimiento: rendimiento ?? null,
+    mermaPorcentaje,
     ubicacion: ubicacion.trim(),
     proveedor: proveedor.trim(),
     lote: lote.trim(),
     version: 1,
     actualizadoEn: aIso(fecha),
   });
+}
+
+function validarConsumo(categoria, { rendimiento, mermaPorcentaje }) {
+  invariante(
+    rendimiento === null || CATEGORIAS_POR_SUPERFICIE.includes(categoria),
+    'El rendimiento en m² solo aplica a viniles y lonas',
+  );
+  invariante(rendimiento === null || rendimiento > 0, 'El rendimiento debe ser mayor a cero');
+  invariante(mermaPorcentaje >= 0 && mermaPorcentaje <= 100, 'La merma debe estar entre 0 y 100 %');
+}
+
+/** Define cuántos m² rinde una unidad de stock y la merma del material. */
+export function configurarConsumo(material, { rendimiento, mermaPorcentaje, fecha }) {
+  validarConsumo(material.categoria, { rendimiento, mermaPorcentaje });
+  return congelarProfundo({
+    ...material,
+    rendimiento,
+    mermaPorcentaje,
+    version: material.version + 1,
+    actualizadoEn: aIso(fecha),
+  });
+}
+
+/**
+ * Consumo de un sustrato para una orden de gran formato.
+ * @returns {{ m2: number, cantidad: number | null }} cantidad en la unidad del
+ *   material; null si el material no tiene rendimiento configurado.
+ */
+export function calcularConsumoSustrato(material, { especificaciones, cantidad }) {
+  invariante(
+    CATEGORIAS_POR_SUPERFICIE.includes(material.categoria),
+    `«${material.nombre}» no es un vinil ni una lona: no puede ser sustrato de gran formato`,
+  );
+  const m2 = areaImpresionM2(especificaciones, cantidad);
+  invariante(m2 !== null, 'La orden necesita ancho, alto y unidad para calcular el consumo del sustrato');
+  return { m2, cantidad: consumoDeSustrato(material, m2) };
 }
 
 /**
@@ -61,8 +107,9 @@ export function aplicarMovimiento(material, { id, tipo, cantidad, motivo, ordenI
   invariante(TIPOS_MOVIMIENTO.includes(tipo), `Tipo de movimiento inválido: ${tipo}`);
   invariante(cantidad > 0, 'La cantidad debe ser mayor a cero');
   const responsable = crearActor(actor);
-  const cant = redondear(cantidad);
-  const resultante = redondear(stockTrasMovimiento(material.stock, tipo, cant));
+  const cant = redondearCantidad(cantidad);
+  invariante(cant > 0, 'La cantidad debe ser mayor a cero');
+  const resultante = redondearCantidad(stockTrasMovimiento(material.stock, tipo, cant));
   if (resultante < 0) {
     throw new DomainError(
       `Stock insuficiente de «${material.nombre}»: hay ${material.stock} ${material.unidad} y se piden ${cant}`,
@@ -92,7 +139,12 @@ export function aplicarMovimiento(material, { id, tipo, cantidad, motivo, ordenI
  * Descuento de materias primas de una orden: todo o nada. Si falta stock de
  * un material, no se descuenta ninguno.
  */
-export function planificarDescuento(materiales, requeridos, { ordenId, codigo, actor, fecha, generarId }) {
+/**
+ * Comprueba que existan los materiales y alcance el stock para todos los
+ * requeridos (agrupados por material). Sin efectos.
+ * @returns {Map<string, number>} cantidad total por material
+ */
+export function verificarStock(materiales, requeridos) {
   const porId = new Map(materiales.map((m) => [m.id, m]));
   const faltan = requeridos.filter((r) => !porId.has(r.materialId)).map((r) => r.materialId);
   if (faltan.length) {
@@ -102,17 +154,31 @@ export function planificarDescuento(materiales, requeridos, { ordenId, codigo, a
     });
   }
   const totales = new Map();
-  for (const r of requeridos) totales.set(r.materialId, redondear((totales.get(r.materialId) ?? 0) + r.cantidad));
+  for (const r of requeridos) totales.set(r.materialId, redondearCantidad((totales.get(r.materialId) ?? 0) + r.cantidad));
 
   const insuficientes = [...totales]
     .filter(([id, cant]) => cant > porId.get(id).stock)
     .map(([id, cant]) => ({ materialId: id, requerido: cant, disponible: porId.get(id).stock }));
   if (insuficientes.length) {
-    throw new DomainError(`Stock insuficiente para ${insuficientes.length} material(es)`, {
+    const numero = (n) => n.toLocaleString('es-VE', { maximumFractionDigits: DECIMALES_STOCK });
+    const detalle = insuficientes
+      .map(({ materialId, requerido, disponible }) => {
+        const m = porId.get(materialId);
+        return `«${m.nombre}»: la orden necesita ${numero(requerido)} ${m.unidad} y hay ${numero(disponible)}`;
+      })
+      .join('; ');
+    throw new DomainError(`Stock insuficiente. ${detalle}.`, {
       codigo: 'STOCK_INSUFICIENTE',
       detalles: { faltantes: insuficientes },
     });
   }
+
+  return totales;
+}
+
+export function planificarDescuento(materiales, requeridos, { ordenId, codigo, actor, fecha, generarId }) {
+  const porId = new Map(materiales.map((m) => [m.id, m]));
+  const totales = verificarStock(materiales, requeridos);
 
   const cambios = [];
   const movimientos = [];
@@ -150,6 +216,8 @@ export function aDisponibilidad(material) {
     unidad: material.unidad,
     stock: material.stock,
     disponible: material.stock > 0,
+    rendimiento: material.rendimiento ?? null,
+    mermaPorcentaje: material.mermaPorcentaje ?? 0,
   };
 }
 

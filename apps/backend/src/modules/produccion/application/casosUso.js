@@ -55,6 +55,8 @@ export function aOrdenDTO(o) {
     categoriaTrabajo: o.categoriaTrabajo,
     productoTerminado: o.productoTerminado,
     prioridad: o.prioridad,
+    materialId: o.materialId ?? null,
+    consumoSustrato: o.consumoSustrato ?? null,
     maquina: o.maquina,
     operador: o.operador,
     cantidad: o.cantidad,
@@ -82,7 +84,18 @@ export function aOrdenDTO(o) {
  *   obtenerCliente: (id: string) => Promise<object|null> }} deps
  *   `obtenerCliente` es la interfaz pública de Ventas.
  */
-export function crearCasosUsoProduccion({ ordenes, eventBus, reloj, ids, obtenerCliente }) {
+/**
+ * @param {object} deps
+ * @param {{
+ *   calcular: (p: { materialId: string, especificaciones: object, cantidad: number }) =>
+ *     Promise<{ materialId: string, nombre: string, unidad: string, m2: number, cantidad: number | null }>,
+ *   descontar: (p: { ordenId: string, codigo: string, materiales: { materialId: string, cantidad: number }[], actor: object }) =>
+ *     Promise<object[]>,
+ * }} deps.sustratos  Interfaz pública de Inventario.
+ * @param {<T>(fn: () => Promise<T>) => Promise<T>} deps.unidadDeTrabajo
+ *   Ejecuta `fn` en una sola transacción (todo o nada).
+ */
+export function crearCasosUsoProduccion({ ordenes, eventBus, reloj, ids, obtenerCliente, sustratos, unidadDeTrabajo }) {
   function publicarActualizada(orden, actor) {
     const evento = orden.historial.at(-1);
     eventBus.publicar(EVENTOS.ORDEN_ACTUALIZADA, {
@@ -110,26 +123,62 @@ export function crearCasosUsoProduccion({ ordenes, eventBus, reloj, ids, obtener
     crearOrden: casoDeUso({
       nombre: 'produccion.crearOrden',
       // safeExtend: NuevaOrdenSchema tiene validaciones propias que deben conservarse.
-      entrada: NuevaOrdenSchema.safeExtend({
-        actor: ActorSchema,
-        /** Materias primas a descontar; hoy las fichas del frontend no las envían. */
-        materiales: z.array(z.object({ materialId: z.string().uuid(), cantidad: z.number().positive() })).default([]),
-      }),
+      entrada: NuevaOrdenSchema.safeExtend({ actor: ActorSchema }),
       salida: OrdenTrabajoSchema,
-      async ejecutar({ actor, materiales, ...datos }) {
+      /**
+       * Con sustrato del almacén (gran formato):
+       *  1. calcula el consumo y verifica el stock (sin efectos): si no
+       *     alcanza, 409 STOCK_INSUFICIENTE y no se crea nada;
+       *  2. en UNA transacción: toma el código de OT, guarda la orden y
+       *     descuenta el sustrato. Si otra venta se llevó el stock entre el
+       *     paso 1 y el 2, el descuento falla y se deshace todo (orden,
+       *     código y movimientos).
+       * Si el material no tiene rendimiento, la orden se crea sin descontar
+       * y se avisa a Producción y Administración.
+       */
+      async ejecutar({ actor, materialId, ...datos }) {
         const cliente = await obtenerCliente(datos.clienteId);
         if (!cliente) throw new RecursoNoEncontradoError('Cliente', datos.clienteId);
+
         const fecha = reloj.ahora();
-        const orden = crearOrdenTrabajo({
-          id: ids.generar(),
-          eventoId: ids.generar(),
-          codigo: await ordenes.siguienteCodigo(fecha.getFullYear()),
-          cliente,
-          actor,
-          datos,
-          fecha,
+        let calculo = null;
+        const orden = await unidadDeTrabajo(async () => {
+          // Antes de tomar el código de OT: si no alcanza, no se gasta un número.
+          calculo = materialId
+            ? await sustratos.calcular({ materialId, especificaciones: datos.especificaciones ?? {}, cantidad: datos.cantidad })
+            : null;
+          const nueva = crearOrdenTrabajo({
+            id: ids.generar(),
+            eventoId: ids.generar(),
+            codigo: await ordenes.siguienteCodigo(fecha.getFullYear()),
+            cliente,
+            actor,
+            datos,
+            fecha,
+            consumo: calculo ? { materialId, cantidad: calculo.cantidad } : null,
+          });
+          await ordenes.crear(nueva);
+          if (calculo?.cantidad) {
+            await sustratos.descontar({
+              ordenId: nueva.id,
+              codigo: nueva.codigo,
+              materiales: [{ materialId, cantidad: calculo.cantidad }],
+              actor,
+            });
+          }
+          return nueva;
         });
-        await ordenes.crear(orden);
+
+        if (calculo && calculo.cantidad === null) {
+          eventBus.publicar(EVENTOS.DESCUENTO_MATERIALES_FALLIDO, {
+            ordenId: orden.id,
+            codigoError: 'SIN_RENDIMIENTO',
+            mensaje:
+              `${orden.codigo}: «${calculo.nombre}» no tiene rendimiento (m² por ${calculo.unidad}) configurado en Inventario; ` +
+              `no se descontaron ${calculo.m2.toFixed(2)} m² del almacén.`,
+            detalles: { materialId, m2: calculo.m2 },
+          });
+        }
 
         // Se publica solo después de guardar.
         eventBus.publicar(EVENTOS.ORDEN_CREADA, {
@@ -138,7 +187,9 @@ export function crearCasosUsoProduccion({ ordenes, eventBus, reloj, ids, obtener
           producto: orden.producto,
           clienteNombre: orden.clienteNombre,
           vendedorId: orden.vendedorId,
-          materiales,
+          // El sustrato ya se descontó arriba (de forma síncrona, para poder
+          // bloquear la orden); el evento no vuelve a descontar.
+          materiales: [],
           actor,
           fecha: orden.fechaCreacion,
         });
