@@ -9,6 +9,7 @@
 import { ENDPOINTS, PREFIJO_API } from '@markenny/contrato';
 import { validarContrato } from '../application/validacion.js';
 import { DomainError } from '../domain/errors.js';
+import { LIMITES_ESTRICTOS } from './seguridad.js';
 
 export class NoAutenticadoError extends DomainError {
   constructor() {
@@ -29,9 +30,12 @@ export async function registrarApi(fastify, manejadores) {
   await fastify.register(
     async (api) => {
       for (const [nombre, ep] of Object.entries(ENDPOINTS)) {
+        const limite = LIMITES_ESTRICTOS[`${ep.metodo} ${PREFIJO_API}${ep.ruta}`];
         api.route({
           method: ep.metodo,
           url: ep.ruta,
+          // Rutas sensibles (login, instalación...) con límite de intentos propio.
+          ...(limite ? { config: { rateLimit: limite } } : {}),
           handler: async (req, reply) => {
             if (ep.roles) {
               if (!req.usuario) throw new NoAutenticadoError();

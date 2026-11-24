@@ -5,6 +5,7 @@ import { relojSistema, generadorUuid } from './shared/infra/sistema.js';
 import { manejadorErrores } from './shared/http/manejadorErrores.js';
 import { registrarApi } from './shared/http/api.js';
 import { sesionPlugin } from './shared/http/sesion.js';
+import { seguridadPlugin } from './shared/http/seguridad.js';
 import { crearPool } from './shared/db/pool.js';
 import {
   crearModuloAuth,
@@ -60,8 +61,16 @@ function crearRepositorios(pool) {
  */
 export async function construirApp({ config, overrides = {} }) {
   const fastify = Fastify({
-    logger: config.LOG_LEVEL === 'silent' ? false : { level: config.LOG_LEVEL },
+    logger:
+      config.LOG_LEVEL === 'silent'
+        ? false
+        : {
+            level: config.LOG_LEVEL,
+            // Nunca registrar cookies de sesión ni contraseñas en los logs.
+            redact: ['req.headers.cookie', 'req.headers.authorization', 'req.body.password'],
+          },
     bodyLimit: 256 * 1024,
+    trustProxy: config.TRUST_PROXY ?? false,
   });
 
   const pool = overrides.pool ?? (config.DATABASE_URL ? crearPool({ connectionString: config.DATABASE_URL }) : null);
@@ -102,6 +111,11 @@ export async function construirApp({ config, overrides = {} }) {
   const notificaciones = crearModuloNotificaciones({ notificaciones: repos.notificaciones, eventBus, reloj, ids });
 
   fastify.setErrorHandler(manejadorErrores);
+  await fastify.register(seguridadPlugin, {
+    produccion: config.NODE_ENV === 'production',
+    origenesPermitidos: config.ORIGENES_PERMITIDOS ?? [],
+    limiteGlobal: config.LIMITE_PETICIONES_MINUTO ?? 600,
+  });
   await fastify.register(sesionPlugin, {
     resolverSesion: auth.resolverSesion,
     cookieSegura: config.COOKIE_SEGURA ?? false,

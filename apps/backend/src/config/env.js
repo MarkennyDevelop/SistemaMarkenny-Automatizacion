@@ -12,6 +12,19 @@ const EnvSchema = z.object({
   SESION_HORAS: z.coerce.number().int().min(1).max(720).default(12),
   /** Cookie solo por HTTPS. Por defecto, activada en producción. */
   COOKIE_SEGURA: z.enum(['true', 'false']).optional(),
+  /**
+   * Orígenes extra que pueden enviar cambios (p. ej. el dominio del frontend si
+   * se publica en otro dominio que la API). Lista separada por comas.
+   */
+  ORIGENES_PERMITIDOS: z.string().optional(),
+  /**
+   * Confiar en X-Forwarded-* solo si hay un proxy inverso propio (Nginx,
+   * Caddy...) delante. Por defecto no: evita que un cliente falsee su IP o
+   * protocolo (y así saltarse el límite de intentos).
+   */
+  TRUST_PROXY: z.enum(['true', 'false']).default('false'),
+  /** Peticiones por minuto e IP para toda la API. */
+  LIMITE_PETICIONES_MINUTO: z.coerce.number().int().min(10).max(100_000).default(600),
 });
 
 /**
@@ -39,5 +52,10 @@ export function cargarConfig(env = process.env) {
   return {
     ...config,
     COOKIE_SEGURA: config.COOKIE_SEGURA ? config.COOKIE_SEGURA === 'true' : config.NODE_ENV === 'production',
+    TRUST_PROXY: config.TRUST_PROXY === 'true',
+    ORIGENES_PERMITIDOS: (config.ORIGENES_PERMITIDOS ?? '')
+      .split(',')
+      .map((o) => o.trim())
+      .filter(Boolean),
   };
 }

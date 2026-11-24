@@ -34,6 +34,7 @@ export function crearCasosUsoAuth({ usuarios, sesiones, hasher, tokens, reloj, i
       tokenHash: tokens.huella(token),
       usuarioId: usuario.id,
       expiraEn: new Date(ahora.getTime() + duracionSesionHoras * 3_600_000).toISOString(),
+      ahora: ahora.toISOString(),
     });
     await usuarios.actualizar(usuario.id, { ultimoAcceso: ahora.toISOString() });
     return { token, usuario: aUsuarioPublico({ ...usuario, ultimoAcceso: ahora.toISOString() }) };

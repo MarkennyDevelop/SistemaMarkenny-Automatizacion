@@ -14,7 +14,8 @@
  * @property {(id: string, cambios: { activo?: boolean, passwordHash?: string, ultimoAcceso?: string }) => Promise<void>} actualizar
  *
  * @typedef {Object} SesionRepositoryPort
- * @property {(sesion: { tokenHash: string, usuarioId: string, expiraEn: string }) => Promise<void>} crear
+ * @property {(sesion: { tokenHash: string, usuarioId: string, expiraEn: string, ahora: string }) => Promise<void>} crear
+ *   Guarda la sesión y puede purgar las vencidas antes de `ahora` (reloj de la aplicación).
  * @property {(tokenHash: string, ahora: string) => Promise<object|null>} usuarioDeSesion  Usuario de una sesión vigente.
  * @property {(tokenHash: string) => Promise<void>} eliminar
  * @property {(usuarioId: string) => Promise<void>} eliminarDeUsuario

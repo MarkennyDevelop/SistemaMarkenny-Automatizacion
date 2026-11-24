@@ -17,6 +17,10 @@ export function manejadorErrores(err, req, reply) {
     const estado = ERRORES[err.codigo] ?? 422;
     return reply.code(estado).send({ error: err.codigo, mensaje: err.message, detalles: err.detalles });
   }
+  // Límite de peticiones (@fastify/rate-limit).
+  if (err.statusCode === 429) {
+    return reply.code(429).send({ error: 'DEMASIADOS_INTENTOS', mensaje: err.mensaje ?? 'Demasiadas peticiones. Espera un momento.' });
+  }
   // Errores de Fastify antes del handler (JSON malformado, cuerpo demasiado grande...).
   if (err.statusCode && err.statusCode < 500) {
     return reply.code(err.statusCode).send({ error: 'CONTRATO_INVALIDO', mensaje: err.message });

@@ -99,14 +99,15 @@ export class SesionRepositoryPostgres {
   constructor(pool) {
     this.pool = pool;
   }
-  async crear({ tokenHash, usuarioId, expiraEn }) {
+  async crear({ tokenHash, usuarioId, expiraEn, ahora }) {
     await this.pool.query('INSERT INTO sesiones (token_hash, usuario_id, expira_en) VALUES ($1, $2, $3)', [
       tokenHash,
       usuarioId,
       expiraEn,
     ]);
-    // Limpieza oportunista de sesiones caducadas.
-    await this.pool.query('DELETE FROM sesiones WHERE expira_en < now()');
+    // Limpieza oportunista de sesiones caducadas, con el reloj de la aplicación
+    // (el mismo que fija la expiración), no con now() de la base de datos.
+    await this.pool.query('DELETE FROM sesiones WHERE expira_en < $1', [ahora]);
   }
   async usuarioDeSesion(tokenHash, ahora) {
     const { rows } = await this.pool.query(
