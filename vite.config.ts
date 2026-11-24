@@ -40,21 +40,15 @@ export default defineConfig({
   build: {
     rollupOptions: {
       output: {
-        manualChunks: {
-          react: ["react", "react-dom", "react-router-dom"],
-          query: ["@tanstack/react-query"],
-          forms: ["react-hook-form", "zod", "@hookform/resolvers"],
-          radix: [
-            "@radix-ui/react-collapsible",
-            "@radix-ui/react-dialog",
-            "@radix-ui/react-dropdown-menu",
-            "@radix-ui/react-label",
-            "@radix-ui/react-select",
-            "@radix-ui/react-separator",
-            "@radix-ui/react-slot",
-            "@radix-ui/react-tabs",
-            "@radix-ui/react-tooltip",
-          ],
+        // Vite 8 (Rolldown) ya no acepta el objeto de manualChunks: se agrupan
+        // las dependencias por paquete con una función equivalente.
+        manualChunks(id: string) {
+          if (!id.includes("node_modules")) return undefined;
+          if (/[\\/](react|react-dom|react-router|react-router-dom|scheduler)[\\/]/.test(id)) return "react";
+          if (id.includes("@tanstack")) return "query";
+          if (/[\\/](react-hook-form|zod|@hookform)[\\/]/.test(id)) return "forms";
+          if (id.includes("@radix-ui")) return "radix";
+          return undefined;
         },
       },
     },

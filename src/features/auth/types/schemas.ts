@@ -51,9 +51,7 @@ export const empleadoSchema = z
       .optional()
       .or(z.literal("")),
     cargo: z.string().trim().max(60).optional().or(z.literal("")),
-    rol: z.enum(["VENDEDOR", "PRODUCCION"], {
-      errorMap: () => ({ message: "Selecciona Vendedor o Producción" }),
-    }),
+    rol: z.enum(["VENDEDOR", "PRODUCCION"], { error: "Selecciona Vendedor o Producción" }),
     password: password,
     confirmar: z.string().min(1, "Confirma la contraseña"),
   })
