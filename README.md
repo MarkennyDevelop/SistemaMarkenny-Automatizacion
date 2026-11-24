@@ -187,3 +187,54 @@ sobre órdenes guardadas en el formato anterior.
 Verificación: contrato 26 pruebas, cliente HTTP 9, backend 100 (con
 PostgreSQL), frontend 26 + typecheck + build, y recorrido en navegador contra
 el backend real.
+
+## Pendones, stickers y viniles · Producto Terminado — 24/11/2026 (tercera revisión)
+
+### Formulario de pendones, stickers y viniles
+
+- **Casillas que "no marcaban"**: el tipo de pieza sí se rellenaba, pero
+  sustrato y acabados usaban `ToggleCard`, cuyo estado activo era un fondo
+  rojo al 4,5 % y un punto de 6 px: casi invisible. Ahora toda la ficha usa
+  `OptionGroup` (el mismo de papelería): borde y fondo rojo Markenny, check
+  visible, `aria-checked` y se desmarca con otro clic. `ToggleCard` (ficha
+  general y cotizador) también ganó borde sólido y check.
+- **Ficha en blanco**: antes venía con "Pendón", metros y 1 × 2 preseleccionados.
+  Ahora tipo, unidad, medidas, sustrato y acabado se eligen a mano (Zod los exige).
+- **Sustratos del almacén**: solo viniles y lonas con existencia > 0
+  (`GET /inventario/disponibilidad`). Lo agotado o inexistente no se muestra.
+  Si el sustrato se agota mientras se llena la ficha, la orden no se envía
+  (`SustratoNoDisponibleError`).
+- **Único acabado: Corte con plotter.** El mate o brillante viene en el
+  material (vinil mate, vinil adhesivo blanco brillante...). El contrato
+  rechaza "Laminado mate/brillante" en órdenes nuevas de gran formato; las
+  órdenes anteriores conservan su texto.
+- Título y pestañas: "Pendones, stickers y viniles".
+
+### Producto Terminado
+
+- Sidebar: "Sellos y PT" → **"Producto Terminado"** (ícono de paquete). Ruta
+  nueva `/inventario/producto-terminado`; la antigua `/inventario/sellos`
+  redirige. Se corrigió que "Inventario" y la subpágina aparecieran activos a
+  la vez en el menú.
+- **Filtro estricto en el backend**: Inventario consulta a Producción la fase
+  real de cada orden (`fasesDeOrdenes`, mismo patrón que `resumenOrdenes`
+  entre Ventas y Producción) y solo devuelve órdenes en `EMPAQUETADO` sin
+  entregar. Quedan fuera `EN_PROCESO`, `EN_REVISION`, `FINALIZADO`, lo
+  entregado y cualquier registro sin orden. Dos pruebas nuevas lo cubren.
+- La página ya no mezcla sellos vírgenes (materia prima, siguen en Inventario).
+- Semilla demo con los viniles del almacén: blanco brillante, holográfico,
+  clear, microperforado y mate (este último en 0 para probar el filtro).
+
+### Observación pendiente
+
+El backend ya sabe descontar materias primas al crear una orden (evento
+`ORDEN_CREADA` con `materiales`), pero el contrato HTTP de `NuevaOrden` no
+acepta ese campo, así que hoy ninguna orden descuenta inventario
+automáticamente. Conectarlo (enviar el id del sustrato y la cantidad
+calculada) es el siguiente paso para que el stock baje solo.
+
+Verificación: contrato 26, cliente HTTP 9, backend 102 (con PostgreSQL),
+frontend 27 + typecheck + build; navegador contra el backend real (casillas en
+rojo con check, sustratos con existencia, corte con plotter, OT creada,
+Producto Terminado con solo las órdenes empaquetadas, salida al entregar,
+sin desborde en móvil).
