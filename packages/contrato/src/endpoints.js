@@ -268,7 +268,7 @@ export const ENDPOINTS = Object.freeze({
     metodo: 'GET',
     ruta: '/inventario/productos-terminados',
     roles: PLANTA,
-    resumen: 'Sellos y productos terminados en almacén',
+    resumen: 'Producto terminado: órdenes EMPAQUETADAS en almacén pendientes de entrega',
     query: e.FiltroProductosTerminadosSchema,
     respuesta: z.array(e.ProductoTerminadoSchema),
     errores: ['CONTRATO_INVALIDO', 'NO_AUTENTICADO', 'SIN_PERMISO'],

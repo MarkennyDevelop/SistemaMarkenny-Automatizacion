@@ -5809,7 +5809,7 @@
     "/api/v1/inventario/productos-terminados": {
       "get": {
         "operationId": "listarProductosTerminados",
-        "summary": "Sellos y productos terminados en almacén",
+        "summary": "Producto terminado: órdenes EMPAQUETADAS en almacén pendientes de entrega",
         "tags": [
           "inventario"
         ],
