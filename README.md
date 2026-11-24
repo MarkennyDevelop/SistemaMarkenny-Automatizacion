@@ -136,3 +136,54 @@ npm run migrate
 ### Pendiente (requiere decisión del dueño del repositorio)
 
 - La rama `main` tiene `node_modules/` versionado (commit `866d525`). Conviene quitarlo con `git rm -r --cached node_modules` y un `.gitignore`; no se tocó porque `main` no es una rama de trabajo de esta sesión.
+
+## OT de papelería según el formato impreso — 24/11/2026 (segunda revisión)
+
+Se comparó la ficha con la foto del formato impreso de MARKENNY, C.A. Lo que ya
+coincidía se mantuvo (cliente y teléfono, vendedor, nombre del documento,
+fechas de aprobación y finalizado, cantidad, NE./RM./F./Otro, Talonario/Block,
+doble cara, laminado, tipos de papel, gramaje opcional, partes, observaciones y
+fecha de entrega). Se corrigió:
+
+| Antes | Ahora |
+|---|---|
+| Sin "Tarjetas de presentación". | Nuevo tipo de trabajo. No lleva talonario/block, partes, numeración ni engomado; ingresa al almacén como `TARJETAS_PRESENTACION`. |
+| Horizontal/Vertical dependía de la perforación. | "Vista del trabajo" (`orientacion`) obligatoria e independiente; perforación es solo Sí/No. |
+| Engomado disponible siempre. | Solo aparece con **Block**; se limpia al cambiar a Talonario. El contrato rechaza engomado fuera de blocks. |
+| "Pantone" era una opción con referencia. | "Pantone" es el título de la columna: Negro, Azul, Verde, Rojo, A color, Otro (con nombre). |
+| Tamaños sin tabloide. | 1/4 Cuarto de carta, 1/2 Media carta, Carta, **Tabloide**, Otro. |
+| Una sola numeración. | **N° del encabezado** y **N° de control del pie de página** (prefijo `00-`), cada uno con su rango validado. |
+
+Contrato: `TIPOS_DOCUMENTO` + `TARJETAS`, `TAMANOS_PAPELERIA` + `TABLOIDE`,
+`COLORES_TINTA` sin `PANTONE`, `ORIENTACIONES`, campos `orientacion` y
+`numeroControlPrefijo/Desde/Hasta`, `EMPRESA` con domicilio fiscal, correo,
+teléfono e Instagram del formato.
+
+Base de datos — migración `003_formato_impreso_papeleria.sql` (ejecutar
+`npm run migrate`): convierte las órdenes existentes sin perder datos
+(`perforacionOrientacion` → `orientacion`; color Pantone → "Otro: Pantone
+<referencia>"; engomado en talonarios → se anota en las observaciones de la
+orden) y agrega `TARJETAS_PRESENTACION` a los productos terminados. Probada
+sobre órdenes guardadas en el formato anterior.
+
+### Defectos de estilo corregidos (sin cambiar la estética)
+
+- Las páginas con columna lateral (nueva orden, pendones, trabajo general,
+  cotizador, seguimiento, panel de ventas) desbordaban **175 px** en móvil: la
+  cuadrícula no tenía columna base y crecía con el contenido. Ahora `grid-cols-1`
+  y `minmax(0, …)` en escritorio. Verificado: desborde 0 en las 13 rutas, en los
+  tres roles, a 390 px.
+- `OptionGroup`: la `<legend>` no era el primer hijo del `<fieldset>` (el grupo
+  quedaba sin nombre accesible) y el `fieldset` no tenía `min-w-0`.
+- Los campos de rango de 3 columnas pasaban a 2 en tablet porque `FormGrid`
+  impone `sm:grid-cols-2`.
+- "Horizontal" se partía a mitad de palabra; "Otros" se cortaba en Partes.
+- Logo: ternarios con ramas idénticas y colores hex fijos → clases de la paleta
+  (`fill-white`, `fill-markenny-red`).
+- Notas de la orden: clases condicionales sin `cn` y `accent-[hsl(...)]` →
+  `cn(...)` y `accent-primary`.
+- Se verificó que todas las clases usadas existan en el CSS generado.
+
+Verificación: contrato 26 pruebas, cliente HTTP 9, backend 100 (con
+PostgreSQL), frontend 26 + typecheck + build, y recorrido en navegador contra
+el backend real.
