@@ -98,8 +98,9 @@
                   },
                   "email": {
                     "type": "string",
+                    "maxLength": 150,
                     "format": "email",
-                    "maxLength": 150
+                    "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
                   },
                   "telefono": {
                     "type": "string",
@@ -145,7 +146,8 @@
                   "properties": {
                     "id": {
                       "type": "string",
-                      "format": "uuid"
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                     },
                     "nombre": {
                       "type": "string"
@@ -154,12 +156,16 @@
                       "type": "string"
                     },
                     "telefono": {
-                      "type": "string",
-                      "nullable": true
+                      "type": [
+                        "string",
+                        "null"
+                      ]
                     },
                     "cargo": {
-                      "type": "string",
-                      "nullable": true
+                      "type": [
+                        "string",
+                        "null"
+                      ]
                     },
                     "rol": {
                       "type": "string",
@@ -174,16 +180,26 @@
                     },
                     "creadoEn": {
                       "type": "string",
-                      "format": "date-time"
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
                     },
                     "ultimoAcceso": {
-                      "type": "string",
-                      "format": "date-time",
-                      "nullable": true
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
                     },
                     "creadoPor": {
-                      "type": "string",
-                      "nullable": true
+                      "type": [
+                        "string",
+                        "null"
+                      ]
                     }
                   },
                   "required": [
@@ -222,6 +238,16 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "DEMASIADOS_INTENTOS",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
           }
         }
       }
@@ -246,8 +272,9 @@
                 "properties": {
                   "email": {
                     "type": "string",
+                    "maxLength": 150,
                     "format": "email",
-                    "maxLength": 150
+                    "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
                   },
                   "password": {
                     "type": "string",
@@ -274,7 +301,8 @@
                   "properties": {
                     "id": {
                       "type": "string",
-                      "format": "uuid"
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                     },
                     "nombre": {
                       "type": "string"
@@ -283,12 +311,16 @@
                       "type": "string"
                     },
                     "telefono": {
-                      "type": "string",
-                      "nullable": true
+                      "type": [
+                        "string",
+                        "null"
+                      ]
                     },
                     "cargo": {
-                      "type": "string",
-                      "nullable": true
+                      "type": [
+                        "string",
+                        "null"
+                      ]
                     },
                     "rol": {
                       "type": "string",
@@ -303,16 +335,26 @@
                     },
                     "creadoEn": {
                       "type": "string",
-                      "format": "date-time"
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
                     },
                     "ultimoAcceso": {
-                      "type": "string",
-                      "format": "date-time",
-                      "nullable": true
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
                     },
                     "creadoPor": {
-                      "type": "string",
-                      "nullable": true
+                      "type": [
+                        "string",
+                        "null"
+                      ]
                     }
                   },
                   "required": [
@@ -344,6 +386,16 @@
           },
           "401": {
             "description": "CREDENCIALES_INVALIDAS",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "DEMASIADOS_INTENTOS",
             "content": {
               "application/json": {
                 "schema": {
@@ -418,7 +470,8 @@
                   "properties": {
                     "id": {
                       "type": "string",
-                      "format": "uuid"
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                     },
                     "nombre": {
                       "type": "string"
@@ -427,12 +480,16 @@
                       "type": "string"
                     },
                     "telefono": {
-                      "type": "string",
-                      "nullable": true
+                      "type": [
+                        "string",
+                        "null"
+                      ]
                     },
                     "cargo": {
-                      "type": "string",
-                      "nullable": true
+                      "type": [
+                        "string",
+                        "null"
+                      ]
                     },
                     "rol": {
                       "type": "string",
@@ -447,16 +504,26 @@
                     },
                     "creadoEn": {
                       "type": "string",
-                      "format": "date-time"
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
                     },
                     "ultimoAcceso": {
-                      "type": "string",
-                      "format": "date-time",
-                      "nullable": true
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
                     },
                     "creadoPor": {
-                      "type": "string",
-                      "nullable": true
+                      "type": [
+                        "string",
+                        "null"
+                      ]
                     }
                   },
                   "required": [
@@ -517,7 +584,8 @@
                     "properties": {
                       "id": {
                         "type": "string",
-                        "format": "uuid"
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                       },
                       "nombre": {
                         "type": "string"
@@ -526,12 +594,16 @@
                         "type": "string"
                       },
                       "telefono": {
-                        "type": "string",
-                        "nullable": true
+                        "type": [
+                          "string",
+                          "null"
+                        ]
                       },
                       "cargo": {
-                        "type": "string",
-                        "nullable": true
+                        "type": [
+                          "string",
+                          "null"
+                        ]
                       },
                       "rol": {
                         "type": "string",
@@ -546,16 +618,26 @@
                       },
                       "creadoEn": {
                         "type": "string",
-                        "format": "date-time"
+                        "format": "date-time",
+                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
                       },
                       "ultimoAcceso": {
-                        "type": "string",
-                        "format": "date-time",
-                        "nullable": true
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
                       },
                       "creadoPor": {
-                        "type": "string",
-                        "nullable": true
+                        "type": [
+                          "string",
+                          "null"
+                        ]
                       }
                     },
                     "required": [
@@ -627,8 +709,9 @@
                   },
                   "email": {
                     "type": "string",
+                    "maxLength": 150,
                     "format": "email",
-                    "maxLength": 150
+                    "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
                   },
                   "telefono": {
                     "type": "string",
@@ -680,7 +763,8 @@
                   "properties": {
                     "id": {
                       "type": "string",
-                      "format": "uuid"
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                     },
                     "nombre": {
                       "type": "string"
@@ -689,12 +773,16 @@
                       "type": "string"
                     },
                     "telefono": {
-                      "type": "string",
-                      "nullable": true
+                      "type": [
+                        "string",
+                        "null"
+                      ]
                     },
                     "cargo": {
-                      "type": "string",
-                      "nullable": true
+                      "type": [
+                        "string",
+                        "null"
+                      ]
                     },
                     "rol": {
                       "type": "string",
@@ -709,16 +797,26 @@
                     },
                     "creadoEn": {
                       "type": "string",
-                      "format": "date-time"
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
                     },
                     "ultimoAcceso": {
-                      "type": "string",
-                      "format": "date-time",
-                      "nullable": true
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
                     },
                     "creadoPor": {
-                      "type": "string",
-                      "nullable": true
+                      "type": [
+                        "string",
+                        "null"
+                      ]
                     }
                   },
                   "required": [
@@ -804,7 +902,8 @@
             "required": true,
             "schema": {
               "type": "string",
-              "format": "uuid"
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
             }
           }
         ],
@@ -837,7 +936,8 @@
                   "properties": {
                     "id": {
                       "type": "string",
-                      "format": "uuid"
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                     },
                     "nombre": {
                       "type": "string"
@@ -846,12 +946,16 @@
                       "type": "string"
                     },
                     "telefono": {
-                      "type": "string",
-                      "nullable": true
+                      "type": [
+                        "string",
+                        "null"
+                      ]
                     },
                     "cargo": {
-                      "type": "string",
-                      "nullable": true
+                      "type": [
+                        "string",
+                        "null"
+                      ]
                     },
                     "rol": {
                       "type": "string",
@@ -866,16 +970,26 @@
                     },
                     "creadoEn": {
                       "type": "string",
-                      "format": "date-time"
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
                     },
                     "ultimoAcceso": {
-                      "type": "string",
-                      "format": "date-time",
-                      "nullable": true
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
                     },
                     "creadoPor": {
-                      "type": "string",
-                      "nullable": true
+                      "type": [
+                        "string",
+                        "null"
+                      ]
                     }
                   },
                   "required": [
@@ -970,7 +1084,8 @@
             "required": true,
             "schema": {
               "type": "string",
-              "format": "uuid"
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
             }
           }
         ],
@@ -1079,7 +1194,8 @@
                     "properties": {
                       "id": {
                         "type": "string",
-                        "format": "uuid"
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                       },
                       "nombre": {
                         "type": "string"
@@ -1101,7 +1217,8 @@
                       },
                       "ordenesActivas": {
                         "type": "integer",
-                        "minimum": 0
+                        "minimum": 0,
+                        "maximum": 9007199254740991
                       },
                       "saldoPendiente": {
                         "type": "number",
@@ -1110,7 +1227,8 @@
                       },
                       "creadoEn": {
                         "type": "string",
-                        "format": "date-time"
+                        "format": "date-time",
+                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
                       }
                     },
                     "required": [
@@ -1197,8 +1315,9 @@
                   },
                   "email": {
                     "type": "string",
+                    "maxLength": 150,
                     "format": "email",
-                    "maxLength": 150
+                    "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
                   },
                   "ciudad": {
                     "type": "string",
@@ -1229,7 +1348,8 @@
                   "properties": {
                     "id": {
                       "type": "string",
-                      "format": "uuid"
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                     },
                     "nombre": {
                       "type": "string"
@@ -1251,7 +1371,8 @@
                     },
                     "ordenesActivas": {
                       "type": "integer",
-                      "minimum": 0
+                      "minimum": 0,
+                      "maximum": 9007199254740991
                     },
                     "saldoPendiente": {
                       "type": "number",
@@ -1260,7 +1381,8 @@
                     },
                     "creadoEn": {
                       "type": "string",
-                      "format": "date-time"
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
                     }
                   },
                   "required": [
@@ -1397,10 +1519,10 @@
             "in": "query",
             "required": false,
             "schema": {
+              "default": 200,
               "type": "integer",
               "minimum": 1,
-              "maximum": 500,
-              "default": 200
+              "maximum": 500
             }
           }
         ],
@@ -1416,7 +1538,8 @@
                     "properties": {
                       "id": {
                         "type": "string",
-                        "format": "uuid"
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                       },
                       "codigo": {
                         "type": "string",
@@ -1424,10 +1547,17 @@
                       },
                       "clienteId": {
                         "type": "string",
-                        "format": "uuid"
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                       },
                       "clienteNombre": {
                         "type": "string"
+                      },
+                      "clienteTelefono": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
                       },
                       "producto": {
                         "type": "string"
@@ -1452,6 +1582,17 @@
                           "GENERAL"
                         ]
                       },
+                      "productoTerminado": {
+                        "type": "string",
+                        "enum": [
+                          "PLIEGO_STICKERS",
+                          "TALONARIO",
+                          "BLOCK",
+                          "SELLO_PERSONALIZADO",
+                          "PENDON",
+                          "VINIL_ROTULACION"
+                        ]
+                      },
                       "prioridad": {
                         "type": "string",
                         "enum": [
@@ -1462,16 +1603,21 @@
                         ]
                       },
                       "maquina": {
-                        "type": "string"
+                        "type": [
+                          "string",
+                          "null"
+                        ]
                       },
                       "operador": {
-                        "type": "string",
-                        "nullable": true
+                        "type": [
+                          "string",
+                          "null"
+                        ]
                       },
                       "cantidad": {
                         "type": "integer",
-                        "exclusiveMinimum": true,
-                        "minimum": 0
+                        "exclusiveMinimum": 0,
+                        "maximum": 9007199254740991
                       },
                       "sustrato": {
                         "type": "string"
@@ -1491,35 +1637,130 @@
                       "especificaciones": {
                         "type": "object",
                         "properties": {
-                          "tipoPapeleria": {
+                          "nombreDocumento": {
+                            "type": "string",
+                            "maxLength": 120
+                          },
+                          "tipoDocumento": {
                             "type": "string",
                             "enum": [
-                              "FACTURA",
-                              "TALONARIO",
-                              "RECIPE",
-                              "NOTA",
-                              "ORDEN_COMPRA",
-                              "RECIBO",
-                              "CARTA",
+                              "NE",
+                              "RM",
+                              "F",
                               "OTRO"
                             ]
+                          },
+                          "tipoDocumentoOtro": {
+                            "type": "string",
+                            "maxLength": 60
+                          },
+                          "formato": {
+                            "type": "string",
+                            "enum": [
+                              "TALONARIO",
+                              "BLOCK"
+                            ]
+                          },
+                          "dobleCara": {
+                            "type": "boolean"
                           },
                           "partes": {
                             "type": "integer",
                             "minimum": 1,
-                            "maximum": 6
+                            "maximum": 10
                           },
                           "numeracionDesde": {
                             "type": "integer",
-                            "minimum": 0
+                            "minimum": 0,
+                            "maximum": 9007199254740991
                           },
                           "numeracionHasta": {
                             "type": "integer",
-                            "minimum": 0
+                            "minimum": 0,
+                            "maximum": 9007199254740991
                           },
                           "numeracionPrefijo": {
                             "type": "string",
                             "maxLength": 12
+                          },
+                          "perforacion": {
+                            "type": "boolean"
+                          },
+                          "perforacionOrientacion": {
+                            "type": "string",
+                            "enum": [
+                              "HORIZONTAL",
+                              "VERTICAL"
+                            ]
+                          },
+                          "engomado": {
+                            "type": "string",
+                            "enum": [
+                              "ARRIBA",
+                              "ABAJO",
+                              "DERECHA",
+                              "IZQUIERDA"
+                            ]
+                          },
+                          "laminado": {
+                            "type": "string",
+                            "enum": [
+                              "BRILLANTE",
+                              "MATE"
+                            ]
+                          },
+                          "coloresTinta": {
+                            "maxItems": 7,
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "enum": [
+                                "PANTONE",
+                                "NEGRO",
+                                "AZUL",
+                                "VERDE",
+                                "ROJO",
+                                "A_COLOR",
+                                "OTRO"
+                              ]
+                            }
+                          },
+                          "pantone": {
+                            "type": "string",
+                            "maxLength": 40
+                          },
+                          "colorTintaOtro": {
+                            "type": "string",
+                            "maxLength": 40
+                          },
+                          "tipoPapel": {
+                            "type": "string",
+                            "enum": [
+                              "QUIMICO",
+                              "BOND",
+                              "GLASSE",
+                              "BRISTOL",
+                              "OPALINA",
+                              "FOTOGRAFICO",
+                              "OTRO"
+                            ]
+                          },
+                          "tipoPapelOtro": {
+                            "type": "string",
+                            "maxLength": 60
+                          },
+                          "tamano": {
+                            "type": "string",
+                            "enum": [
+                              "CUARTO_CARTA",
+                              "MEDIA_CARTA",
+                              "CARTA",
+                              "OTRO"
+                            ]
+                          },
+                          "tamanoOtro": {
+                            "type": "string",
+                            "maxLength": 40
                           },
                           "tipoGranFormato": {
                             "type": "string",
@@ -1535,14 +1776,12 @@
                           },
                           "ancho": {
                             "type": "number",
-                            "exclusiveMinimum": true,
-                            "minimum": 0,
+                            "exclusiveMinimum": 0,
                             "maximum": 10000
                           },
                           "alto": {
                             "type": "number",
-                            "exclusiveMinimum": true,
-                            "minimum": 0,
+                            "exclusiveMinimum": 0,
                             "maximum": 10000
                           },
                           "unidadDimension": {
@@ -1569,18 +1808,17 @@
                           },
                           "gramaje": {
                             "type": "number",
-                            "exclusiveMinimum": true,
-                            "minimum": 0,
+                            "exclusiveMinimum": 0,
                             "maximum": 2000
                           },
                           "pantones": {
+                            "maxItems": 20,
                             "type": "array",
                             "items": {
                               "type": "string",
                               "minLength": 1,
                               "maxLength": 40
-                            },
-                            "maxItems": 20
+                            }
                           },
                           "observaciones": {
                             "type": "string",
@@ -1619,23 +1857,38 @@
                       },
                       "vendedorId": {
                         "type": "string",
-                        "format": "uuid"
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                       },
                       "vendedor": {
                         "type": "string"
                       },
                       "fechaCreacion": {
                         "type": "string",
-                        "format": "date-time"
+                        "format": "date-time",
+                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                      },
+                      "fechaFinalizado": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
                       },
                       "fechaEntrega": {
                         "type": "string",
-                        "format": "date-time"
+                        "format": "date-time",
+                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
                       },
                       "version": {
                         "type": "integer",
-                        "exclusiveMinimum": true,
-                        "minimum": 0
+                        "exclusiveMinimum": 0,
+                        "maximum": 9007199254740991
                       },
                       "historial": {
                         "type": "array",
@@ -1644,7 +1897,8 @@
                           "properties": {
                             "id": {
                               "type": "string",
-                              "format": "uuid"
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                             },
                             "fase": {
                               "type": "string",
@@ -1656,18 +1910,25 @@
                               ]
                             },
                             "anterior": {
-                              "type": "string",
-                              "enum": [
-                                "EN_PROCESO",
-                                "EN_REVISION",
-                                "FINALIZADO",
-                                "EMPAQUETADO"
-                              ],
-                              "nullable": true
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "enum": [
+                                    "EN_PROCESO",
+                                    "EN_REVISION",
+                                    "FINALIZADO",
+                                    "EMPAQUETADO"
+                                  ]
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
                             },
                             "usuarioId": {
                               "type": "string",
-                              "format": "uuid"
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                             },
                             "usuario": {
                               "type": "string"
@@ -1682,11 +1943,14 @@
                             },
                             "fecha": {
                               "type": "string",
-                              "format": "date-time"
+                              "format": "date-time",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
                             },
                             "nota": {
-                              "type": "string",
-                              "nullable": true
+                              "type": [
+                                "string",
+                                "null"
+                              ]
                             }
                           },
                           "required": [
@@ -1701,6 +1965,56 @@
                           ],
                           "additionalProperties": false
                         }
+                      },
+                      "notas": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "mensaje": {
+                              "type": "string"
+                            },
+                            "solicitaRetrabajo": {
+                              "type": "boolean"
+                            },
+                            "usuarioId": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "usuario": {
+                              "type": "string"
+                            },
+                            "rol": {
+                              "type": "string",
+                              "enum": [
+                                "ADMIN",
+                                "VENDEDOR",
+                                "PRODUCCION"
+                              ]
+                            },
+                            "fecha": {
+                              "type": "string",
+                              "format": "date-time",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "mensaje",
+                            "solicitaRetrabajo",
+                            "usuarioId",
+                            "usuario",
+                            "rol",
+                            "fecha"
+                          ],
+                          "additionalProperties": false
+                        }
                       }
                     },
                     "required": [
@@ -1708,10 +2022,12 @@
                       "codigo",
                       "clienteId",
                       "clienteNombre",
+                      "clienteTelefono",
                       "producto",
                       "descripcion",
                       "tecnologia",
                       "categoriaTrabajo",
+                      "productoTerminado",
                       "prioridad",
                       "maquina",
                       "operador",
@@ -1727,9 +2043,11 @@
                       "vendedorId",
                       "vendedor",
                       "fechaCreacion",
+                      "fechaFinalizado",
                       "fechaEntrega",
                       "version",
-                      "historial"
+                      "historial",
+                      "notas"
                     ],
                     "additionalProperties": false
                   }
@@ -1785,7 +2103,8 @@
                 "properties": {
                   "clienteId": {
                     "type": "string",
-                    "format": "uuid"
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                   },
                   "producto": {
                     "type": "string",
@@ -1793,9 +2112,9 @@
                     "maxLength": 120
                   },
                   "descripcion": {
+                    "default": "",
                     "type": "string",
-                    "maxLength": 280,
-                    "default": ""
+                    "maxLength": 280
                   },
                   "tecnologia": {
                     "type": "string",
@@ -1814,7 +2133,19 @@
                       "GENERAL"
                     ]
                   },
+                  "productoTerminado": {
+                    "type": "string",
+                    "enum": [
+                      "PLIEGO_STICKERS",
+                      "TALONARIO",
+                      "BLOCK",
+                      "SELLO_PERSONALIZADO",
+                      "PENDON",
+                      "VINIL_ROTULACION"
+                    ]
+                  },
                   "prioridad": {
+                    "default": "MEDIA",
                     "type": "string",
                     "enum": [
                       "BAJA",
@@ -1825,7 +2156,6 @@
                   },
                   "maquina": {
                     "type": "string",
-                    "minLength": 1,
                     "maxLength": 80
                   },
                   "cantidad": {
@@ -1839,55 +2169,151 @@
                     "maxLength": 120
                   },
                   "tintas": {
+                    "maxItems": 20,
                     "type": "array",
                     "items": {
                       "type": "string",
                       "minLength": 1,
                       "maxLength": 40
-                    },
-                    "maxItems": 20
+                    }
                   },
                   "acabados": {
+                    "maxItems": 20,
                     "type": "array",
                     "items": {
                       "type": "string",
                       "minLength": 1,
                       "maxLength": 60
-                    },
-                    "maxItems": 20
+                    }
                   },
                   "especificaciones": {
+                    "default": {},
                     "type": "object",
                     "properties": {
-                      "tipoPapeleria": {
+                      "nombreDocumento": {
+                        "type": "string",
+                        "maxLength": 120
+                      },
+                      "tipoDocumento": {
                         "type": "string",
                         "enum": [
-                          "FACTURA",
-                          "TALONARIO",
-                          "RECIPE",
-                          "NOTA",
-                          "ORDEN_COMPRA",
-                          "RECIBO",
-                          "CARTA",
+                          "NE",
+                          "RM",
+                          "F",
                           "OTRO"
                         ]
+                      },
+                      "tipoDocumentoOtro": {
+                        "type": "string",
+                        "maxLength": 60
+                      },
+                      "formato": {
+                        "type": "string",
+                        "enum": [
+                          "TALONARIO",
+                          "BLOCK"
+                        ]
+                      },
+                      "dobleCara": {
+                        "type": "boolean"
                       },
                       "partes": {
                         "type": "integer",
                         "minimum": 1,
-                        "maximum": 6
+                        "maximum": 10
                       },
                       "numeracionDesde": {
                         "type": "integer",
-                        "minimum": 0
+                        "minimum": 0,
+                        "maximum": 9007199254740991
                       },
                       "numeracionHasta": {
                         "type": "integer",
-                        "minimum": 0
+                        "minimum": 0,
+                        "maximum": 9007199254740991
                       },
                       "numeracionPrefijo": {
                         "type": "string",
                         "maxLength": 12
+                      },
+                      "perforacion": {
+                        "type": "boolean"
+                      },
+                      "perforacionOrientacion": {
+                        "type": "string",
+                        "enum": [
+                          "HORIZONTAL",
+                          "VERTICAL"
+                        ]
+                      },
+                      "engomado": {
+                        "type": "string",
+                        "enum": [
+                          "ARRIBA",
+                          "ABAJO",
+                          "DERECHA",
+                          "IZQUIERDA"
+                        ]
+                      },
+                      "laminado": {
+                        "type": "string",
+                        "enum": [
+                          "BRILLANTE",
+                          "MATE"
+                        ]
+                      },
+                      "coloresTinta": {
+                        "maxItems": 7,
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "enum": [
+                            "PANTONE",
+                            "NEGRO",
+                            "AZUL",
+                            "VERDE",
+                            "ROJO",
+                            "A_COLOR",
+                            "OTRO"
+                          ]
+                        }
+                      },
+                      "pantone": {
+                        "type": "string",
+                        "maxLength": 40
+                      },
+                      "colorTintaOtro": {
+                        "type": "string",
+                        "maxLength": 40
+                      },
+                      "tipoPapel": {
+                        "type": "string",
+                        "enum": [
+                          "QUIMICO",
+                          "BOND",
+                          "GLASSE",
+                          "BRISTOL",
+                          "OPALINA",
+                          "FOTOGRAFICO",
+                          "OTRO"
+                        ]
+                      },
+                      "tipoPapelOtro": {
+                        "type": "string",
+                        "maxLength": 60
+                      },
+                      "tamano": {
+                        "type": "string",
+                        "enum": [
+                          "CUARTO_CARTA",
+                          "MEDIA_CARTA",
+                          "CARTA",
+                          "OTRO"
+                        ]
+                      },
+                      "tamanoOtro": {
+                        "type": "string",
+                        "maxLength": 40
                       },
                       "tipoGranFormato": {
                         "type": "string",
@@ -1903,14 +2329,12 @@
                       },
                       "ancho": {
                         "type": "number",
-                        "exclusiveMinimum": true,
-                        "minimum": 0,
+                        "exclusiveMinimum": 0,
                         "maximum": 10000
                       },
                       "alto": {
                         "type": "number",
-                        "exclusiveMinimum": true,
-                        "minimum": 0,
+                        "exclusiveMinimum": 0,
                         "maximum": 10000
                       },
                       "unidadDimension": {
@@ -1937,26 +2361,24 @@
                       },
                       "gramaje": {
                         "type": "number",
-                        "exclusiveMinimum": true,
-                        "minimum": 0,
+                        "exclusiveMinimum": 0,
                         "maximum": 2000
                       },
                       "pantones": {
+                        "maxItems": 20,
                         "type": "array",
                         "items": {
                           "type": "string",
                           "minLength": 1,
                           "maxLength": 40
-                        },
-                        "maxItems": 20
+                        }
                       },
                       "observaciones": {
                         "type": "string",
                         "maxLength": 500
                       }
                     },
-                    "additionalProperties": false,
-                    "default": {}
+                    "additionalProperties": false
                   },
                   "montoTotal": {
                     "type": "number",
@@ -1965,16 +2387,14 @@
                   },
                   "fechaEntrega": {
                     "type": "string",
-                    "format": "date-time"
+                    "format": "date-time",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
                   }
                 },
                 "required": [
                   "clienteId",
                   "producto",
-                  "tecnologia",
                   "categoriaTrabajo",
-                  "prioridad",
-                  "maquina",
                   "cantidad",
                   "sustrato",
                   "tintas",
@@ -1997,7 +2417,8 @@
                   "properties": {
                     "id": {
                       "type": "string",
-                      "format": "uuid"
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                     },
                     "codigo": {
                       "type": "string",
@@ -2005,10 +2426,17 @@
                     },
                     "clienteId": {
                       "type": "string",
-                      "format": "uuid"
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                     },
                     "clienteNombre": {
                       "type": "string"
+                    },
+                    "clienteTelefono": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
                     },
                     "producto": {
                       "type": "string"
@@ -2033,6 +2461,17 @@
                         "GENERAL"
                       ]
                     },
+                    "productoTerminado": {
+                      "type": "string",
+                      "enum": [
+                        "PLIEGO_STICKERS",
+                        "TALONARIO",
+                        "BLOCK",
+                        "SELLO_PERSONALIZADO",
+                        "PENDON",
+                        "VINIL_ROTULACION"
+                      ]
+                    },
                     "prioridad": {
                       "type": "string",
                       "enum": [
@@ -2043,16 +2482,21 @@
                       ]
                     },
                     "maquina": {
-                      "type": "string"
+                      "type": [
+                        "string",
+                        "null"
+                      ]
                     },
                     "operador": {
-                      "type": "string",
-                      "nullable": true
+                      "type": [
+                        "string",
+                        "null"
+                      ]
                     },
                     "cantidad": {
                       "type": "integer",
-                      "exclusiveMinimum": true,
-                      "minimum": 0
+                      "exclusiveMinimum": 0,
+                      "maximum": 9007199254740991
                     },
                     "sustrato": {
                       "type": "string"
@@ -2072,35 +2516,130 @@
                     "especificaciones": {
                       "type": "object",
                       "properties": {
-                        "tipoPapeleria": {
+                        "nombreDocumento": {
+                          "type": "string",
+                          "maxLength": 120
+                        },
+                        "tipoDocumento": {
                           "type": "string",
                           "enum": [
-                            "FACTURA",
-                            "TALONARIO",
-                            "RECIPE",
-                            "NOTA",
-                            "ORDEN_COMPRA",
-                            "RECIBO",
-                            "CARTA",
+                            "NE",
+                            "RM",
+                            "F",
                             "OTRO"
                           ]
+                        },
+                        "tipoDocumentoOtro": {
+                          "type": "string",
+                          "maxLength": 60
+                        },
+                        "formato": {
+                          "type": "string",
+                          "enum": [
+                            "TALONARIO",
+                            "BLOCK"
+                          ]
+                        },
+                        "dobleCara": {
+                          "type": "boolean"
                         },
                         "partes": {
                           "type": "integer",
                           "minimum": 1,
-                          "maximum": 6
+                          "maximum": 10
                         },
                         "numeracionDesde": {
                           "type": "integer",
-                          "minimum": 0
+                          "minimum": 0,
+                          "maximum": 9007199254740991
                         },
                         "numeracionHasta": {
                           "type": "integer",
-                          "minimum": 0
+                          "minimum": 0,
+                          "maximum": 9007199254740991
                         },
                         "numeracionPrefijo": {
                           "type": "string",
                           "maxLength": 12
+                        },
+                        "perforacion": {
+                          "type": "boolean"
+                        },
+                        "perforacionOrientacion": {
+                          "type": "string",
+                          "enum": [
+                            "HORIZONTAL",
+                            "VERTICAL"
+                          ]
+                        },
+                        "engomado": {
+                          "type": "string",
+                          "enum": [
+                            "ARRIBA",
+                            "ABAJO",
+                            "DERECHA",
+                            "IZQUIERDA"
+                          ]
+                        },
+                        "laminado": {
+                          "type": "string",
+                          "enum": [
+                            "BRILLANTE",
+                            "MATE"
+                          ]
+                        },
+                        "coloresTinta": {
+                          "maxItems": 7,
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "enum": [
+                              "PANTONE",
+                              "NEGRO",
+                              "AZUL",
+                              "VERDE",
+                              "ROJO",
+                              "A_COLOR",
+                              "OTRO"
+                            ]
+                          }
+                        },
+                        "pantone": {
+                          "type": "string",
+                          "maxLength": 40
+                        },
+                        "colorTintaOtro": {
+                          "type": "string",
+                          "maxLength": 40
+                        },
+                        "tipoPapel": {
+                          "type": "string",
+                          "enum": [
+                            "QUIMICO",
+                            "BOND",
+                            "GLASSE",
+                            "BRISTOL",
+                            "OPALINA",
+                            "FOTOGRAFICO",
+                            "OTRO"
+                          ]
+                        },
+                        "tipoPapelOtro": {
+                          "type": "string",
+                          "maxLength": 60
+                        },
+                        "tamano": {
+                          "type": "string",
+                          "enum": [
+                            "CUARTO_CARTA",
+                            "MEDIA_CARTA",
+                            "CARTA",
+                            "OTRO"
+                          ]
+                        },
+                        "tamanoOtro": {
+                          "type": "string",
+                          "maxLength": 40
                         },
                         "tipoGranFormato": {
                           "type": "string",
@@ -2116,14 +2655,12 @@
                         },
                         "ancho": {
                           "type": "number",
-                          "exclusiveMinimum": true,
-                          "minimum": 0,
+                          "exclusiveMinimum": 0,
                           "maximum": 10000
                         },
                         "alto": {
                           "type": "number",
-                          "exclusiveMinimum": true,
-                          "minimum": 0,
+                          "exclusiveMinimum": 0,
                           "maximum": 10000
                         },
                         "unidadDimension": {
@@ -2150,18 +2687,17 @@
                         },
                         "gramaje": {
                           "type": "number",
-                          "exclusiveMinimum": true,
-                          "minimum": 0,
+                          "exclusiveMinimum": 0,
                           "maximum": 2000
                         },
                         "pantones": {
+                          "maxItems": 20,
                           "type": "array",
                           "items": {
                             "type": "string",
                             "minLength": 1,
                             "maxLength": 40
-                          },
-                          "maxItems": 20
+                          }
                         },
                         "observaciones": {
                           "type": "string",
@@ -2200,23 +2736,38 @@
                     },
                     "vendedorId": {
                       "type": "string",
-                      "format": "uuid"
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                     },
                     "vendedor": {
                       "type": "string"
                     },
                     "fechaCreacion": {
                       "type": "string",
-                      "format": "date-time"
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                    },
+                    "fechaFinalizado": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
                     },
                     "fechaEntrega": {
                       "type": "string",
-                      "format": "date-time"
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
                     },
                     "version": {
                       "type": "integer",
-                      "exclusiveMinimum": true,
-                      "minimum": 0
+                      "exclusiveMinimum": 0,
+                      "maximum": 9007199254740991
                     },
                     "historial": {
                       "type": "array",
@@ -2225,7 +2776,8 @@
                         "properties": {
                           "id": {
                             "type": "string",
-                            "format": "uuid"
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                           },
                           "fase": {
                             "type": "string",
@@ -2237,18 +2789,25 @@
                             ]
                           },
                           "anterior": {
-                            "type": "string",
-                            "enum": [
-                              "EN_PROCESO",
-                              "EN_REVISION",
-                              "FINALIZADO",
-                              "EMPAQUETADO"
-                            ],
-                            "nullable": true
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "EN_PROCESO",
+                                  "EN_REVISION",
+                                  "FINALIZADO",
+                                  "EMPAQUETADO"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
                           },
                           "usuarioId": {
                             "type": "string",
-                            "format": "uuid"
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                           },
                           "usuario": {
                             "type": "string"
@@ -2263,11 +2822,14 @@
                           },
                           "fecha": {
                             "type": "string",
-                            "format": "date-time"
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
                           },
                           "nota": {
-                            "type": "string",
-                            "nullable": true
+                            "type": [
+                              "string",
+                              "null"
+                            ]
                           }
                         },
                         "required": [
@@ -2282,6 +2844,56 @@
                         ],
                         "additionalProperties": false
                       }
+                    },
+                    "notas": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "mensaje": {
+                            "type": "string"
+                          },
+                          "solicitaRetrabajo": {
+                            "type": "boolean"
+                          },
+                          "usuarioId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "usuario": {
+                            "type": "string"
+                          },
+                          "rol": {
+                            "type": "string",
+                            "enum": [
+                              "ADMIN",
+                              "VENDEDOR",
+                              "PRODUCCION"
+                            ]
+                          },
+                          "fecha": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "mensaje",
+                          "solicitaRetrabajo",
+                          "usuarioId",
+                          "usuario",
+                          "rol",
+                          "fecha"
+                        ],
+                        "additionalProperties": false
+                      }
                     }
                   },
                   "required": [
@@ -2289,10 +2901,12 @@
                     "codigo",
                     "clienteId",
                     "clienteNombre",
+                    "clienteTelefono",
                     "producto",
                     "descripcion",
                     "tecnologia",
                     "categoriaTrabajo",
+                    "productoTerminado",
                     "prioridad",
                     "maquina",
                     "operador",
@@ -2308,9 +2922,11 @@
                     "vendedorId",
                     "vendedor",
                     "fechaCreacion",
+                    "fechaFinalizado",
                     "fechaEntrega",
                     "version",
-                    "historial"
+                    "historial",
+                    "notas"
                   ],
                   "additionalProperties": false
                 }
@@ -2385,7 +3001,8 @@
             "required": true,
             "schema": {
               "type": "string",
-              "format": "uuid"
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
             }
           }
         ],
@@ -2399,7 +3016,8 @@
                   "properties": {
                     "id": {
                       "type": "string",
-                      "format": "uuid"
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                     },
                     "codigo": {
                       "type": "string",
@@ -2407,10 +3025,17 @@
                     },
                     "clienteId": {
                       "type": "string",
-                      "format": "uuid"
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                     },
                     "clienteNombre": {
                       "type": "string"
+                    },
+                    "clienteTelefono": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
                     },
                     "producto": {
                       "type": "string"
@@ -2435,6 +3060,17 @@
                         "GENERAL"
                       ]
                     },
+                    "productoTerminado": {
+                      "type": "string",
+                      "enum": [
+                        "PLIEGO_STICKERS",
+                        "TALONARIO",
+                        "BLOCK",
+                        "SELLO_PERSONALIZADO",
+                        "PENDON",
+                        "VINIL_ROTULACION"
+                      ]
+                    },
                     "prioridad": {
                       "type": "string",
                       "enum": [
@@ -2445,16 +3081,21 @@
                       ]
                     },
                     "maquina": {
-                      "type": "string"
+                      "type": [
+                        "string",
+                        "null"
+                      ]
                     },
                     "operador": {
-                      "type": "string",
-                      "nullable": true
+                      "type": [
+                        "string",
+                        "null"
+                      ]
                     },
                     "cantidad": {
                       "type": "integer",
-                      "exclusiveMinimum": true,
-                      "minimum": 0
+                      "exclusiveMinimum": 0,
+                      "maximum": 9007199254740991
                     },
                     "sustrato": {
                       "type": "string"
@@ -2474,35 +3115,130 @@
                     "especificaciones": {
                       "type": "object",
                       "properties": {
-                        "tipoPapeleria": {
+                        "nombreDocumento": {
+                          "type": "string",
+                          "maxLength": 120
+                        },
+                        "tipoDocumento": {
                           "type": "string",
                           "enum": [
-                            "FACTURA",
-                            "TALONARIO",
-                            "RECIPE",
-                            "NOTA",
-                            "ORDEN_COMPRA",
-                            "RECIBO",
-                            "CARTA",
+                            "NE",
+                            "RM",
+                            "F",
                             "OTRO"
                           ]
+                        },
+                        "tipoDocumentoOtro": {
+                          "type": "string",
+                          "maxLength": 60
+                        },
+                        "formato": {
+                          "type": "string",
+                          "enum": [
+                            "TALONARIO",
+                            "BLOCK"
+                          ]
+                        },
+                        "dobleCara": {
+                          "type": "boolean"
                         },
                         "partes": {
                           "type": "integer",
                           "minimum": 1,
-                          "maximum": 6
+                          "maximum": 10
                         },
                         "numeracionDesde": {
                           "type": "integer",
-                          "minimum": 0
+                          "minimum": 0,
+                          "maximum": 9007199254740991
                         },
                         "numeracionHasta": {
                           "type": "integer",
-                          "minimum": 0
+                          "minimum": 0,
+                          "maximum": 9007199254740991
                         },
                         "numeracionPrefijo": {
                           "type": "string",
                           "maxLength": 12
+                        },
+                        "perforacion": {
+                          "type": "boolean"
+                        },
+                        "perforacionOrientacion": {
+                          "type": "string",
+                          "enum": [
+                            "HORIZONTAL",
+                            "VERTICAL"
+                          ]
+                        },
+                        "engomado": {
+                          "type": "string",
+                          "enum": [
+                            "ARRIBA",
+                            "ABAJO",
+                            "DERECHA",
+                            "IZQUIERDA"
+                          ]
+                        },
+                        "laminado": {
+                          "type": "string",
+                          "enum": [
+                            "BRILLANTE",
+                            "MATE"
+                          ]
+                        },
+                        "coloresTinta": {
+                          "maxItems": 7,
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "enum": [
+                              "PANTONE",
+                              "NEGRO",
+                              "AZUL",
+                              "VERDE",
+                              "ROJO",
+                              "A_COLOR",
+                              "OTRO"
+                            ]
+                          }
+                        },
+                        "pantone": {
+                          "type": "string",
+                          "maxLength": 40
+                        },
+                        "colorTintaOtro": {
+                          "type": "string",
+                          "maxLength": 40
+                        },
+                        "tipoPapel": {
+                          "type": "string",
+                          "enum": [
+                            "QUIMICO",
+                            "BOND",
+                            "GLASSE",
+                            "BRISTOL",
+                            "OPALINA",
+                            "FOTOGRAFICO",
+                            "OTRO"
+                          ]
+                        },
+                        "tipoPapelOtro": {
+                          "type": "string",
+                          "maxLength": 60
+                        },
+                        "tamano": {
+                          "type": "string",
+                          "enum": [
+                            "CUARTO_CARTA",
+                            "MEDIA_CARTA",
+                            "CARTA",
+                            "OTRO"
+                          ]
+                        },
+                        "tamanoOtro": {
+                          "type": "string",
+                          "maxLength": 40
                         },
                         "tipoGranFormato": {
                           "type": "string",
@@ -2518,14 +3254,12 @@
                         },
                         "ancho": {
                           "type": "number",
-                          "exclusiveMinimum": true,
-                          "minimum": 0,
+                          "exclusiveMinimum": 0,
                           "maximum": 10000
                         },
                         "alto": {
                           "type": "number",
-                          "exclusiveMinimum": true,
-                          "minimum": 0,
+                          "exclusiveMinimum": 0,
                           "maximum": 10000
                         },
                         "unidadDimension": {
@@ -2552,18 +3286,17 @@
                         },
                         "gramaje": {
                           "type": "number",
-                          "exclusiveMinimum": true,
-                          "minimum": 0,
+                          "exclusiveMinimum": 0,
                           "maximum": 2000
                         },
                         "pantones": {
+                          "maxItems": 20,
                           "type": "array",
                           "items": {
                             "type": "string",
                             "minLength": 1,
                             "maxLength": 40
-                          },
-                          "maxItems": 20
+                          }
                         },
                         "observaciones": {
                           "type": "string",
@@ -2602,23 +3335,38 @@
                     },
                     "vendedorId": {
                       "type": "string",
-                      "format": "uuid"
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                     },
                     "vendedor": {
                       "type": "string"
                     },
                     "fechaCreacion": {
                       "type": "string",
-                      "format": "date-time"
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                    },
+                    "fechaFinalizado": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
                     },
                     "fechaEntrega": {
                       "type": "string",
-                      "format": "date-time"
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
                     },
                     "version": {
                       "type": "integer",
-                      "exclusiveMinimum": true,
-                      "minimum": 0
+                      "exclusiveMinimum": 0,
+                      "maximum": 9007199254740991
                     },
                     "historial": {
                       "type": "array",
@@ -2627,7 +3375,8 @@
                         "properties": {
                           "id": {
                             "type": "string",
-                            "format": "uuid"
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                           },
                           "fase": {
                             "type": "string",
@@ -2639,18 +3388,25 @@
                             ]
                           },
                           "anterior": {
-                            "type": "string",
-                            "enum": [
-                              "EN_PROCESO",
-                              "EN_REVISION",
-                              "FINALIZADO",
-                              "EMPAQUETADO"
-                            ],
-                            "nullable": true
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "EN_PROCESO",
+                                  "EN_REVISION",
+                                  "FINALIZADO",
+                                  "EMPAQUETADO"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
                           },
                           "usuarioId": {
                             "type": "string",
-                            "format": "uuid"
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                           },
                           "usuario": {
                             "type": "string"
@@ -2665,11 +3421,14 @@
                           },
                           "fecha": {
                             "type": "string",
-                            "format": "date-time"
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
                           },
                           "nota": {
-                            "type": "string",
-                            "nullable": true
+                            "type": [
+                              "string",
+                              "null"
+                            ]
                           }
                         },
                         "required": [
@@ -2684,6 +3443,56 @@
                         ],
                         "additionalProperties": false
                       }
+                    },
+                    "notas": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "mensaje": {
+                            "type": "string"
+                          },
+                          "solicitaRetrabajo": {
+                            "type": "boolean"
+                          },
+                          "usuarioId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "usuario": {
+                            "type": "string"
+                          },
+                          "rol": {
+                            "type": "string",
+                            "enum": [
+                              "ADMIN",
+                              "VENDEDOR",
+                              "PRODUCCION"
+                            ]
+                          },
+                          "fecha": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "mensaje",
+                          "solicitaRetrabajo",
+                          "usuarioId",
+                          "usuario",
+                          "rol",
+                          "fecha"
+                        ],
+                        "additionalProperties": false
+                      }
                     }
                   },
                   "required": [
@@ -2691,10 +3500,12 @@
                     "codigo",
                     "clienteId",
                     "clienteNombre",
+                    "clienteTelefono",
                     "producto",
                     "descripcion",
                     "tecnologia",
                     "categoriaTrabajo",
+                    "productoTerminado",
                     "prioridad",
                     "maquina",
                     "operador",
@@ -2710,9 +3521,11 @@
                     "vendedorId",
                     "vendedor",
                     "fechaCreacion",
+                    "fechaFinalizado",
                     "fechaEntrega",
                     "version",
-                    "historial"
+                    "historial",
+                    "notas"
                   ],
                   "additionalProperties": false
                 }
@@ -2756,7 +3569,7 @@
       "post": {
         "operationId": "cambiarFaseOrden",
         "summary": "Avanza (o devuelve a retrabajo) una orden en el control de calidad",
-        "description": "Solo se avanza a la fase siguiente. EN_REVISION -> EN_PROCESO es el retrabajo y exige nota. Al llegar a FINALIZADO o EMPAQUETADO se notifica al vendedor; EMPAQUETADO ingresa el producto al almacén.",
+        "description": "Solo se avanza a la fase siguiente. El retrabajo (EN_REVISION o FINALIZADO -> EN_PROCESO) exige nota con el motivo y solo lo autorizan Producción y Administración; el Vendedor recibe 403 y debe usar /ordenes/:id/notas para solicitarlo. Al llegar a FINALIZADO o EMPAQUETADO se notifica al vendedor; EMPAQUETADO ingresa el producto al almacén.",
         "tags": [
           "ordenes"
         ],
@@ -2776,7 +3589,8 @@
             "required": true,
             "schema": {
               "type": "string",
-              "format": "uuid"
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
             }
           }
         ],
@@ -2802,8 +3616,8 @@
                   },
                   "versionEsperada": {
                     "type": "integer",
-                    "exclusiveMinimum": true,
-                    "minimum": 0
+                    "exclusiveMinimum": 0,
+                    "maximum": 9007199254740991
                   }
                 },
                 "required": [
@@ -2824,7 +3638,8 @@
                   "properties": {
                     "id": {
                       "type": "string",
-                      "format": "uuid"
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                     },
                     "codigo": {
                       "type": "string",
@@ -2832,10 +3647,17 @@
                     },
                     "clienteId": {
                       "type": "string",
-                      "format": "uuid"
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                     },
                     "clienteNombre": {
                       "type": "string"
+                    },
+                    "clienteTelefono": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
                     },
                     "producto": {
                       "type": "string"
@@ -2860,6 +3682,17 @@
                         "GENERAL"
                       ]
                     },
+                    "productoTerminado": {
+                      "type": "string",
+                      "enum": [
+                        "PLIEGO_STICKERS",
+                        "TALONARIO",
+                        "BLOCK",
+                        "SELLO_PERSONALIZADO",
+                        "PENDON",
+                        "VINIL_ROTULACION"
+                      ]
+                    },
                     "prioridad": {
                       "type": "string",
                       "enum": [
@@ -2870,16 +3703,21 @@
                       ]
                     },
                     "maquina": {
-                      "type": "string"
+                      "type": [
+                        "string",
+                        "null"
+                      ]
                     },
                     "operador": {
-                      "type": "string",
-                      "nullable": true
+                      "type": [
+                        "string",
+                        "null"
+                      ]
                     },
                     "cantidad": {
                       "type": "integer",
-                      "exclusiveMinimum": true,
-                      "minimum": 0
+                      "exclusiveMinimum": 0,
+                      "maximum": 9007199254740991
                     },
                     "sustrato": {
                       "type": "string"
@@ -2899,35 +3737,130 @@
                     "especificaciones": {
                       "type": "object",
                       "properties": {
-                        "tipoPapeleria": {
+                        "nombreDocumento": {
+                          "type": "string",
+                          "maxLength": 120
+                        },
+                        "tipoDocumento": {
                           "type": "string",
                           "enum": [
-                            "FACTURA",
-                            "TALONARIO",
-                            "RECIPE",
-                            "NOTA",
-                            "ORDEN_COMPRA",
-                            "RECIBO",
-                            "CARTA",
+                            "NE",
+                            "RM",
+                            "F",
                             "OTRO"
                           ]
+                        },
+                        "tipoDocumentoOtro": {
+                          "type": "string",
+                          "maxLength": 60
+                        },
+                        "formato": {
+                          "type": "string",
+                          "enum": [
+                            "TALONARIO",
+                            "BLOCK"
+                          ]
+                        },
+                        "dobleCara": {
+                          "type": "boolean"
                         },
                         "partes": {
                           "type": "integer",
                           "minimum": 1,
-                          "maximum": 6
+                          "maximum": 10
                         },
                         "numeracionDesde": {
                           "type": "integer",
-                          "minimum": 0
+                          "minimum": 0,
+                          "maximum": 9007199254740991
                         },
                         "numeracionHasta": {
                           "type": "integer",
-                          "minimum": 0
+                          "minimum": 0,
+                          "maximum": 9007199254740991
                         },
                         "numeracionPrefijo": {
                           "type": "string",
                           "maxLength": 12
+                        },
+                        "perforacion": {
+                          "type": "boolean"
+                        },
+                        "perforacionOrientacion": {
+                          "type": "string",
+                          "enum": [
+                            "HORIZONTAL",
+                            "VERTICAL"
+                          ]
+                        },
+                        "engomado": {
+                          "type": "string",
+                          "enum": [
+                            "ARRIBA",
+                            "ABAJO",
+                            "DERECHA",
+                            "IZQUIERDA"
+                          ]
+                        },
+                        "laminado": {
+                          "type": "string",
+                          "enum": [
+                            "BRILLANTE",
+                            "MATE"
+                          ]
+                        },
+                        "coloresTinta": {
+                          "maxItems": 7,
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "enum": [
+                              "PANTONE",
+                              "NEGRO",
+                              "AZUL",
+                              "VERDE",
+                              "ROJO",
+                              "A_COLOR",
+                              "OTRO"
+                            ]
+                          }
+                        },
+                        "pantone": {
+                          "type": "string",
+                          "maxLength": 40
+                        },
+                        "colorTintaOtro": {
+                          "type": "string",
+                          "maxLength": 40
+                        },
+                        "tipoPapel": {
+                          "type": "string",
+                          "enum": [
+                            "QUIMICO",
+                            "BOND",
+                            "GLASSE",
+                            "BRISTOL",
+                            "OPALINA",
+                            "FOTOGRAFICO",
+                            "OTRO"
+                          ]
+                        },
+                        "tipoPapelOtro": {
+                          "type": "string",
+                          "maxLength": 60
+                        },
+                        "tamano": {
+                          "type": "string",
+                          "enum": [
+                            "CUARTO_CARTA",
+                            "MEDIA_CARTA",
+                            "CARTA",
+                            "OTRO"
+                          ]
+                        },
+                        "tamanoOtro": {
+                          "type": "string",
+                          "maxLength": 40
                         },
                         "tipoGranFormato": {
                           "type": "string",
@@ -2943,14 +3876,12 @@
                         },
                         "ancho": {
                           "type": "number",
-                          "exclusiveMinimum": true,
-                          "minimum": 0,
+                          "exclusiveMinimum": 0,
                           "maximum": 10000
                         },
                         "alto": {
                           "type": "number",
-                          "exclusiveMinimum": true,
-                          "minimum": 0,
+                          "exclusiveMinimum": 0,
                           "maximum": 10000
                         },
                         "unidadDimension": {
@@ -2977,18 +3908,17 @@
                         },
                         "gramaje": {
                           "type": "number",
-                          "exclusiveMinimum": true,
-                          "minimum": 0,
+                          "exclusiveMinimum": 0,
                           "maximum": 2000
                         },
                         "pantones": {
+                          "maxItems": 20,
                           "type": "array",
                           "items": {
                             "type": "string",
                             "minLength": 1,
                             "maxLength": 40
-                          },
-                          "maxItems": 20
+                          }
                         },
                         "observaciones": {
                           "type": "string",
@@ -3027,23 +3957,38 @@
                     },
                     "vendedorId": {
                       "type": "string",
-                      "format": "uuid"
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                     },
                     "vendedor": {
                       "type": "string"
                     },
                     "fechaCreacion": {
                       "type": "string",
-                      "format": "date-time"
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                    },
+                    "fechaFinalizado": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
                     },
                     "fechaEntrega": {
                       "type": "string",
-                      "format": "date-time"
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
                     },
                     "version": {
                       "type": "integer",
-                      "exclusiveMinimum": true,
-                      "minimum": 0
+                      "exclusiveMinimum": 0,
+                      "maximum": 9007199254740991
                     },
                     "historial": {
                       "type": "array",
@@ -3052,7 +3997,8 @@
                         "properties": {
                           "id": {
                             "type": "string",
-                            "format": "uuid"
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                           },
                           "fase": {
                             "type": "string",
@@ -3064,18 +4010,25 @@
                             ]
                           },
                           "anterior": {
-                            "type": "string",
-                            "enum": [
-                              "EN_PROCESO",
-                              "EN_REVISION",
-                              "FINALIZADO",
-                              "EMPAQUETADO"
-                            ],
-                            "nullable": true
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "EN_PROCESO",
+                                  "EN_REVISION",
+                                  "FINALIZADO",
+                                  "EMPAQUETADO"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
                           },
                           "usuarioId": {
                             "type": "string",
-                            "format": "uuid"
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                           },
                           "usuario": {
                             "type": "string"
@@ -3090,11 +4043,14 @@
                           },
                           "fecha": {
                             "type": "string",
-                            "format": "date-time"
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
                           },
                           "nota": {
-                            "type": "string",
-                            "nullable": true
+                            "type": [
+                              "string",
+                              "null"
+                            ]
                           }
                         },
                         "required": [
@@ -3109,6 +4065,56 @@
                         ],
                         "additionalProperties": false
                       }
+                    },
+                    "notas": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "mensaje": {
+                            "type": "string"
+                          },
+                          "solicitaRetrabajo": {
+                            "type": "boolean"
+                          },
+                          "usuarioId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "usuario": {
+                            "type": "string"
+                          },
+                          "rol": {
+                            "type": "string",
+                            "enum": [
+                              "ADMIN",
+                              "VENDEDOR",
+                              "PRODUCCION"
+                            ]
+                          },
+                          "fecha": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "mensaje",
+                          "solicitaRetrabajo",
+                          "usuarioId",
+                          "usuario",
+                          "rol",
+                          "fecha"
+                        ],
+                        "additionalProperties": false
+                      }
                     }
                   },
                   "required": [
@@ -3116,10 +4122,12 @@
                     "codigo",
                     "clienteId",
                     "clienteNombre",
+                    "clienteTelefono",
                     "producto",
                     "descripcion",
                     "tecnologia",
                     "categoriaTrabajo",
+                    "productoTerminado",
                     "prioridad",
                     "maquina",
                     "operador",
@@ -3135,9 +4143,11 @@
                     "vendedorId",
                     "vendedor",
                     "fechaCreacion",
+                    "fechaFinalizado",
                     "fechaEntrega",
                     "version",
-                    "historial"
+                    "historial",
+                    "notas"
                   ],
                   "additionalProperties": false
                 }
@@ -3207,6 +4217,731 @@
         }
       }
     },
+    "/api/v1/ordenes/{id}/notas": {
+      "post": {
+        "operationId": "agregarNotaOrden",
+        "summary": "Deja una observación en la orden o solicita revisión/retrabajo",
+        "description": "Queda en la orden (solo inserción) y notifica a Producción y Administración. Un Vendedor solo puede anotar en sus órdenes; con solicitaRetrabajo=true pide que Producción autorice el retorno a EN_PROCESO.",
+        "tags": [
+          "ordenes"
+        ],
+        "security": [
+          {
+            "cookieSesion": []
+          }
+        ],
+        "x-roles": [
+          "ADMIN",
+          "VENDEDOR",
+          "PRODUCCION"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "mensaje": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 500
+                  },
+                  "solicitaRetrabajo": {
+                    "default": false,
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "mensaje"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "codigo": {
+                      "type": "string",
+                      "pattern": "^OT-\\d{4}-\\d{4,}$"
+                    },
+                    "clienteId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "clienteNombre": {
+                      "type": "string"
+                    },
+                    "clienteTelefono": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "producto": {
+                      "type": "string"
+                    },
+                    "descripcion": {
+                      "type": "string"
+                    },
+                    "tecnologia": {
+                      "type": "string",
+                      "enum": [
+                        "OFFSET",
+                        "DIGITAL",
+                        "GRAN_FORMATO",
+                        "FLEXOGRAFIA"
+                      ]
+                    },
+                    "categoriaTrabajo": {
+                      "type": "string",
+                      "enum": [
+                        "PAPELERIA",
+                        "GRAN_FORMATO",
+                        "GENERAL"
+                      ]
+                    },
+                    "productoTerminado": {
+                      "type": "string",
+                      "enum": [
+                        "PLIEGO_STICKERS",
+                        "TALONARIO",
+                        "BLOCK",
+                        "SELLO_PERSONALIZADO",
+                        "PENDON",
+                        "VINIL_ROTULACION"
+                      ]
+                    },
+                    "prioridad": {
+                      "type": "string",
+                      "enum": [
+                        "BAJA",
+                        "MEDIA",
+                        "ALTA",
+                        "URGENTE"
+                      ]
+                    },
+                    "maquina": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "operador": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "cantidad": {
+                      "type": "integer",
+                      "exclusiveMinimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "sustrato": {
+                      "type": "string"
+                    },
+                    "tintas": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "acabados": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "especificaciones": {
+                      "type": "object",
+                      "properties": {
+                        "nombreDocumento": {
+                          "type": "string",
+                          "maxLength": 120
+                        },
+                        "tipoDocumento": {
+                          "type": "string",
+                          "enum": [
+                            "NE",
+                            "RM",
+                            "F",
+                            "OTRO"
+                          ]
+                        },
+                        "tipoDocumentoOtro": {
+                          "type": "string",
+                          "maxLength": 60
+                        },
+                        "formato": {
+                          "type": "string",
+                          "enum": [
+                            "TALONARIO",
+                            "BLOCK"
+                          ]
+                        },
+                        "dobleCara": {
+                          "type": "boolean"
+                        },
+                        "partes": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 10
+                        },
+                        "numeracionDesde": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "numeracionHasta": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "numeracionPrefijo": {
+                          "type": "string",
+                          "maxLength": 12
+                        },
+                        "perforacion": {
+                          "type": "boolean"
+                        },
+                        "perforacionOrientacion": {
+                          "type": "string",
+                          "enum": [
+                            "HORIZONTAL",
+                            "VERTICAL"
+                          ]
+                        },
+                        "engomado": {
+                          "type": "string",
+                          "enum": [
+                            "ARRIBA",
+                            "ABAJO",
+                            "DERECHA",
+                            "IZQUIERDA"
+                          ]
+                        },
+                        "laminado": {
+                          "type": "string",
+                          "enum": [
+                            "BRILLANTE",
+                            "MATE"
+                          ]
+                        },
+                        "coloresTinta": {
+                          "maxItems": 7,
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "enum": [
+                              "PANTONE",
+                              "NEGRO",
+                              "AZUL",
+                              "VERDE",
+                              "ROJO",
+                              "A_COLOR",
+                              "OTRO"
+                            ]
+                          }
+                        },
+                        "pantone": {
+                          "type": "string",
+                          "maxLength": 40
+                        },
+                        "colorTintaOtro": {
+                          "type": "string",
+                          "maxLength": 40
+                        },
+                        "tipoPapel": {
+                          "type": "string",
+                          "enum": [
+                            "QUIMICO",
+                            "BOND",
+                            "GLASSE",
+                            "BRISTOL",
+                            "OPALINA",
+                            "FOTOGRAFICO",
+                            "OTRO"
+                          ]
+                        },
+                        "tipoPapelOtro": {
+                          "type": "string",
+                          "maxLength": 60
+                        },
+                        "tamano": {
+                          "type": "string",
+                          "enum": [
+                            "CUARTO_CARTA",
+                            "MEDIA_CARTA",
+                            "CARTA",
+                            "OTRO"
+                          ]
+                        },
+                        "tamanoOtro": {
+                          "type": "string",
+                          "maxLength": 40
+                        },
+                        "tipoGranFormato": {
+                          "type": "string",
+                          "enum": [
+                            "PENDON",
+                            "STICKER",
+                            "VINIL",
+                            "LONA",
+                            "BACKING",
+                            "ROTULO",
+                            "OTRO"
+                          ]
+                        },
+                        "ancho": {
+                          "type": "number",
+                          "exclusiveMinimum": 0,
+                          "maximum": 10000
+                        },
+                        "alto": {
+                          "type": "number",
+                          "exclusiveMinimum": 0,
+                          "maximum": 10000
+                        },
+                        "unidadDimension": {
+                          "type": "string",
+                          "enum": [
+                            "cm",
+                            "m"
+                          ]
+                        },
+                        "resolucionDpi": {
+                          "type": "integer",
+                          "minimum": 72,
+                          "maximum": 1440
+                        },
+                        "tintasTiro": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 8
+                        },
+                        "tintasRetiro": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 8
+                        },
+                        "gramaje": {
+                          "type": "number",
+                          "exclusiveMinimum": 0,
+                          "maximum": 2000
+                        },
+                        "pantones": {
+                          "maxItems": 20,
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 40
+                          }
+                        },
+                        "observaciones": {
+                          "type": "string",
+                          "maxLength": 500
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    "montoTotal": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 100000000
+                    },
+                    "fase": {
+                      "type": "string",
+                      "enum": [
+                        "EN_PROCESO",
+                        "EN_REVISION",
+                        "FINALIZADO",
+                        "EMPAQUETADO"
+                      ]
+                    },
+                    "avance": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 100
+                    },
+                    "estadoEntrega": {
+                      "type": "string",
+                      "enum": [
+                        "NO_APLICA",
+                        "PENDIENTE",
+                        "PARCIAL",
+                        "ENTREGADO"
+                      ]
+                    },
+                    "vendedorId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "vendedor": {
+                      "type": "string"
+                    },
+                    "fechaCreacion": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                    },
+                    "fechaFinalizado": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "fechaEntrega": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                    },
+                    "version": {
+                      "type": "integer",
+                      "exclusiveMinimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "historial": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "fase": {
+                            "type": "string",
+                            "enum": [
+                              "EN_PROCESO",
+                              "EN_REVISION",
+                              "FINALIZADO",
+                              "EMPAQUETADO"
+                            ]
+                          },
+                          "anterior": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "EN_PROCESO",
+                                  "EN_REVISION",
+                                  "FINALIZADO",
+                                  "EMPAQUETADO"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "usuarioId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "usuario": {
+                            "type": "string"
+                          },
+                          "rol": {
+                            "type": "string",
+                            "enum": [
+                              "ADMIN",
+                              "VENDEDOR",
+                              "PRODUCCION"
+                            ]
+                          },
+                          "fecha": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                          },
+                          "nota": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "fase",
+                          "anterior",
+                          "usuarioId",
+                          "usuario",
+                          "rol",
+                          "fecha",
+                          "nota"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "notas": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "mensaje": {
+                            "type": "string"
+                          },
+                          "solicitaRetrabajo": {
+                            "type": "boolean"
+                          },
+                          "usuarioId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "usuario": {
+                            "type": "string"
+                          },
+                          "rol": {
+                            "type": "string",
+                            "enum": [
+                              "ADMIN",
+                              "VENDEDOR",
+                              "PRODUCCION"
+                            ]
+                          },
+                          "fecha": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "mensaje",
+                          "solicitaRetrabajo",
+                          "usuarioId",
+                          "usuario",
+                          "rol",
+                          "fecha"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "codigo",
+                    "clienteId",
+                    "clienteNombre",
+                    "clienteTelefono",
+                    "producto",
+                    "descripcion",
+                    "tecnologia",
+                    "categoriaTrabajo",
+                    "productoTerminado",
+                    "prioridad",
+                    "maquina",
+                    "operador",
+                    "cantidad",
+                    "sustrato",
+                    "tintas",
+                    "acabados",
+                    "especificaciones",
+                    "montoTotal",
+                    "fase",
+                    "avance",
+                    "estadoEntrega",
+                    "vendedorId",
+                    "vendedor",
+                    "fechaCreacion",
+                    "fechaFinalizado",
+                    "fechaEntrega",
+                    "version",
+                    "historial",
+                    "notas"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "CONTRATO_INVALIDO",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "NO_AUTENTICADO",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NO_ENCONTRADO",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/inventario/disponibilidad": {
+      "get": {
+        "operationId": "disponibilidadInventario",
+        "summary": "Insumos disponibles para las fichas de orden de trabajo",
+        "description": "Solo nombre, categoría, tipo de papel y existencia: sin costos, proveedores ni lotes.",
+        "tags": [
+          "inventario"
+        ],
+        "security": [
+          {
+            "cookieSesion": []
+          }
+        ],
+        "x-roles": [
+          "ADMIN",
+          "VENDEDOR",
+          "PRODUCCION"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      },
+                      "nombre": {
+                        "type": "string"
+                      },
+                      "categoria": {
+                        "type": "string",
+                        "enum": [
+                          "PAPEL",
+                          "VINIL",
+                          "LONA",
+                          "SELLO"
+                        ]
+                      },
+                      "subtipo": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "enum": [
+                              "QUIMICO",
+                              "BOND",
+                              "GLASSE",
+                              "BRISTOL",
+                              "OPALINA",
+                              "FOTOGRAFICO"
+                            ]
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "unidad": {
+                        "type": "string",
+                        "enum": [
+                          "resma",
+                          "pliego",
+                          "unidad",
+                          "rollo",
+                          "metro",
+                          "caja"
+                        ]
+                      },
+                      "stock": {
+                        "type": "number",
+                        "minimum": 0
+                      },
+                      "disponible": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "nombre",
+                      "categoria",
+                      "subtipo",
+                      "unidad",
+                      "stock",
+                      "disponible"
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "NO_AUTENTICADO",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/inventario/materiales": {
       "get": {
         "operationId": "listarMateriales",
@@ -3232,11 +4967,9 @@
               "type": "string",
               "enum": [
                 "PAPEL",
-                "TINTAS",
-                "PLANCHAS",
-                "VINILOS",
-                "SELLOS",
-                "ALMACEN"
+                "VINIL",
+                "LONA",
+                "SELLO"
               ]
             }
           },
@@ -3262,7 +4995,8 @@
                     "properties": {
                       "id": {
                         "type": "string",
-                        "format": "uuid"
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                       },
                       "sku": {
                         "type": "string"
@@ -3274,11 +5008,27 @@
                         "type": "string",
                         "enum": [
                           "PAPEL",
-                          "TINTAS",
-                          "PLANCHAS",
-                          "VINILOS",
-                          "SELLOS",
-                          "ALMACEN"
+                          "VINIL",
+                          "LONA",
+                          "SELLO"
+                        ]
+                      },
+                      "subtipo": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "enum": [
+                              "QUIMICO",
+                              "BOND",
+                              "GLASSE",
+                              "BRISTOL",
+                              "OPALINA",
+                              "FOTOGRAFICO"
+                            ]
+                          },
+                          {
+                            "type": "null"
+                          }
                         ]
                       },
                       "unidad": {
@@ -3286,10 +5036,9 @@
                         "enum": [
                           "resma",
                           "pliego",
-                          "kg",
-                          "litro",
                           "unidad",
                           "rollo",
+                          "metro",
                           "caja"
                         ]
                       },
@@ -3317,7 +5066,8 @@
                       },
                       "actualizadoEn": {
                         "type": "string",
-                        "format": "date-time"
+                        "format": "date-time",
+                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
                       }
                     },
                     "required": [
@@ -3325,6 +5075,7 @@
                       "sku",
                       "nombre",
                       "categoria",
+                      "subtipo",
                       "unidad",
                       "stock",
                       "stockMinimo",
@@ -3408,11 +5159,20 @@
                     "type": "string",
                     "enum": [
                       "PAPEL",
-                      "TINTAS",
-                      "PLANCHAS",
-                      "VINILOS",
-                      "SELLOS",
-                      "ALMACEN"
+                      "VINIL",
+                      "LONA",
+                      "SELLO"
+                    ]
+                  },
+                  "subtipo": {
+                    "type": "string",
+                    "enum": [
+                      "QUIMICO",
+                      "BOND",
+                      "GLASSE",
+                      "BRISTOL",
+                      "OPALINA",
+                      "FOTOGRAFICO"
                     ]
                   },
                   "unidad": {
@@ -3420,38 +5180,37 @@
                     "enum": [
                       "resma",
                       "pliego",
-                      "kg",
-                      "litro",
                       "unidad",
                       "rollo",
+                      "metro",
                       "caja"
                     ]
                   },
                   "stockMinimo": {
+                    "default": 0,
                     "type": "number",
-                    "minimum": 0,
-                    "default": 0
+                    "minimum": 0
                   },
                   "costoUnitario": {
+                    "default": 0,
                     "type": "number",
                     "minimum": 0,
-                    "maximum": 100000000,
-                    "default": 0
+                    "maximum": 100000000
                   },
                   "ubicacion": {
+                    "default": "",
                     "type": "string",
-                    "maxLength": 100,
-                    "default": ""
+                    "maxLength": 100
                   },
                   "proveedor": {
+                    "default": "",
                     "type": "string",
-                    "maxLength": 120,
-                    "default": ""
+                    "maxLength": 120
                   },
                   "lote": {
+                    "default": "",
                     "type": "string",
-                    "maxLength": 60,
-                    "default": ""
+                    "maxLength": 60
                   }
                 },
                 "required": [
@@ -3475,7 +5234,8 @@
                   "properties": {
                     "id": {
                       "type": "string",
-                      "format": "uuid"
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                     },
                     "sku": {
                       "type": "string"
@@ -3487,11 +5247,27 @@
                       "type": "string",
                       "enum": [
                         "PAPEL",
-                        "TINTAS",
-                        "PLANCHAS",
-                        "VINILOS",
-                        "SELLOS",
-                        "ALMACEN"
+                        "VINIL",
+                        "LONA",
+                        "SELLO"
+                      ]
+                    },
+                    "subtipo": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "QUIMICO",
+                            "BOND",
+                            "GLASSE",
+                            "BRISTOL",
+                            "OPALINA",
+                            "FOTOGRAFICO"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
                       ]
                     },
                     "unidad": {
@@ -3499,10 +5275,9 @@
                       "enum": [
                         "resma",
                         "pliego",
-                        "kg",
-                        "litro",
                         "unidad",
                         "rollo",
+                        "metro",
                         "caja"
                       ]
                     },
@@ -3530,7 +5305,8 @@
                     },
                     "actualizadoEn": {
                       "type": "string",
-                      "format": "date-time"
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
                     }
                   },
                   "required": [
@@ -3538,6 +5314,7 @@
                     "sku",
                     "nombre",
                     "categoria",
+                    "subtipo",
                     "unidad",
                     "stock",
                     "stockMinimo",
@@ -3618,7 +5395,8 @@
             "required": false,
             "schema": {
               "type": "string",
-              "format": "uuid"
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
             }
           },
           {
@@ -3626,10 +5404,10 @@
             "in": "query",
             "required": false,
             "schema": {
+              "default": 50,
               "type": "integer",
               "minimum": 1,
-              "maximum": 500,
-              "default": 50
+              "maximum": 500
             }
           }
         ],
@@ -3645,11 +5423,13 @@
                     "properties": {
                       "id": {
                         "type": "string",
-                        "format": "uuid"
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                       },
                       "materialId": {
                         "type": "string",
-                        "format": "uuid"
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                       },
                       "materialNombre": {
                         "type": "string"
@@ -3665,8 +5445,7 @@
                       },
                       "cantidad": {
                         "type": "number",
-                        "exclusiveMinimum": true,
-                        "minimum": 0
+                        "exclusiveMinimum": 0
                       },
                       "stockResultante": {
                         "type": "number",
@@ -3676,20 +5455,29 @@
                         "type": "string"
                       },
                       "ordenId": {
-                        "type": "string",
-                        "format": "uuid",
-                        "nullable": true
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
                       },
                       "usuarioId": {
                         "type": "string",
-                        "format": "uuid"
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                       },
                       "usuario": {
                         "type": "string"
                       },
                       "fecha": {
                         "type": "string",
-                        "format": "date-time"
+                        "format": "date-time",
+                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
                       }
                     },
                     "required": [
@@ -3769,7 +5557,8 @@
                 "properties": {
                   "materialId": {
                     "type": "string",
-                    "format": "uuid"
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                   },
                   "tipo": {
                     "type": "string",
@@ -3782,8 +5571,7 @@
                   },
                   "cantidad": {
                     "type": "number",
-                    "exclusiveMinimum": true,
-                    "minimum": 0,
+                    "exclusiveMinimum": 0,
                     "maximum": 10000000
                   },
                   "motivo": {
@@ -3793,7 +5581,8 @@
                   },
                   "ordenId": {
                     "type": "string",
-                    "format": "uuid"
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                   }
                 },
                 "required": [
@@ -3817,11 +5606,13 @@
                   "properties": {
                     "id": {
                       "type": "string",
-                      "format": "uuid"
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                     },
                     "materialId": {
                       "type": "string",
-                      "format": "uuid"
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                     },
                     "materialNombre": {
                       "type": "string"
@@ -3837,8 +5628,7 @@
                     },
                     "cantidad": {
                       "type": "number",
-                      "exclusiveMinimum": true,
-                      "minimum": 0
+                      "exclusiveMinimum": 0
                     },
                     "stockResultante": {
                       "type": "number",
@@ -3848,20 +5638,29 @@
                       "type": "string"
                     },
                     "ordenId": {
-                      "type": "string",
-                      "format": "uuid",
-                      "nullable": true
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
                     },
                     "usuarioId": {
                       "type": "string",
-                      "format": "uuid"
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                     },
                     "usuario": {
                       "type": "string"
                     },
                     "fecha": {
                       "type": "string",
-                      "format": "date-time"
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
                     }
                   },
                   "required": [
@@ -3959,8 +5758,12 @@
             "schema": {
               "type": "string",
               "enum": [
-                "SELLO",
-                "PRODUCTO_TERMINADO"
+                "PLIEGO_STICKERS",
+                "TALONARIO",
+                "BLOCK",
+                "SELLO_PERSONALIZADO",
+                "PENDON",
+                "VINIL_ROTULACION"
               ]
             }
           },
@@ -3980,8 +5783,7 @@
                     "false"
                   ]
                 }
-              ],
-              "default": true
+              ]
             }
           }
         ],
@@ -3997,52 +5799,79 @@
                     "properties": {
                       "id": {
                         "type": "string",
-                        "format": "uuid"
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                       },
                       "tipo": {
                         "type": "string",
                         "enum": [
-                          "SELLO",
-                          "PRODUCTO_TERMINADO"
+                          "PLIEGO_STICKERS",
+                          "TALONARIO",
+                          "BLOCK",
+                          "SELLO_PERSONALIZADO",
+                          "PENDON",
+                          "VINIL_ROTULACION"
                         ]
                       },
                       "ordenId": {
-                        "type": "string",
-                        "format": "uuid",
-                        "nullable": true
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
                       },
                       "codigoOrden": {
-                        "type": "string",
-                        "nullable": true
+                        "type": [
+                          "string",
+                          "null"
+                        ]
                       },
                       "clienteId": {
-                        "type": "string",
-                        "format": "uuid",
-                        "nullable": true
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
                       },
                       "clienteNombre": {
-                        "type": "string",
-                        "nullable": true
+                        "type": [
+                          "string",
+                          "null"
+                        ]
                       },
                       "descripcion": {
                         "type": "string"
                       },
                       "cantidad": {
                         "type": "integer",
-                        "exclusiveMinimum": true,
-                        "minimum": 0
+                        "exclusiveMinimum": 0,
+                        "maximum": 9007199254740991
                       },
                       "cantidadEntregada": {
                         "type": "integer",
-                        "minimum": 0
+                        "minimum": 0,
+                        "maximum": 9007199254740991
                       },
                       "cantidadPendiente": {
                         "type": "integer",
-                        "minimum": 0
+                        "minimum": 0,
+                        "maximum": 9007199254740991
                       },
                       "ubicacion": {
-                        "type": "string",
-                        "nullable": true
+                        "type": [
+                          "string",
+                          "null"
+                        ]
                       },
                       "estadoEntrega": {
                         "type": "string",
@@ -4054,7 +5883,8 @@
                       },
                       "ingresadoEn": {
                         "type": "string",
-                        "format": "date-time"
+                        "format": "date-time",
+                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
                       },
                       "entregas": {
                         "type": "array",
@@ -4063,23 +5893,27 @@
                           "properties": {
                             "cantidad": {
                               "type": "integer",
-                              "exclusiveMinimum": true,
-                              "minimum": 0
+                              "exclusiveMinimum": 0,
+                              "maximum": 9007199254740991
                             },
                             "recibidoPor": {
-                              "type": "string",
-                              "nullable": true
+                              "type": [
+                                "string",
+                                "null"
+                              ]
                             },
                             "usuarioId": {
                               "type": "string",
-                              "format": "uuid"
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                             },
                             "usuario": {
                               "type": "string"
                             },
                             "fecha": {
                               "type": "string",
-                              "format": "date-time"
+                              "format": "date-time",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
                             }
                           },
                           "required": [
@@ -4172,7 +6006,8 @@
             "required": true,
             "schema": {
               "type": "string",
-              "format": "uuid"
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
             }
           }
         ],
@@ -4185,8 +6020,8 @@
                 "properties": {
                   "cantidad": {
                     "type": "integer",
-                    "exclusiveMinimum": true,
-                    "minimum": 0
+                    "exclusiveMinimum": 0,
+                    "maximum": 9007199254740991
                   },
                   "recibidoPor": {
                     "type": "string",
@@ -4211,52 +6046,79 @@
                   "properties": {
                     "id": {
                       "type": "string",
-                      "format": "uuid"
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                     },
                     "tipo": {
                       "type": "string",
                       "enum": [
-                        "SELLO",
-                        "PRODUCTO_TERMINADO"
+                        "PLIEGO_STICKERS",
+                        "TALONARIO",
+                        "BLOCK",
+                        "SELLO_PERSONALIZADO",
+                        "PENDON",
+                        "VINIL_ROTULACION"
                       ]
                     },
                     "ordenId": {
-                      "type": "string",
-                      "format": "uuid",
-                      "nullable": true
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
                     },
                     "codigoOrden": {
-                      "type": "string",
-                      "nullable": true
+                      "type": [
+                        "string",
+                        "null"
+                      ]
                     },
                     "clienteId": {
-                      "type": "string",
-                      "format": "uuid",
-                      "nullable": true
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
                     },
                     "clienteNombre": {
-                      "type": "string",
-                      "nullable": true
+                      "type": [
+                        "string",
+                        "null"
+                      ]
                     },
                     "descripcion": {
                       "type": "string"
                     },
                     "cantidad": {
                       "type": "integer",
-                      "exclusiveMinimum": true,
-                      "minimum": 0
+                      "exclusiveMinimum": 0,
+                      "maximum": 9007199254740991
                     },
                     "cantidadEntregada": {
                       "type": "integer",
-                      "minimum": 0
+                      "minimum": 0,
+                      "maximum": 9007199254740991
                     },
                     "cantidadPendiente": {
                       "type": "integer",
-                      "minimum": 0
+                      "minimum": 0,
+                      "maximum": 9007199254740991
                     },
                     "ubicacion": {
-                      "type": "string",
-                      "nullable": true
+                      "type": [
+                        "string",
+                        "null"
+                      ]
                     },
                     "estadoEntrega": {
                       "type": "string",
@@ -4268,7 +6130,8 @@
                     },
                     "ingresadoEn": {
                       "type": "string",
-                      "format": "date-time"
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
                     },
                     "entregas": {
                       "type": "array",
@@ -4277,23 +6140,27 @@
                         "properties": {
                           "cantidad": {
                             "type": "integer",
-                            "exclusiveMinimum": true,
-                            "minimum": 0
+                            "exclusiveMinimum": 0,
+                            "maximum": 9007199254740991
                           },
                           "recibidoPor": {
-                            "type": "string",
-                            "nullable": true
+                            "type": [
+                              "string",
+                              "null"
+                            ]
                           },
                           "usuarioId": {
                             "type": "string",
-                            "format": "uuid"
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                           },
                           "usuario": {
                             "type": "string"
                           },
                           "fecha": {
                             "type": "string",
-                            "format": "date-time"
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
                           }
                         },
                         "required": [
@@ -4411,7 +6278,8 @@
                     "properties": {
                       "id": {
                         "type": "string",
-                        "format": "uuid"
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                       },
                       "tipo": {
                         "type": "string",
@@ -4429,20 +6297,30 @@
                         "type": "string"
                       },
                       "ordenId": {
-                        "type": "string",
-                        "format": "uuid",
-                        "nullable": true
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
                       },
                       "codigo": {
-                        "type": "string",
-                        "nullable": true
+                        "type": [
+                          "string",
+                          "null"
+                        ]
                       },
                       "leida": {
                         "type": "boolean"
                       },
                       "creadaEn": {
                         "type": "string",
-                        "format": "date-time"
+                        "format": "date-time",
+                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
                       }
                     },
                     "required": [
@@ -4498,7 +6376,8 @@
             "required": true,
             "schema": {
               "type": "string",
-              "format": "uuid"
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
             }
           }
         ],
@@ -4512,7 +6391,8 @@
                   "properties": {
                     "id": {
                       "type": "string",
-                      "format": "uuid"
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                     },
                     "tipo": {
                       "type": "string",
@@ -4530,20 +6410,30 @@
                       "type": "string"
                     },
                     "ordenId": {
-                      "type": "string",
-                      "format": "uuid",
-                      "nullable": true
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
                     },
                     "codigo": {
-                      "type": "string",
-                      "nullable": true
+                      "type": [
+                        "string",
+                        "null"
+                      ]
                     },
                     "leida": {
                       "type": "boolean"
                     },
                     "creadaEn": {
                       "type": "string",
-                      "format": "date-time"
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
                     }
                   },
                   "required": [
@@ -4622,7 +6512,8 @@
                   "properties": {
                     "marcadas": {
                       "type": "integer",
-                      "minimum": 0
+                      "minimum": 0,
+                      "maximum": 9007199254740991
                     }
                   },
                   "required": [
@@ -4674,7 +6565,8 @@
                   "properties": {
                     "ordenId": {
                       "type": "string",
-                      "format": "uuid"
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                     },
                     "codigo": {
                       "type": "string"
@@ -4689,26 +6581,33 @@
                       ]
                     },
                     "anterior": {
-                      "type": "string",
-                      "enum": [
-                        "EN_PROCESO",
-                        "EN_REVISION",
-                        "FINALIZADO",
-                        "EMPAQUETADO"
-                      ],
-                      "nullable": true
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "EN_PROCESO",
+                            "EN_REVISION",
+                            "FINALIZADO",
+                            "EMPAQUETADO"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
                     },
                     "version": {
                       "type": "integer",
-                      "exclusiveMinimum": true,
-                      "minimum": 0
+                      "exclusiveMinimum": 0,
+                      "maximum": 9007199254740991
                     },
                     "usuario": {
                       "type": "string"
                     },
                     "fecha": {
                       "type": "string",
-                      "format": "date-time"
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
                     }
                   },
                   "required": [

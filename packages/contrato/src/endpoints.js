@@ -53,7 +53,7 @@ export const ENDPOINTS = Object.freeze({
     body: e.SetupAdminSchema,
     respuesta: e.UsuarioPublicoSchema,
     estadoExito: 201,
-    errores: ['CONTRATO_INVALIDO', 'ADMIN_YA_REGISTRADO', 'EMAIL_DUPLICADO'],
+    errores: ['CONTRATO_INVALIDO', 'ADMIN_YA_REGISTRADO', 'EMAIL_DUPLICADO', 'DEMASIADOS_INTENTOS'],
   },
   login: {
     metodo: 'POST',
@@ -63,7 +63,7 @@ export const ENDPOINTS = Object.freeze({
     descripcion: 'Correo inexistente, contraseña errónea o cuenta inactiva responden igual.',
     body: e.LoginSchema,
     respuesta: e.UsuarioPublicoSchema,
-    errores: ['CONTRATO_INVALIDO', 'CREDENCIALES_INVALIDAS'],
+    errores: ['CONTRATO_INVALIDO', 'CREDENCIALES_INVALIDAS', 'DEMASIADOS_INTENTOS'],
   },
   logout: {
     metodo: 'POST',
@@ -182,8 +182,10 @@ export const ENDPOINTS = Object.freeze({
     roles: PLANTA,
     resumen: 'Avanza (o devuelve a retrabajo) una orden en el control de calidad',
     descripcion:
-      'Solo se avanza a la fase siguiente. EN_REVISION -> EN_PROCESO es el retrabajo y exige nota. ' +
-      'Al llegar a FINALIZADO o EMPAQUETADO se notifica al vendedor; EMPAQUETADO ingresa el producto al almacén.',
+      'Solo se avanza a la fase siguiente. El retrabajo (EN_REVISION o FINALIZADO -> EN_PROCESO) exige nota ' +
+      'con el motivo y solo lo autorizan Producción y Administración; el Vendedor recibe 403 y debe usar ' +
+      '/ordenes/:id/notas para solicitarlo. Al llegar a FINALIZADO o EMPAQUETADO se notifica al vendedor; ' +
+      'EMPAQUETADO ingresa el producto al almacén.',
     params: e.ParamsIdSchema,
     body: e.TransicionSchema,
     respuesta: e.OrdenTrabajoSchema,
@@ -198,7 +200,31 @@ export const ENDPOINTS = Object.freeze({
     ],
   },
 
+  agregarNotaOrden: {
+    metodo: 'POST',
+    ruta: '/ordenes/:id/notas',
+    roles: TODOS,
+    resumen: 'Deja una observación en la orden o solicita revisión/retrabajo',
+    descripcion:
+      'Queda en la orden (solo inserción) y notifica a Producción y Administración. Un Vendedor solo puede ' +
+      'anotar en sus órdenes; con solicitaRetrabajo=true pide que Producción autorice el retorno a EN_PROCESO.',
+    params: e.ParamsIdSchema,
+    body: e.NuevaNotaSchema,
+    respuesta: e.OrdenTrabajoSchema,
+    estadoExito: 201,
+    errores: ['CONTRATO_INVALIDO', 'NO_AUTENTICADO', 'NO_ENCONTRADO'],
+  },
+
   /* ------------------------------ Inventario ---------------------------- */
+  disponibilidadInventario: {
+    metodo: 'GET',
+    ruta: '/inventario/disponibilidad',
+    roles: TODOS,
+    resumen: 'Insumos disponibles para las fichas de orden de trabajo',
+    descripcion: 'Solo nombre, categoría, tipo de papel y existencia: sin costos, proveedores ni lotes.',
+    respuesta: z.array(e.DisponibilidadSchema),
+    errores: ['NO_AUTENTICADO'],
+  },
   listarMateriales: {
     metodo: 'GET',
     ruta: '/inventario/materiales',

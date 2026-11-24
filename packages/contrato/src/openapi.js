@@ -1,12 +1,18 @@
 // Construye la especificación OpenAPI 3.1 a partir de la tabla de endpoints.
 // No hay documentación escrita a mano que pueda desincronizarse del código.
-import { zodToJsonSchema } from 'zod-to-json-schema';
+import { z } from 'zod';
 import { ENDPOINTS, PREFIJO_API, COOKIE_SESION, SSE_PRODUCCION } from './endpoints.js';
 import { ERRORES } from './dominio.js';
 import { ErrorApiSchema } from './esquemas.js';
 
-const esquema = (zod, modo = 'output') =>
-  zodToJsonSchema(zod, { target: 'openApi3', $refStrategy: 'none', effectStrategy: 'input', pipeStrategy: modo });
+/**
+ * JSON Schema 2020-12 (el dialecto de OpenAPI 3.1) con el generador nativo de
+ * Zod 4. `io` elige la forma de entrada (peticiones) o de salida (respuestas).
+ */
+function esquema(zod, modo = 'output') {
+  const { $schema: _dialecto, ...json } = z.toJSONSchema(zod, { io: modo, unrepresentable: 'any' });
+  return json;
+}
 
 function parametros(zod, ubicacion) {
   if (!zod) return [];
