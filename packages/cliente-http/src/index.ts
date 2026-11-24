@@ -109,8 +109,10 @@ export function crearClienteApi(opciones: OpcionesCliente = {}): ClienteApi {
       entrada: { params?: unknown; query?: unknown; body?: unknown } = {},
       opcionesPeticion: OpcionesPeticion = {},
     ) => {
-      const p = params ? validar(params, entrada.params, nombre, "params") : {};
-      const q = query ? validar(query, entrada.query ?? {}, nombre, "query") : undefined;
+      const p = (params ? validar(params, entrada.params, nombre, "params") : {}) as Record<string, unknown>;
+      const q = (query ? validar(query, entrada.query ?? {}, nombre, "query") : undefined) as
+        | Record<string, unknown>
+        | undefined;
       const b = body ? validar(body, entrada.body, nombre, "body") : undefined;
 
       const url = baseUrl + construirRuta(ep, p) + construirQuery(q);

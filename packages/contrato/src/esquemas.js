@@ -20,8 +20,16 @@ import {
   TIPOS_GRAN_FORMATO,
   TIPOS_MOVIMIENTO,
   TIPOS_NOTIFICACION,
-  TIPOS_PAPELERIA,
   TIPOS_PRODUCTO_TERMINADO,
+  TIPOS_DOCUMENTO,
+  FORMATOS_PAPELERIA,
+  ORIENTACIONES_PERFORACION,
+  LUGARES_ENGOMADO,
+  LAMINADOS,
+  COLORES_TINTA,
+  TIPOS_PAPEL,
+  TAMANOS_PAPELERIA,
+  ACABADOS_GRAN_FORMATO,
   UNIDADES_DIMENSION,
   UNIDADES_MEDIDA,
 } from './dominio.js';
@@ -146,21 +154,43 @@ export const NuevoClienteSchema = z
 /* Órdenes de trabajo                                                  */
 /* ------------------------------------------------------------------ */
 
+/**
+ * Ficha técnica de la orden. Los campos de papelería reproducen el formato
+ * físico de la Orden de Trabajo de MARKENNY, C.A.; los de gran formato, la
+ * ficha de pendones y stickers.
+ */
 export const EspecificacionesSchema = z
   .object({
-    // Papelería corporativa
-    tipoPapeleria: z.enum(TIPOS_PAPELERIA).optional(),
-    partes: z.number().int().min(1).max(6).optional(),
+    /* Papelería corporativa (formato físico) */
+    nombreDocumento: textoOpcional(120),
+    tipoDocumento: z.enum(TIPOS_DOCUMENTO).optional(),
+    tipoDocumentoOtro: textoOpcional(60),
+    formato: z.enum(FORMATOS_PAPELERIA).optional(),
+    dobleCara: z.boolean().optional(),
+    /** 1 a 4 partes, u "Otros" hasta 10. */
+    partes: z.number().int().min(1).max(10).optional(),
     numeracionDesde: z.number().int().min(0).optional(),
     numeracionHasta: z.number().int().min(0).optional(),
     numeracionPrefijo: textoOpcional(12),
-    // Gran formato y adhesivos
+    perforacion: z.boolean().optional(),
+    perforacionOrientacion: z.enum(ORIENTACIONES_PERFORACION).optional(),
+    engomado: z.enum(LUGARES_ENGOMADO).optional(),
+    laminado: z.enum(LAMINADOS).optional(),
+    coloresTinta: z.array(z.enum(COLORES_TINTA)).max(COLORES_TINTA.length).optional(),
+    /** Referencia Pantone cuando se marca "Pantone". */
+    pantone: textoOpcional(40),
+    colorTintaOtro: textoOpcional(40),
+    tipoPapel: z.enum([...TIPOS_PAPEL, 'OTRO']).optional(),
+    tipoPapelOtro: textoOpcional(60),
+    tamano: z.enum(TAMANOS_PAPELERIA).optional(),
+    tamanoOtro: textoOpcional(40),
+    /* Gran formato y adhesivos */
     tipoGranFormato: z.enum(TIPOS_GRAN_FORMATO).optional(),
     ancho: z.number().positive().max(10_000).optional(),
     alto: z.number().positive().max(10_000).optional(),
     unidadDimension: z.enum(UNIDADES_DIMENSION).optional(),
     resolucionDpi: z.number().int().min(72).max(1440).optional(),
-    // Comunes
+    /* Comunes */
     tintasTiro: z.number().int().min(0).max(8).optional(),
     tintasRetiro: z.number().int().min(0).max(8).optional(),
     gramaje: z.number().positive().max(2000).optional(),
@@ -169,17 +199,20 @@ export const EspecificacionesSchema = z
   })
   .strict()
   .superRefine((e, ctx) => {
-    if (
-      e.numeracionDesde !== undefined &&
-      e.numeracionHasta !== undefined &&
-      e.numeracionHasta < e.numeracionDesde
-    ) {
-      ctx.addIssue({
-        code: 'custom',
-        path: ['numeracionHasta'],
-        message: 'El número final debe ser mayor o igual al inicial',
-      });
-    }
+    const exigir = (condicion, path, message) => {
+      if (condicion) ctx.addIssue({ code: 'custom', path: [path], message });
+    };
+    exigir(
+      e.numeracionDesde !== undefined && e.numeracionHasta !== undefined && e.numeracionHasta < e.numeracionDesde,
+      'numeracionHasta',
+      'El número final debe ser mayor o igual al inicial',
+    );
+    exigir(e.tipoDocumento === 'OTRO' && !e.tipoDocumentoOtro, 'tipoDocumentoOtro', 'Indica qué documento es');
+    exigir(e.tipoPapel === 'OTRO' && !e.tipoPapelOtro, 'tipoPapelOtro', 'Indica qué papel');
+    exigir(e.tamano === 'OTRO' && !e.tamanoOtro, 'tamanoOtro', 'Indica el tamaño');
+    exigir(Boolean(e.coloresTinta?.includes('PANTONE')) && !e.pantone, 'pantone', 'Indica la referencia Pantone');
+    exigir(Boolean(e.coloresTinta?.includes('OTRO')) && !e.colorTintaOtro, 'colorTintaOtro', 'Indica el color');
+    exigir(e.perforacion === true && !e.perforacionOrientacion, 'perforacionOrientacion', 'Indica si es horizontal o vertical');
   });
 
 export const EventoOrdenSchema = z.object({
@@ -193,17 +226,42 @@ export const EventoOrdenSchema = z.object({
   nota: z.string().nullable(),
 });
 
+/**
+ * Nota sobre una orden. El vendedor no puede cambiar la fase, pero sí dejar
+ * una observación o pedir a Producción que revise y autorice un retrabajo.
+ */
+export const NotaOrdenSchema = z.object({
+  id: IdSchema,
+  mensaje: z.string(),
+  solicitaRetrabajo: z.boolean(),
+  usuarioId: IdSchema,
+  usuario: z.string(),
+  rol: RolSchema,
+  fecha: FechaIsoSchema,
+});
+
+export const NuevaNotaSchema = z
+  .object({
+    mensaje: texto(500).min(3, 'Escribe al menos 3 caracteres'),
+    solicitaRetrabajo: z.boolean().default(false),
+  })
+  .strict();
+
 export const OrdenTrabajoSchema = z.object({
   id: IdSchema,
   codigo: z.string().regex(/^OT-\d{4}-\d{4,}$/),
   clienteId: IdSchema,
   clienteNombre: z.string(),
+  clienteTelefono: z.string().nullable(),
   producto: z.string(),
   descripcion: z.string(),
   tecnologia: z.enum(TECNOLOGIAS),
   categoriaTrabajo: z.enum(CATEGORIAS_TRABAJO),
+  /** Producto terminado que ingresa al almacén al empaquetar. */
+  productoTerminado: z.enum(TIPOS_PRODUCTO_TERMINADO),
   prioridad: z.enum(PRIORIDADES),
-  maquina: z.string(),
+  /** Asignación de taller (opcional). No es inventario. */
+  maquina: z.string().nullable(),
   operador: z.string().nullable(),
   cantidad: z.number().int().positive(),
   sustrato: z.string(),
@@ -218,25 +276,30 @@ export const OrdenTrabajoSchema = z.object({
   vendedorId: IdSchema,
   vendedor: z.string(),
   fechaCreacion: FechaIsoSchema,
+  /** "Fecha de finalizado" del formato físico (null si aún no finaliza). */
+  fechaFinalizado: FechaIsoSchema.nullable(),
   fechaEntrega: FechaIsoSchema,
   /** Bloqueo optimista: se incrementa en cada cambio de fase. */
   version: z.number().int().positive(),
   historial: z.array(EventoOrdenSchema),
+  notas: z.array(NotaOrdenSchema),
 });
 
 /**
  * Alta de orden. El servidor asigna id, código `OT-AAAA-NNNN`, vendedor (el
- * usuario de la sesión), fase inicial y fechas de auditoría.
+ * usuario de la sesión), fase inicial y fechas de auditoría. Tecnología,
+ * prioridad y producto terminado se deducen de la ficha si no se indican.
  */
 export const NuevaOrdenSchema = z
   .object({
     clienteId: IdSchema,
     producto: texto(120).min(3),
     descripcion: z.string().trim().max(280).default(''),
-    tecnologia: z.enum(TECNOLOGIAS),
+    tecnologia: z.enum(TECNOLOGIAS).optional(),
     categoriaTrabajo: z.enum(CATEGORIAS_TRABAJO),
-    prioridad: z.enum(PRIORIDADES),
-    maquina: texto(80),
+    productoTerminado: z.enum(TIPOS_PRODUCTO_TERMINADO).optional(),
+    prioridad: z.enum(PRIORIDADES).default('MEDIA'),
+    maquina: textoOpcional(80),
     cantidad: z.number().int().min(1).max(1_000_000),
     sustrato: texto(120),
     tintas: z.array(texto(40)).max(20),
@@ -245,7 +308,26 @@ export const NuevaOrdenSchema = z
     montoTotal: MontoSchema,
     fechaEntrega: FechaIsoSchema,
   })
-  .strict();
+  .strict()
+  .superRefine((o, ctx) => {
+    if (o.categoriaTrabajo === 'GRAN_FORMATO') {
+      const ajenos = o.acabados.filter((a) => !ACABADOS_GRAN_FORMATO.includes(a));
+      if (ajenos.length) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['acabados'],
+          message: `Pendones y stickers solo admiten: ${ACABADOS_GRAN_FORMATO.join(', ')}`,
+        });
+      }
+    }
+    if (o.categoriaTrabajo === 'PAPELERIA') {
+      for (const campo of ['tipoDocumento', 'formato', 'partes', 'tipoPapel', 'tamano']) {
+        if (o.especificaciones?.[campo] === undefined) {
+          ctx.addIssue({ code: 'custom', path: ['especificaciones', campo], message: 'Campo obligatorio de la orden de papelería' });
+        }
+      }
+    }
+  });
 
 export const FiltroOrdenesSchema = z
   .object({
@@ -261,7 +343,7 @@ export const FiltroOrdenesSchema = z
 export const TransicionSchema = z
   .object({
     fase: FaseSchema,
-    /** Nota de calidad. Obligatoria (min. 3 caracteres) en el retrabajo EN_REVISION -> EN_PROCESO. */
+    /** Nota de calidad. Obligatoria (min. 3 caracteres) en todo retrabajo hacia EN_PROCESO. */
     nota: textoOpcional(500),
     /** Versión que vio el operario; si no coincide, 409 CONFLICTO_CONCURRENCIA. */
     versionEsperada: z.number().int().positive().optional(),
@@ -277,6 +359,8 @@ export const MaterialSchema = z.object({
   sku: z.string(),
   nombre: z.string(),
   categoria: z.enum(CATEGORIAS_INVENTARIO),
+  /** Para PAPEL: Químico, Bond, Glasse, Bristol, Opalina o Fotográfico. */
+  subtipo: z.enum(TIPOS_PAPEL).nullable(),
   unidad: z.enum(UNIDADES_MEDIDA),
   stock: z.number().min(0),
   stockMinimo: z.number().min(0),
@@ -292,6 +376,7 @@ export const NuevoMaterialSchema = z
     sku: texto(50),
     nombre: texto(100),
     categoria: z.enum(CATEGORIAS_INVENTARIO),
+    subtipo: z.enum(TIPOS_PAPEL).optional(),
     unidad: z.enum(UNIDADES_MEDIDA),
     stockMinimo: z.number().min(0).default(0),
     costoUnitario: MontoSchema.default(0),
@@ -299,7 +384,29 @@ export const NuevoMaterialSchema = z
     proveedor: z.string().trim().max(120).default(''),
     lote: z.string().trim().max(60).default(''),
   })
-  .strict();
+  .strict()
+  .superRefine((m, ctx) => {
+    if (m.categoria === 'PAPEL' && !m.subtipo) {
+      ctx.addIssue({ code: 'custom', path: ['subtipo'], message: 'Indica el tipo de papel' });
+    }
+    if (m.categoria !== 'PAPEL' && m.subtipo) {
+      ctx.addIssue({ code: 'custom', path: ['subtipo'], message: 'El tipo de papel solo aplica a materiales PAPEL' });
+    }
+  });
+
+/**
+ * Disponibilidad de insumos para las fichas de venta. No expone costos,
+ * proveedores ni lotes: la puede consultar cualquier rol.
+ */
+export const DisponibilidadSchema = z.object({
+  id: IdSchema,
+  nombre: z.string(),
+  categoria: z.enum(CATEGORIAS_INVENTARIO),
+  subtipo: z.enum(TIPOS_PAPEL).nullable(),
+  unidad: z.enum(UNIDADES_MEDIDA),
+  stock: z.number().min(0),
+  disponible: z.boolean(),
+});
 
 export const FiltroMaterialesSchema = z
   .object({
