@@ -5,6 +5,7 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { esRetrabajo, requiereMotivo, transicionPermitida } from "@markenny/contrato/dominio";
 import { plantaApi } from "../api/plantaApi";
 import { queryKeys } from "@/shared/api/queryKeys";
 import {
@@ -29,9 +30,10 @@ interface MoverOrdenVariables {
  * La actualización es optimista: la tarjeta se mueve al instante y se
  * reconcilia con el servidor (POST /api/v1/ordenes/:id/transiciones).
  *
- * El flujo es estrictamente secuencial: solo se permite avanzar a la fase
- * inmediatamente siguiente. Cada movimiento se firma con el usuario de la
- * sesión para que el historial quede auditado.
+ * Las reglas de transición vienen del contrato (las mismas que aplica el
+ * servidor): se avanza solo a la fase siguiente y una orden en revisión o
+ * finalizada puede volver a En Proceso para retrabajo, siempre con motivo.
+ * Cada movimiento se firma con el usuario de la sesión y queda auditado.
  */
 export function usePlantaBoard() {
   const queryClient = useQueryClient();
@@ -70,7 +72,11 @@ export function usePlantaBoard() {
       queryClient.setQueryData<OrdenTrabajo[]>(queryKeys.ordenes, (current) =>
         current?.map((orden) => (orden.id === actualizada.id ? actualizada : orden)),
       );
-      if (actualizada.fase === "FINALIZADO" || actualizada.fase === "EMPAQUETADO") {
+      if (actualizada.fase === "EN_PROCESO") {
+        toast.success(`${actualizada.codigo} volvió a En Proceso`, {
+          description: "El retrabajo quedó registrado con su motivo y el vendedor fue notificado.",
+        });
+      } else if (actualizada.fase === "FINALIZADO" || actualizada.fase === "EMPAQUETADO") {
         toast.success("Notificación enviada al vendedor", {
           description:
             actualizada.fase === "EMPAQUETADO"
@@ -111,31 +117,34 @@ export function usePlantaBoard() {
     if (!orden) return;
     if (enMovimiento.includes(orden.id)) return;
 
-    const origen = FASES_PLANTA.indexOf(orden.fase);
-    const destino = FASES_PLANTA.indexOf(variables.fase);
+    if (orden.fase === variables.fase) return;
 
-    if (destino === origen) return;
+    if (!transicionPermitida(orden.fase, variables.fase)) {
+      const origen = FASES_PLANTA.indexOf(orden.fase);
+      const siguiente = FASES_PLANTA[origen + 1];
+      toast.error("Cambio de fase no permitido", {
+        description:
+          FASES_PLANTA.indexOf(variables.fase) < origen
+            ? "Solo una orden en revisión o finalizada puede volver a En Proceso para retrabajo."
+            : siguiente
+              ? `Primero debes completar «${FASE_PLANTA[siguiente].label}».`
+              : "La orden ya está empaquetada.",
+      });
+      return;
+    }
 
-    if (destino !== origen + 1) {
-      if (destino < origen) {
-        toast.error("Avance no permitido", {
-          description:
-            "El control de calidad es secuencial: una orden no puede retroceder de fase.",
-        });
-      } else {
-        const siguiente = FASES_PLANTA[origen + 1];
-        toast.error("Avance no permitido", {
-          description: siguiente
-            ? `Primero debes completar «${FASE_PLANTA[siguiente].label}».`
-            : "La orden ya está empaquetada.",
-        });
-      }
+    // El retrabajo exige motivo: arrastrar la tarjeta no basta, se registra
+    // desde la ficha de la orden para que quede en la auditoría.
+    if (requiereMotivo(orden.fase, variables.fase) && (variables.nota?.trim().length ?? 0) < 3) {
+      toast.error("Indica el motivo del retrabajo", {
+        description: "Abre la ficha de la orden y usa «Devolver a En Proceso».",
+      });
       return;
     }
 
     mutation.mutate({ ...variables, versionEsperada: orden.version }, {
       onError: (error) => {
-        toast.error("No se pudo avanzar la orden", {
+        toast.error(esRetrabajo(orden.fase, variables.fase) ? "No se pudo devolver la orden" : "No se pudo avanzar la orden", {
           description:
             error instanceof Error ? error.message : "La tarjeta volvió a su fase original.",
         });

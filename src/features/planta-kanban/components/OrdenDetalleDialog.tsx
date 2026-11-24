@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import {
   Check,
   ClipboardCheck,
+  MessageSquareWarning,
+  RotateCcw,
   Loader2,
   PackageCheck,
   Play,
@@ -27,18 +29,22 @@ import {
   PRIORIDAD_LABEL,
   ROL_LABEL,
   TIPO_GRAN_FORMATO_LABEL,
-  TIPO_PAPELERIA_LABEL,
+  resumenEspecificaciones,
   TECNOLOGIA_LABEL,
   type FasePlanta,
   type OrdenTrabajo,
+  SIN_MAQUINA,
 } from "@/shared/domain";
 import { FASE_UI } from "@/shared/fase-ui";
+import { esRetrabajo } from "@markenny/contrato/dominio";
 import { siguienteFaseDe } from "./OrdenCard";
 
 interface OrdenDetalleDialogProps {
   orden: OrdenTrabajo | null;
   onOpenChange: (abierto: boolean) => void;
   onAvanzar: (orden: OrdenTrabajo, nota?: string) => void;
+  /** Devuelve la orden a En Proceso (retrabajo). El motivo es obligatorio. */
+  onRetrabajo: (orden: OrdenTrabajo, motivo: string) => void;
   isPending?: boolean;
 }
 
@@ -60,13 +66,14 @@ const ICONO_FASE: Record<FasePlanta, typeof Play> = {
 
 /**
  * Ficha de taller con la trazabilidad completa de la OT.
- * El operario solo puede ejecutar la transición inmediatamente siguiente;
- * el diálogo nunca ofrece saltos ni retrocesos.
+ * El operario ejecuta la transición siguiente o, desde En Revisión o
+ * Finalizado, devuelve la orden a En Proceso para retrabajo con motivo.
  */
 export function OrdenDetalleDialog({
   orden,
   onOpenChange,
   onAvanzar,
+  onRetrabajo,
   isPending,
 }: OrdenDetalleDialogProps) {
   const [nota, setNota] = useState("");
@@ -84,9 +91,20 @@ export function OrdenDetalleDialog({
     (a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime(),
   );
 
+  const admiteRetrabajo = esRetrabajo(orden.fase, "EN_PROCESO");
+  const motivoValido = nota.trim().length >= 3;
+  const notas = orden.notas ?? [];
+  const solicitudes = notas.filter((item) => item.solicitaRetrabajo).length;
+
   const enviar = () => {
     if (!siguiente) return;
     onAvanzar(orden, nota.trim() || undefined);
+    setNota("");
+  };
+
+  const devolver = () => {
+    if (!motivoValido) return;
+    onRetrabajo(orden, nota.trim());
     setNota("");
   };
 
@@ -190,7 +208,7 @@ export function OrdenDetalleDialog({
               <div className="flex justify-between gap-3">
                 <dt className="text-muted-foreground">Máquina</dt>
                 <dd className="max-w-[60%] truncate text-right font-medium">
-                  {orden.maquina}
+                  {orden.maquina ?? SIN_MAQUINA}
                 </dd>
               </div>
               <div className="flex justify-between gap-3">
@@ -209,30 +227,13 @@ export function OrdenDetalleDialog({
                   {orden.acabados.join(", ") || "—"}
                 </dd>
               </div>
-              {orden.categoriaTrabajo === "PAPELERIA" && (
-                <>
-                  <div className="flex justify-between gap-3">
-                    <dt className="text-muted-foreground">Documento</dt>
-                    <dd className="font-medium">
-                      {spec.tipoPapeleria
-                        ? TIPO_PAPELERIA_LABEL[spec.tipoPapeleria]
-                        : "—"}
-                    </dd>
+              {orden.categoriaTrabajo === "PAPELERIA" &&
+                resumenEspecificaciones(spec).map(([etiqueta, valor]) => (
+                  <div key={etiqueta} className="flex justify-between gap-3">
+                    <dt className="text-muted-foreground">{etiqueta}</dt>
+                    <dd className="max-w-[60%] text-right font-medium">{valor}</dd>
                   </div>
-                  <div className="flex justify-between gap-3">
-                    <dt className="text-muted-foreground">Partes</dt>
-                    <dd className="font-medium">{spec.partes ?? "—"}</dd>
-                  </div>
-                  <div className="flex justify-between gap-3">
-                    <dt className="text-muted-foreground">Numeración</dt>
-                    <dd className="font-medium tabular-nums">
-                      {spec.numeracionDesde != null
-                        ? `${spec.numeracionPrefijo ?? ""}${formatNumber(spec.numeracionDesde)} → ${formatNumber(spec.numeracionHasta ?? 0)}`
-                        : "Sin numerar"}
-                    </dd>
-                  </div>
-                </>
-              )}
+                ))}
               {orden.categoriaTrabajo === "GRAN_FORMATO" && (
                 <>
                   <div className="flex justify-between gap-3">
@@ -318,6 +319,34 @@ export function OrdenDetalleDialog({
           </div>
         )}
 
+        {notas.length > 0 && (
+          <div className="rounded-lg border border-border px-3.5 py-3">
+            <p className="section-label flex items-center gap-1.5">
+              <MessageSquareWarning className="h-3.5 w-3.5 text-primary" />
+              Observaciones de la orden
+              {solicitudes > 0 && (
+                <Badge variant="solid" className="ml-1">
+                  {solicitudes} solicitud(es) de revisión
+                </Badge>
+              )}
+            </p>
+            <ul className="mt-2 max-h-[160px] space-y-2 overflow-y-auto pr-1">
+              {notas.map((item) => (
+                <li key={item.id} className="text-[11px] leading-relaxed">
+                  <p className="text-muted-foreground">
+                    <span className="font-medium text-foreground">{item.usuario}</span> ·{" "}
+                    {ROL_LABEL[item.rol]} · {hora(item.fecha)}
+                    {item.solicitaRetrabajo && (
+                      <span className="ml-1.5 font-semibold text-primary">Pide revisión</span>
+                    )}
+                  </p>
+                  <p>{item.mensaje}</p>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
         {siguiente ? (
           <div className="space-y-2">
             <label
@@ -325,7 +354,11 @@ export function OrdenDetalleDialog({
               className="text-[11px] font-medium text-foreground"
             >
               Nota de control de calidad{" "}
-              <span className="font-normal text-muted-foreground">(opcional)</span>
+              <span className="font-normal text-muted-foreground">
+                {admiteRetrabajo
+                  ? "(opcional para avanzar · obligatoria para devolver a En Proceso)"
+                  : "(opcional)"}
+              </span>
             </label>
             <Textarea
               id="nota-calidad"
@@ -352,6 +385,17 @@ export function OrdenDetalleDialog({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cerrar
           </Button>
+          {admiteRetrabajo && (
+            <Button
+              variant="outline"
+              onClick={devolver}
+              disabled={isPending || !motivoValido}
+              title={motivoValido ? undefined : "Escribe el motivo del retrabajo (mínimo 3 caracteres)"}
+            >
+              <RotateCcw className="h-4 w-4" />
+              Devolver a En Proceso
+            </Button>
+          )}
           {siguiente && (
             <Button onClick={enviar} disabled={isPending}>
               {isPending ? (

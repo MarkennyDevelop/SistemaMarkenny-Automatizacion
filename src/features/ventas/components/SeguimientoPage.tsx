@@ -5,7 +5,6 @@ import {
   Circle,
   ClipboardList,
   Droplets,
-  Hash,
   Layers,
   PackageCheck,
   Ruler,
@@ -15,6 +14,7 @@ import {
   UserRound,
 } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
+import { NotasOrdenCard } from "./NotasOrdenCard";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -34,7 +34,8 @@ import {
   PRIORIDAD_LABEL,
   ROL_LABEL,
   TIPO_GRAN_FORMATO_LABEL,
-  TIPO_PAPELERIA_LABEL,
+  resumenEspecificaciones,
+  SIN_MAQUINA,
   TECNOLOGIA_LABEL,
   type FasePlanta,
   type OrdenTrabajo,
@@ -146,7 +147,7 @@ function DatosOrden({ orden }: { orden: OrdenTrabajo }) {
           },
           {
             label: "Máquina",
-            valor: orden.maquina,
+            valor: orden.maquina ?? SIN_MAQUINA,
             icon: Layers,
           },
         ].map((item) => (
@@ -201,44 +202,13 @@ function DatosOrden({ orden }: { orden: OrdenTrabajo }) {
             {esPapeleria ? "Papelería" : esGranFormato ? "Gran formato" : "Producción"}
           </p>
           <dl className="mt-2 space-y-1.5 text-[11.5px]">
-            {esPapeleria && (
-              <>
-                <div className="flex justify-between gap-3">
-                  <dt className="flex items-center gap-1 text-muted-foreground">
-                    <ClipboardList className="h-3 w-3" /> Documento
-                  </dt>
-                  <dd className="font-medium">
-                    {spec.tipoPapeleria
-                      ? TIPO_PAPELERIA_LABEL[spec.tipoPapeleria]
-                      : "—"}
-                  </dd>
+            {esPapeleria &&
+              resumenEspecificaciones(spec).map(([etiqueta, valor]) => (
+                <div key={etiqueta} className="flex justify-between gap-3">
+                  <dt className="text-muted-foreground">{etiqueta}</dt>
+                  <dd className="max-w-[60%] text-right font-medium">{valor}</dd>
                 </div>
-                <div className="flex justify-between gap-3">
-                  <dt className="flex items-center gap-1 text-muted-foreground">
-                    <Layers className="h-3 w-3" /> Partes
-                  </dt>
-                  <dd className="font-medium">{spec.partes ?? "—"}</dd>
-                </div>
-                <div className="flex justify-between gap-3">
-                  <dt className="flex items-center gap-1 text-muted-foreground">
-                    <Hash className="h-3 w-3" /> Numeración
-                  </dt>
-                  <dd className="font-medium tabular-nums">
-                    {spec.numeracionDesde != null
-                      ? `${spec.numeracionPrefijo ?? ""}${formatNumber(spec.numeracionDesde)} → ${formatNumber(spec.numeracionHasta ?? 0)}`
-                      : "Sin numerar"}
-                  </dd>
-                </div>
-                <div className="flex justify-between gap-3">
-                  <dt className="flex items-center gap-1 text-muted-foreground">
-                    <Layers className="h-3 w-3" /> Gramaje
-                  </dt>
-                  <dd className="font-medium">
-                    {spec.gramaje ? `${spec.gramaje} g/m²` : "—"}
-                  </dd>
-                </div>
-              </>
-            )}
+              ))}
 
             {esGranFormato && (
               <>
@@ -550,6 +520,8 @@ export function SeguimientoPage() {
             </Card>
 
             <DatosOrden orden={seleccionada} />
+
+            <NotasOrdenCard orden={seleccionada} />
 
             <Card className="p-4">
               <div className="flex items-center justify-between">

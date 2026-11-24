@@ -23,7 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn, formatNumber } from "@/lib/utils";
-import { FASES_PLANTA, type FasePlanta, type OrdenTrabajo } from "@/shared/domain";
+import { FASES_PLANTA, type FasePlanta, type OrdenTrabajo, SIN_MAQUINA } from "@/shared/domain";
 import { FASE_UI } from "@/shared/fase-ui";
 import { KanbanBoard } from "./KanbanBoard";
 import { OrdenDetalleDialog } from "./OrdenDetalleDialog";
@@ -65,14 +65,14 @@ export function ProduccionDashboardPage() {
   const [detalleId, setDetalleId] = useState<string | null>(null);
 
   const maquinas = useMemo(
-    () => [...new Set(ordenes.map((orden) => orden.maquina))].sort(),
+    () => [...new Set(ordenes.map((orden) => orden.maquina ?? SIN_MAQUINA))].sort(),
     [ordenes],
   );
 
   const filtradas = useMemo(() => {
     const termino = busqueda.trim().toLowerCase();
     return ordenes.filter((orden) => {
-      const coincideMaquina = maquina === "todas" || orden.maquina === maquina;
+      const coincideMaquina = maquina === "todas" || (orden.maquina ?? SIN_MAQUINA) === maquina;
       const coincideBusqueda =
         !termino ||
         orden.codigo.toLowerCase().includes(termino) ||
@@ -101,6 +101,10 @@ export function ProduccionDashboardPage() {
     // El aviso "notificación enviada" lo muestra el hook solo cuando el
     // servidor confirma el avance; antes salía aunque la operación fallara.
     moverOrden({ ordenId: orden.id, fase: siguiente, origen: orden.fase, nota });
+  };
+
+  const devolver = (orden: OrdenTrabajo, motivo: string) => {
+    moverOrden({ ordenId: orden.id, fase: "EN_PROCESO", origen: orden.fase, nota: motivo });
   };
 
   return (
@@ -268,8 +272,9 @@ export function ProduccionDashboardPage() {
         <span className="font-semibold uppercase tracking-wide text-foreground">
           Flujo obligatorio
         </span>
-        En Proceso → En Revisión → Finalizado → Empaquetado. Al marcar Finalizado o
-        Empaquetado el sistema avisa al vendedor en su campana y en el seguimiento.
+        En Proceso → En Revisión → Finalizado → Empaquetado. Desde En Revisión o
+        Finalizado la orden puede volver a En Proceso con motivo (retrabajo). Cada
+        cambio avisa al vendedor en su campana y en el seguimiento.
         <span className="ml-auto tabular-nums">
           {formatNumber(ordenes.length)} órdenes · {isMoving ? "moviendo..." : "listo"}
         </span>
@@ -279,6 +284,7 @@ export function ProduccionDashboardPage() {
         orden={detalle}
         onOpenChange={(abierto) => !abierto && setDetalleId(null)}
         onAvanzar={avanzar}
+        onRetrabajo={devolver}
         isPending={detalle ? ordenesEnMovimiento.includes(detalle.id) : false}
       />
     </div>

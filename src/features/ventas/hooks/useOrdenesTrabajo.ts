@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ventasApi } from "../api/ventasApi";
 import { queryKeys } from "@/shared/api/queryKeys";
-import type { NuevaOrdenTrabajo } from "@/shared/domain";
+import type { NuevaNotaOrden, NuevaOrdenTrabajo } from "@/shared/domain";
 
 export function useOrdenesTrabajo() {
   return useQuery({
@@ -23,6 +23,24 @@ export function useCrearOrdenTrabajo() {
       void queryClient.invalidateQueries({ queryKey: queryKeys.ordenes });
       void queryClient.invalidateQueries({ queryKey: queryKeys.clientes });
       void queryClient.invalidateQueries({ queryKey: queryKeys.dashboard });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.notificaciones });
+    },
+  });
+}
+
+/**
+ * Observación del vendedor (o de planta) sobre la orden. El vendedor no
+ * cambia la fase: puede dejar una nota o solicitar revisión, y Producción o
+ * Administración deciden si la orden vuelve a En Proceso.
+ */
+export function useAgregarNota() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ ordenId, ...input }: NuevaNotaOrden & { ordenId: string }) =>
+      ventasApi.agregarNota(ordenId, input),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.ordenes });
       void queryClient.invalidateQueries({ queryKey: queryKeys.notificaciones });
     },
   });

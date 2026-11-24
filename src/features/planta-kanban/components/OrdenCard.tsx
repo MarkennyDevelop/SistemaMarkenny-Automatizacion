@@ -27,6 +27,7 @@ import {
   TECNOLOGIA_LABEL,
   type FasePlanta,
   type OrdenTrabajo,
+  SIN_MAQUINA,
 } from "@/shared/domain";
 import { FASE_UI } from "@/shared/fase-ui";
 
@@ -136,7 +137,7 @@ export function OrdenCard({
               )}
               <DropdownMenuSeparator />
               <DropdownMenuItem disabled className="gap-2 text-[10px] leading-snug">
-                Flujo secuencial: sin saltos ni retrocesos
+                Sin saltos de fase · el retrabajo se registra en la ficha con motivo
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -175,7 +176,7 @@ export function OrdenCard({
 
       <div className="mt-2.5 flex items-center gap-1.5 text-[9.5px] text-muted-foreground">
         <Printer className="h-3 w-3 shrink-0" />
-        <span className="truncate">{orden.maquina}</span>
+        <span className="truncate">{orden.maquina ?? SIN_MAQUINA}</span>
       </div>
 
       <div className="mt-2.5 flex items-center gap-2">
