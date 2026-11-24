@@ -23,19 +23,22 @@ const CLIENTES = [
   { nombre: 'Nathy Studio', rif: 'V-18765432-0', contacto: 'Nathaly Gil', telefono: '0424-555-0123', email: 'hola@nathystudio.com', ciudad: 'Maracay' },
 ];
 
+/** Solo materias primas de Markenny: papeles, viniles, lonas y sellos (sin maquinaria). */
 const MATERIALES = [
-  { sku: 'PAP-BOND-75', nombre: 'Papel Bond 75 g (carta)', categoria: 'PAPEL', unidad: 'resma', stockMinimo: 20, costoUnitario: 6.5, ubicacion: 'Estante A1', proveedor: 'Papelera del Centro', lote: 'L-2611', stock: 120 },
-  { sku: 'PAP-QUIM-2P', nombre: 'Papel químico 2 partes', categoria: 'PAPEL', unidad: 'caja', stockMinimo: 10, costoUnitario: 38, ubicacion: 'Estante A2', proveedor: 'Papelera del Centro', lote: 'L-2602', stock: 14 },
-  { sku: 'PAP-COUCHE-150', nombre: 'Couché 150 g', categoria: 'PAPEL', unidad: 'pliego', stockMinimo: 500, costoUnitario: 0.21, ubicacion: 'Estante A3', proveedor: 'Distribuidora Gráfica', lote: 'L-2588', stock: 4200 },
-  { sku: 'TIN-CYAN', nombre: 'Tinta proceso Cyan', categoria: 'TINTAS', unidad: 'kg', stockMinimo: 3, costoUnitario: 24, ubicacion: 'Gabinete T1', proveedor: 'Sun Chemical', lote: 'SC-118', stock: 8 },
-  { sku: 'TIN-NEGRO', nombre: 'Tinta proceso Negro', categoria: 'TINTAS', unidad: 'kg', stockMinimo: 3, costoUnitario: 21, ubicacion: 'Gabinete T1', proveedor: 'Sun Chemical', lote: 'SC-121', stock: 2 },
-  { sku: 'TIN-PANT-032', nombre: 'Pantone 032 C', categoria: 'TINTAS', unidad: 'kg', stockMinimo: 1, costoUnitario: 45, ubicacion: 'Gabinete T2', proveedor: 'Sun Chemical', lote: 'PT-032', stock: 3 },
-  { sku: 'CTP-SM52', nombre: 'Plancha CTP SM 52', categoria: 'PLANCHAS', unidad: 'unidad', stockMinimo: 30, costoUnitario: 9.8, ubicacion: 'Rack P1', proveedor: 'Kodak', lote: 'K-552', stock: 85 },
-  { sku: 'VIN-LONA-13', nombre: 'Lona front 13 oz', categoria: 'VINILOS', unidad: 'rollo', stockMinimo: 2, costoUnitario: 140, ubicacion: 'Rack G1', proveedor: 'Vinilos Andinos', lote: 'VA-77', stock: 6 },
-  { sku: 'VIN-ADH-BLANCO', nombre: 'Vinil adhesivo blanco brillante', categoria: 'VINILOS', unidad: 'rollo', stockMinimo: 2, costoUnitario: 95, ubicacion: 'Rack G2', proveedor: 'Vinilos Andinos', lote: 'VA-81', stock: 1 },
-  { sku: 'SEL-TRODAT-4912', nombre: 'Sello automático Trodat 4912', categoria: 'SELLOS', unidad: 'unidad', stockMinimo: 10, costoUnitario: 8.5, ubicacion: 'Gaveta S1', proveedor: 'Trodat', lote: 'TR-4912', stock: 40 },
-  { sku: 'SEL-TRODAT-4913', nombre: 'Sello automático Trodat 4913', categoria: 'SELLOS', unidad: 'unidad', stockMinimo: 10, costoUnitario: 9.5, ubicacion: 'Gaveta S1', proveedor: 'Trodat', lote: 'TR-4913', stock: 6 },
-  { sku: 'SEL-FECHADOR', nombre: 'Sello fechador Trodat 4810', categoria: 'SELLOS', unidad: 'unidad', stockMinimo: 5, costoUnitario: 11, ubicacion: 'Gaveta S2', proveedor: 'Trodat', lote: 'TR-4810', stock: 15 },
+  { sku: 'PAP-QUIMICO-CARTA', nombre: 'Papel químico carta (juego 2 partes)', categoria: 'PAPEL', subtipo: 'QUIMICO', unidad: 'caja', stockMinimo: 10, costoUnitario: 38, ubicacion: 'Estante A1', proveedor: 'Papelera del Centro', lote: 'L-2602', stock: 14 },
+  { sku: 'PAP-BOND-75', nombre: 'Papel Bond 75 g carta', categoria: 'PAPEL', subtipo: 'BOND', unidad: 'resma', stockMinimo: 20, costoUnitario: 6.5, ubicacion: 'Estante A2', proveedor: 'Papelera del Centro', lote: 'L-2611', stock: 120 },
+  { sku: 'PAP-GLASSE-150', nombre: 'Papel Glasse 150 g', categoria: 'PAPEL', subtipo: 'GLASSE', unidad: 'pliego', stockMinimo: 500, costoUnitario: 0.21, ubicacion: 'Estante A3', proveedor: 'Distribuidora Gráfica', lote: 'L-2588', stock: 4200 },
+  { sku: 'PAP-BRISTOL-240', nombre: 'Cartulina Bristol 240 g', categoria: 'PAPEL', subtipo: 'BRISTOL', unidad: 'pliego', stockMinimo: 200, costoUnitario: 0.3, ubicacion: 'Estante A4', proveedor: 'Distribuidora Gráfica', lote: 'L-2590', stock: 900 },
+  { sku: 'PAP-OPALINA-180', nombre: 'Opalina 180 g', categoria: 'PAPEL', subtipo: 'OPALINA', unidad: 'pliego', stockMinimo: 200, costoUnitario: 0.35, ubicacion: 'Estante A5', proveedor: 'Distribuidora Gráfica', lote: 'L-2593', stock: 0 },
+  { sku: 'PAP-FOTO-200', nombre: 'Papel fotográfico 200 g', categoria: 'PAPEL', subtipo: 'FOTOGRAFICO', unidad: 'pliego', stockMinimo: 50, costoUnitario: 0.8, ubicacion: 'Estante A6', proveedor: 'Distribuidora Gráfica', lote: 'L-2601', stock: 120 },
+  { sku: 'VIN-ADH-BLANCO', nombre: 'Vinil adhesivo blanco brillante', categoria: 'VINIL', unidad: 'rollo', stockMinimo: 2, costoUnitario: 95, ubicacion: 'Rack G1', proveedor: 'Vinilos Andinos', lote: 'VA-81', stock: 4 },
+  { sku: 'VIN-ADH-TRANSP', nombre: 'Vinil adhesivo transparente', categoria: 'VINIL', unidad: 'rollo', stockMinimo: 1, costoUnitario: 110, ubicacion: 'Rack G2', proveedor: 'Vinilos Andinos', lote: 'VA-84', stock: 1 },
+  { sku: 'LON-FRONT-13', nombre: 'Lona front 13 oz', categoria: 'LONA', unidad: 'rollo', stockMinimo: 2, costoUnitario: 140, ubicacion: 'Rack G3', proveedor: 'Vinilos Andinos', lote: 'VA-77', stock: 6 },
+  { sku: 'LON-MESH', nombre: 'Lona mesh microperforada', categoria: 'LONA', unidad: 'rollo', stockMinimo: 1, costoUnitario: 160, ubicacion: 'Rack G4', proveedor: 'Vinilos Andinos', lote: 'VA-79', stock: 0 },
+  { sku: 'SEL-TRODAT-4911', nombre: 'Sello automático Trodat 4911', categoria: 'SELLO', unidad: 'unidad', stockMinimo: 10, costoUnitario: 7.5, ubicacion: 'Gaveta S1', proveedor: 'Trodat', lote: 'TR-4911', stock: 25 },
+  { sku: 'SEL-TRODAT-4912', nombre: 'Sello automático Trodat 4912', categoria: 'SELLO', unidad: 'unidad', stockMinimo: 10, costoUnitario: 8.5, ubicacion: 'Gaveta S1', proveedor: 'Trodat', lote: 'TR-4912', stock: 40 },
+  { sku: 'SEL-TRODAT-4913', nombre: 'Sello automático Trodat 4913', categoria: 'SELLO', unidad: 'unidad', stockMinimo: 10, costoUnitario: 9.5, ubicacion: 'Gaveta S2', proveedor: 'Trodat', lote: 'TR-4913', stock: 6 },
+  { sku: 'SEL-FECHADOR-4810', nombre: 'Sello fechador Trodat 4810', categoria: 'SELLO', unidad: 'unidad', stockMinimo: 5, costoUnitario: 11, ubicacion: 'Gaveta S2', proveedor: 'Trodat', lote: 'TR-4810', stock: 15 },
 ];
 
 const dias = (n) => {
@@ -46,13 +49,21 @@ const dias = (n) => {
 };
 
 /** Orden: cliente (índice), datos de la ficha y fases que se le harán avanzar. */
+const papeleria = (extra) => ({
+  nombreDocumento: 'Factura', tipoDocumento: 'F', formato: 'TALONARIO', dobleCara: false, partes: 2,
+  numeracionDesde: 1, numeracionHasta: 1000, numeracionPrefijo: '00-', perforacion: true,
+  perforacionOrientacion: 'HORIZONTAL', engomado: 'ARRIBA', coloresTinta: ['NEGRO'], tipoPapel: 'QUIMICO',
+  tamano: 'MEDIA_CARTA', ...extra,
+});
+
+/** Orden: cliente (índice), datos de la ficha y fases que se le harán avanzar. */
 const ORDENES = [
-  { cliente: 0, fases: [], datos: { producto: 'Facturas fiscales 2 partes', categoriaTrabajo: 'PAPELERIA', tecnologia: 'OFFSET', prioridad: 'ALTA', maquina: 'Heidelberg SM 52', cantidad: 1000, sustrato: 'Bond 75 g', tintas: ['Pantone 032 C'], acabados: ['Numerado', 'Engrapado', 'Perforado'], especificaciones: { tipoPapeleria: 'FACTURA', partes: 2, numeracionDesde: 1, numeracionHasta: 1000, numeracionPrefijo: 'A-', tintasTiro: 1, gramaje: 75, pantones: ['Pantone 032 C'], observaciones: 'Logo centrado, datos fiscales al pie' }, montoTotal: 185, fechaEntrega: dias(5) } },
-  { cliente: 1, fases: ['EN_REVISION'], datos: { producto: 'Récipes médicos', categoriaTrabajo: 'PAPELERIA', tecnologia: 'DIGITAL', prioridad: 'MEDIA', maquina: 'Konica Minolta C4080', cantidad: 2000, sustrato: 'Bond 75 g', tintas: ['CMYK proceso'], acabados: ['Engrapado'], especificaciones: { tipoPapeleria: 'RECIPE', partes: 1, tintasTiro: 4, gramaje: 75 }, montoTotal: 96, fechaEntrega: dias(2) } },
-  { cliente: 2, fases: ['EN_REVISION', 'FINALIZADO'], datos: { producto: 'Etiquetas 5×5 cm', categoriaTrabajo: 'GENERAL', tecnologia: 'FLEXOGRAFIA', prioridad: 'URGENTE', maquina: 'Troqueladora Bobst', cantidad: 8000, sustrato: 'Adhesivo 80 g', tintas: ['CMYK', 'Pantone 186 C'], acabados: ['Troquelado', 'Barniz UV'], especificaciones: { tintasTiro: 4, gramaje: 80, observaciones: 'Rollo de 1.000 etiquetas' }, montoTotal: 420, fechaEntrega: dias(1) } },
-  { cliente: 3, fases: ['EN_REVISION', 'FINALIZADO', 'EMPAQUETADO'], datos: { producto: 'Pendones 80×200 cm', categoriaTrabajo: 'GRAN_FORMATO', tecnologia: 'GRAN_FORMATO', prioridad: 'MEDIA', maquina: 'Mimaki JV300', cantidad: 12, sustrato: 'Lona front 13 oz', tintas: ['CMYK alta cobertura'], acabados: ['Ojales metálicos', 'Refuerzo perimetral'], especificaciones: { tipoGranFormato: 'PENDON', ancho: 80, alto: 200, unidadDimension: 'cm', resolucionDpi: 720 }, montoTotal: 312, fechaEntrega: dias(3) } },
-  { cliente: 4, fases: ['EN_REVISION', 'FINALIZADO', 'EMPAQUETADO'], datos: { producto: 'Tarjetas de presentación', categoriaTrabajo: 'GENERAL', tecnologia: 'DIGITAL', prioridad: 'BAJA', maquina: 'Konica Minolta C4080', cantidad: 500, sustrato: 'Couché 300 g', tintas: ['CMYK'], acabados: ['Laminado mate'], especificaciones: { tintasTiro: 4, tintasRetiro: 4, gramaje: 300 }, montoTotal: 48, fechaEntrega: dias(-1) } },
-  { cliente: 2, fases: [], datos: { producto: 'Stickers troquelados 4×4', categoriaTrabajo: 'GRAN_FORMATO', tecnologia: 'GRAN_FORMATO', prioridad: 'MEDIA', maquina: 'Mimaki JV300', cantidad: 300, sustrato: 'Vinilo blanco brillante', tintas: ['CMYK alta cobertura'], acabados: ['Troquelado'], especificaciones: { tipoGranFormato: 'STICKER', ancho: 4, alto: 4, unidadDimension: 'cm', resolucionDpi: 1440 }, montoTotal: 75, fechaEntrega: dias(7) } },
+  { cliente: 0, fases: [], datos: { producto: 'Facturas fiscales 2 partes', categoriaTrabajo: 'PAPELERIA', prioridad: 'ALTA', cantidad: 1000, sustrato: 'Papel químico', tintas: ['Pantone 032 C'], acabados: ['Numerado', 'Perforado', 'Engomado'], especificaciones: papeleria({ coloresTinta: ['PANTONE'], pantone: 'Pantone 032 C', observaciones: 'Logo centrado, datos fiscales al pie' }), montoTotal: 185, fechaEntrega: dias(5) } },
+  { cliente: 1, fases: ['EN_REVISION'], datos: { producto: 'Récipes médicos', categoriaTrabajo: 'PAPELERIA', cantidad: 2000, sustrato: 'Papel bond', tintas: ['Azul'], acabados: ['Engomado'], especificaciones: papeleria({ nombreDocumento: 'Récipe', tipoDocumento: 'RM', formato: 'BLOCK', partes: 1, numeracionDesde: undefined, numeracionHasta: undefined, numeracionPrefijo: undefined, perforacion: false, perforacionOrientacion: undefined, coloresTinta: ['AZUL'], tipoPapel: 'BOND', tamano: 'CUARTO_CARTA' }), montoTotal: 96, fechaEntrega: dias(2) } },
+  { cliente: 2, fases: ['EN_REVISION', 'FINALIZADO'], datos: { producto: 'Stickers redondos 5 cm', categoriaTrabajo: 'GRAN_FORMATO', prioridad: 'URGENTE', cantidad: 40, sustrato: 'Vinil adhesivo blanco brillante', tintas: ['CMYK alta cobertura'], acabados: ['Laminado brillante', 'Corte con plotter'], especificaciones: { tipoGranFormato: 'STICKER', ancho: 30, alto: 45, unidadDimension: 'cm', resolucionDpi: 1440, observaciones: '40 pliegos de 24 stickers' }, montoTotal: 420, fechaEntrega: dias(1) } },
+  { cliente: 3, fases: ['EN_REVISION', 'FINALIZADO', 'EMPAQUETADO'], datos: { producto: 'Pendones 80×200 cm', categoriaTrabajo: 'GRAN_FORMATO', cantidad: 12, sustrato: 'Lona front 13 oz', tintas: ['CMYK alta cobertura'], acabados: ['Laminado mate'], especificaciones: { tipoGranFormato: 'PENDON', ancho: 80, alto: 200, unidadDimension: 'cm', resolucionDpi: 720 }, montoTotal: 312, fechaEntrega: dias(3) } },
+  { cliente: 4, fases: ['EN_REVISION', 'FINALIZADO', 'EMPAQUETADO'], datos: { producto: 'Notas de entrega', categoriaTrabajo: 'PAPELERIA', prioridad: 'BAJA', cantidad: 500, sustrato: 'Papel químico', tintas: ['Negro'], acabados: ['Numerado'], especificaciones: papeleria({ nombreDocumento: 'Nota de entrega', tipoDocumento: 'NE', partes: 3, numeracionHasta: 500 }), montoTotal: 48, fechaEntrega: dias(-1) } },
+  { cliente: 2, fases: [], datos: { producto: 'Vinil de rotulación para vidriera', categoriaTrabajo: 'GRAN_FORMATO', cantidad: 2, sustrato: 'Vinil adhesivo transparente', tintas: ['CMYK alta cobertura'], acabados: ['Corte con plotter'], especificaciones: { tipoGranFormato: 'VINIL', ancho: 1.2, alto: 2, unidadDimension: 'm', resolucionDpi: 720 }, montoTotal: 75, fechaEntrega: dias(7) } },
 ];
 
 export async function sembrarDemo(app) {

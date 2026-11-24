@@ -16,6 +16,7 @@ export function crearModuloNotificaciones({ notificaciones, eventBus, reloj, ids
   const suscripciones = [
     eventBus.suscribir(EVENTOS.ORDEN_CREADA, ({ payload }) => casosUso.alCrearOrden(payload)),
     eventBus.suscribir(EVENTOS.ORDEN_ACTUALIZADA, ({ payload }) => casosUso.alActualizarOrden(payload)),
+    eventBus.suscribir(EVENTOS.NOTA_AGREGADA, ({ payload }) => casosUso.alAgregarNota(payload)),
     eventBus.suscribir(EVENTOS.DESCUENTO_MATERIALES_FALLIDO, ({ payload }) => casosUso.alFallarDescuento(payload)),
   ];
 

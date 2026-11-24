@@ -49,7 +49,11 @@ export function datosOrden(extra = {}) {
     sustrato: 'Bond 75 g',
     tintas: ['Pantone 032 C'],
     acabados: ['Numerado', 'Engrapado'],
-    especificaciones: { tipoPapeleria: 'FACTURA', partes: 2, numeracionDesde: 1, numeracionHasta: 1000, observaciones: 'Prueba de color' },
+    especificaciones: {
+      nombreDocumento: 'Factura', tipoDocumento: 'F', formato: 'TALONARIO', partes: 2, numeracionDesde: 1,
+      numeracionHasta: 1000, numeracionPrefijo: '00-', tipoPapel: 'QUIMICO', tamano: 'MEDIA_CARTA',
+      coloresTinta: ['PANTONE'], pantone: 'Pantone 032 C', observaciones: 'Prueba de color',
+    },
     montoTotal: 120.5,
     fechaEntrega: '2026-11-27T16:00:00.000Z',
     ...extra,

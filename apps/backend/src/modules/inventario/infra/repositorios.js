@@ -83,6 +83,7 @@ const aMaterial = (f) =>
     sku: f.codigo_sku,
     nombre: f.nombre,
     categoria: f.tipo,
+    subtipo: f.subtipo,
     unidad: f.unidad_medida,
     stock: f.stock_actual,
     stockMinimo: f.stock_minimo,
@@ -117,7 +118,8 @@ export class MaterialRepositoryPostgres {
   async listar({ categoria, q } = {}) {
     const { rows } = await this.pool.query(
       `SELECT * FROM materiales
-        WHERE ($1::text IS NULL OR tipo = $1)
+        WHERE NOT archivado
+          AND ($1::text IS NULL OR tipo = $1)
           AND ($2::text IS NULL OR nombre ILIKE '%' || $2 || '%' OR codigo_sku ILIKE '%' || $2 || '%')
         ORDER BY codigo_sku`,
       [categoria ?? null, q || null],
@@ -125,20 +127,21 @@ export class MaterialRepositoryPostgres {
     return rows.map(aMaterial);
   }
   async obtenerPorId(id) {
-    const { rows } = await this.pool.query('SELECT * FROM materiales WHERE id = $1', [id]);
+    // Los materiales archivados (categorías antiguas como tintas o planchas) no admiten movimientos.
+    const { rows } = await this.pool.query('SELECT * FROM materiales WHERE id = $1 AND NOT archivado', [id]);
     return rows[0] ? aMaterial(rows[0]) : null;
   }
   async obtenerVarios(ids) {
-    const { rows } = await this.pool.query('SELECT * FROM materiales WHERE id = ANY($1::uuid[])', [ids]);
+    const { rows } = await this.pool.query('SELECT * FROM materiales WHERE id = ANY($1::uuid[]) AND NOT archivado', [ids]);
     return rows.map(aMaterial);
   }
   async crear(m) {
     try {
       await this.pool.query(
         `INSERT INTO materiales (id, codigo_sku, nombre, tipo, stock_actual, unidad_medida, stock_minimo,
-                                 costo_unitario, ubicacion, proveedor, lote, version, actualizado_en)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
-        [m.id, m.sku, m.nombre, m.categoria, m.stock, m.unidad, m.stockMinimo, m.costoUnitario, m.ubicacion, m.proveedor, m.lote, m.version, m.actualizadoEn],
+                                 costo_unitario, ubicacion, proveedor, lote, version, actualizado_en, subtipo)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
+        [m.id, m.sku, m.nombre, m.categoria, m.stock, m.unidad, m.stockMinimo, m.costoUnitario, m.ubicacion, m.proveedor, m.lote, m.version, m.actualizadoEn, m.subtipo],
       );
     } catch (err) {
       if (err.code === '23505') throw skuDuplicado(m.sku);
@@ -182,7 +185,7 @@ export class MaterialRepositoryPostgres {
       `SELECT mv.*, m.nombre AS material_nombre
          FROM movimientos_inventario mv JOIN materiales m ON m.id = mv.material_id
         WHERE ($1::uuid IS NULL OR mv.material_id = $1)
-        ORDER BY mv.registrado_en DESC, mv.id DESC
+        ORDER BY mv.registrado_en DESC, mv.secuencia DESC
         LIMIT $2`,
       [materialId ?? null, limite],
     );
@@ -225,7 +228,7 @@ export class ProductoTerminadoRepositoryPostgres {
   async #conEntregas(filas) {
     if (filas.length === 0) return [];
     const { rows } = await this.pool.query(
-      'SELECT * FROM entregas_productos WHERE producto_id = ANY($1::uuid[]) ORDER BY registrado_en, id',
+      'SELECT * FROM entregas_productos WHERE producto_id = ANY($1::uuid[]) ORDER BY registrado_en, secuencia',
       [filas.map((f) => f.id)],
     );
     return filas.map((f) => aProducto(f, rows.filter((e) => e.producto_id === f.id).map(aEntrega)));

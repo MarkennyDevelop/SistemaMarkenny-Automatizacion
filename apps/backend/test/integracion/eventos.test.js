@@ -22,7 +22,7 @@ describe('descuento de materias primas al crear una orden (EventBus)', () => {
   it('descuenta todo o nada, es idempotente y avisa si falta stock', async () => {
     const { app, pedir } = await appConDatos();
     const material = async (sku, stock) => {
-      const { cuerpo } = await pedir('POST', '/inventario/materiales', { sku, nombre: sku, categoria: 'PAPEL', unidad: 'resma' });
+      const { cuerpo } = await pedir('POST', '/inventario/materiales', { sku, nombre: sku, categoria: 'PAPEL', subtipo: 'BOND', unidad: 'resma' });
       await pedir('POST', '/inventario/movimientos', { materialId: cuerpo.id, tipo: 'ENTRADA', cantidad: stock, motivo: 'Carga inicial' });
       return cuerpo.id;
     };

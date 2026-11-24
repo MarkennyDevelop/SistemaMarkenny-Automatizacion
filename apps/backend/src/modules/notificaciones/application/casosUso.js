@@ -84,6 +84,26 @@ export function crearCasosUsoNotificaciones({ notificaciones, reloj, ids }) {
       });
     },
 
+    /**
+     * Nota en una orden. Si la escribe el vendedor, avisa a Producción y
+     * Administración (que deciden el retrabajo); si la escribe Producción o
+     * Administración, avisa al vendedor de esa orden.
+     */
+    alAgregarNota: ({ ordenId, codigo, producto, mensaje, solicitaRetrabajo, vendedorId, actor }) => {
+      const delVendedor = actor.rol === 'VENDEDOR';
+      return notificar({
+        tipo: 'FASE',
+        titulo: solicitaRetrabajo
+          ? `Solicitud de revisión/retrabajo · ${codigo}`
+          : `Nueva observación en ${codigo}`,
+        detalle: `${actor.nombre}: ${mensaje}`.slice(0, 300) || producto,
+        ordenId,
+        codigo,
+        roles: delVendedor ? ['ADMIN', 'PRODUCCION'] : ['VENDEDOR', 'ADMIN'],
+        destinatarioId: delVendedor ? null : vendedorId,
+      });
+    },
+
     alFallarDescuento: ({ ordenId, mensaje }) =>
       notificar({
         tipo: 'STOCK',

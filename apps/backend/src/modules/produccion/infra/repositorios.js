@@ -40,6 +40,10 @@ export class OrdenRepositoryMemoria {
     const o = this.#ordenes.get(id);
     if (o) this.#ordenes.set(id, Object.freeze({ ...o, estadoEntrega }));
   }
+  async agregarNota(ordenId, nota) {
+    const o = this.#ordenes.get(ordenId);
+    if (o) this.#ordenes.set(ordenId, Object.freeze({ ...o, notas: [...o.notas, nota] }));
+  }
   async obtenerPorId(id) {
     return this.#ordenes.get(id) ?? null;
   }
@@ -79,7 +83,17 @@ const aEvento = (f) => ({
   nota: f.comentario,
 });
 
-function aOrden(f, historial) {
+const aNota = (f) => ({
+  id: f.id,
+  mensaje: f.mensaje,
+  solicitaRetrabajo: f.solicita_retrabajo,
+  usuarioId: f.usuario_id,
+  usuario: f.usuario_nombre,
+  rol: f.usuario_rol,
+  fecha: f.registrado_en.toISOString(),
+});
+
+function aOrden(f, historial, notas) {
   const especificaciones = { ...f.especificaciones };
   // La columna `observaciones` del esquema original es la fuente de las observaciones.
   if (f.observaciones) especificaciones.observaciones = f.observaciones;
@@ -92,6 +106,7 @@ function aOrden(f, historial) {
     vendedorId: f.vendedor_id,
     vendedor: f.vendedor_nombre,
     categoriaTrabajo: f.tipo_trabajo,
+    productoTerminado: f.producto_terminado,
     producto: f.producto,
     descripcion: f.descripcion,
     tecnologia: f.tecnologia,
@@ -111,6 +126,7 @@ function aOrden(f, historial) {
     fechaFinalizado: f.fecha_finalizado ? f.fecha_finalizado.toISOString() : null,
     version: f.version,
     historial,
+    notas,
   });
 }
 
@@ -150,13 +166,13 @@ export class OrdenRepositoryPostgres {
            (id, codigo_orden, cliente_id, cliente_nombre, cliente_telefono, vendedor_id, tipo_trabajo, producto,
             descripcion, tecnologia, prioridad, maquina, operador, cantidad, sustrato, tintas, acabados,
             especificaciones, estado_produccion, estado_entrega, monto_total, observaciones, fecha_aprobacion,
-            fecha_estimada_entrega, fecha_finalizado, version, creado_en)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$23)`,
+            fecha_estimada_entrega, fecha_finalizado, version, creado_en, producto_terminado)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$23,$27)`,
         [
           o.id, o.codigo, o.clienteId, o.clienteNombre, o.clienteTelefono, o.vendedorId, o.categoriaTrabajo, o.producto,
           o.descripcion, o.tecnologia, o.prioridad, o.maquina, o.operador, o.cantidad, o.sustrato, o.tintas, o.acabados,
           JSON.stringify(especificaciones), o.fase, o.estadoEntrega, o.montoTotal, observaciones ?? null, o.fechaCreacion,
-          o.fechaEntrega, o.fechaFinalizado, o.version,
+          o.fechaEntrega, o.fechaFinalizado, o.version, o.productoTerminado,
         ],
       );
       await insertarEventos(c, o.id, o.historial);
@@ -182,10 +198,19 @@ export class OrdenRepositoryPostgres {
     await this.pool.query('UPDATE ordenes_trabajo SET estado_entrega = $2 WHERE id = $1', [id, estadoEntrega]);
   }
 
+  async agregarNota(ordenId, n) {
+    await this.pool.query(
+      `INSERT INTO ordenes_notas (id, orden_id, mensaje, solicita_retrabajo, usuario_id, usuario_nombre, usuario_rol, registrado_en)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+      [n.id, ordenId, n.mensaje, n.solicitaRetrabajo, n.usuarioId, n.usuario, n.rol, n.fecha],
+    );
+  }
+
   async obtenerPorId(id) {
     const { rows } = await this.pool.query(`${SELECT_ORDEN} WHERE o.id = $1`, [id]);
     if (!rows[0]) return null;
-    return aOrden(rows[0], (await this.#historiales([id])).get(id) ?? []);
+    const [historiales, notas] = await Promise.all([this.#historiales([id]), this.#notas([id])]);
+    return aOrden(rows[0], historiales.get(id) ?? [], notas.get(id) ?? []);
   }
 
   async listar({ fase, categoria, estadoEntrega, q, vendedorId, limite = 200 } = {}) {
@@ -201,8 +226,9 @@ export class OrdenRepositoryPostgres {
         LIMIT $6`,
       [fase ?? null, categoria ?? null, estadoEntrega ?? null, vendedorId ?? null, q || null, limite],
     );
-    const historiales = await this.#historiales(rows.map((f) => f.id));
-    return rows.map((f) => aOrden(f, historiales.get(f.id) ?? []));
+    const ids = rows.map((f) => f.id);
+    const [historiales, notas] = await Promise.all([this.#historiales(ids), this.#notas(ids)]);
+    return rows.map((f) => aOrden(f, historiales.get(f.id) ?? [], notas.get(f.id) ?? []));
   }
 
   async resumenPorCliente() {
@@ -215,11 +241,25 @@ export class OrdenRepositoryPostgres {
     return new Map(rows.map((f) => [f.cliente_id, { activas: f.activas, saldo: Number(f.saldo) }]));
   }
 
+  async #notas(ids) {
+    const mapa = new Map();
+    if (ids.length === 0) return mapa;
+    const { rows } = await this.pool.query(
+      'SELECT * FROM ordenes_notas WHERE orden_id = ANY($1::uuid[]) ORDER BY registrado_en, secuencia',
+      [ids],
+    );
+    for (const f of rows) {
+      if (!mapa.has(f.orden_id)) mapa.set(f.orden_id, []);
+      mapa.get(f.orden_id).push(aNota(f));
+    }
+    return mapa;
+  }
+
   async #historiales(ids) {
     const mapa = new Map();
     if (ids.length === 0) return mapa;
     const { rows } = await this.pool.query(
-      `SELECT * FROM produccion_etapas_auditoria WHERE orden_id = ANY($1::uuid[]) ORDER BY registrado_en, id`,
+      `SELECT * FROM produccion_etapas_auditoria WHERE orden_id = ANY($1::uuid[]) ORDER BY registrado_en, secuencia`,
       [ids],
     );
     for (const f of rows) {

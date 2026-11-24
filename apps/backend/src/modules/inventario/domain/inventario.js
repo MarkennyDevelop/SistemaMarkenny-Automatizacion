@@ -3,6 +3,7 @@
 import {
   CATEGORIAS_INVENTARIO,
   TIPOS_MOVIMIENTO,
+  TIPOS_PAPEL,
   TIPOS_PRODUCTO_TERMINADO,
   UNIDADES_MEDIDA,
   stockTrasMovimiento,
@@ -20,9 +21,18 @@ function invariante(condicion, mensaje, detalles) {
 
 /* ------------------------------ Materiales ------------------------------ */
 
-export function crearMaterial({ id, sku, nombre, categoria, unidad, stockMinimo = 0, costoUnitario = 0, ubicacion = '', proveedor = '', lote = '', fecha }) {
+/**
+ * Materia prima de Markenny: papel (con su tipo), vinil, lona o sello. El
+ * inventario no admite maquinaria ni equipos.
+ */
+export function crearMaterial({ id, sku, nombre, categoria, subtipo = null, unidad, stockMinimo = 0, costoUnitario = 0, ubicacion = '', proveedor = '', lote = '', fecha }) {
   invariante(sku?.trim() && nombre?.trim(), 'El material requiere SKU y nombre');
-  invariante(CATEGORIAS_INVENTARIO.includes(categoria), `Categoría inválida: ${categoria}`);
+  invariante(
+    CATEGORIAS_INVENTARIO.includes(categoria),
+    `Categoría inválida: ${categoria}. El inventario solo registra materias primas (${CATEGORIAS_INVENTARIO.join(', ')})`,
+  );
+  invariante(categoria !== 'PAPEL' || TIPOS_PAPEL.includes(subtipo), 'Indica el tipo de papel');
+  invariante(categoria === 'PAPEL' || !subtipo, 'El tipo de papel solo aplica a materiales PAPEL');
   invariante(UNIDADES_MEDIDA.includes(unidad), `Unidad inválida: ${unidad}`);
   invariante(stockMinimo >= 0 && costoUnitario >= 0, 'Stock mínimo y costo no pueden ser negativos');
   return congelarProfundo({
@@ -30,6 +40,7 @@ export function crearMaterial({ id, sku, nombre, categoria, unidad, stockMinimo 
     sku: sku.trim().toUpperCase(),
     nombre: nombre.trim(),
     categoria,
+    subtipo: categoria === 'PAPEL' ? subtipo : null,
     unidad,
     stock: 0,
     stockMinimo: redondear(stockMinimo),
@@ -129,7 +140,20 @@ function estadoSegun(cantidad, entregada) {
   return entregada < cantidad ? 'PARCIAL' : 'ENTREGADO';
 }
 
-export function crearProductoTerminado({ id, tipo = 'PRODUCTO_TERMINADO', ordenId = null, codigoOrden = null, clienteId = null, clienteNombre = null, descripcion, cantidad, ubicacion = null, fecha }) {
+/** Disponibilidad para las fichas de venta: sin costos, proveedor ni lote. */
+export function aDisponibilidad(material) {
+  return {
+    id: material.id,
+    nombre: material.nombre,
+    categoria: material.categoria,
+    subtipo: material.subtipo ?? null,
+    unidad: material.unidad,
+    stock: material.stock,
+    disponible: material.stock > 0,
+  };
+}
+
+export function crearProductoTerminado({ id, tipo, ordenId = null, codigoOrden = null, clienteId = null, clienteNombre = null, descripcion, cantidad, ubicacion = null, fecha }) {
   invariante(TIPOS_PRODUCTO_TERMINADO.includes(tipo), `Tipo de producto inválido: ${tipo}`);
   invariante(descripcion?.trim(), 'El producto requiere una descripción');
   invariante(Number.isInteger(cantidad) && cantidad > 0, 'La cantidad debe ser un entero positivo');

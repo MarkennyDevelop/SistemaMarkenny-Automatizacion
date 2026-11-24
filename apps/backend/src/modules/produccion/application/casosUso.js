@@ -2,6 +2,7 @@
 import { z } from 'zod';
 import {
   FiltroOrdenesSchema,
+  NuevaNotaSchema,
   NuevaOrdenSchema,
   OrdenTrabajoSchema,
   TransicionSchema,
@@ -15,6 +16,7 @@ import {
 } from '../../../shared/domain/errors.js';
 import { EVENTOS } from '../../../shared/events/catalogo.js';
 import {
+  agregarNota,
   crearOrdenTrabajo,
   puedeVer,
   registrarEstadoEntrega,
@@ -28,12 +30,14 @@ import {
  * @property {(orden: object, versionEsperada: number) => Promise<void>} actualizar
  *   Guarda fase/estado y los eventos nuevos del historial. ConflictoConcurrenciaError si la versión cambió.
  * @property {(id: string, estadoEntrega: string) => Promise<void>} actualizarEstadoEntrega
+ * @property {(ordenId: string, nota: object) => Promise<void>} agregarNota  Solo inserción.
  * @property {(id: string) => Promise<object|null>} obtenerPorId
  * @property {(filtro: object) => Promise<object[]>} listar  Más recientes primero.
  * @property {() => Promise<Map<string, { activas: number, saldo: number }>>} resumenPorCliente
  */
 export const ORDEN_REPOSITORY_PORT = Object.freeze([
-  'siguienteCodigo', 'crear', 'actualizar', 'actualizarEstadoEntrega', 'obtenerPorId', 'listar', 'resumenPorCliente',
+  'siguienteCodigo', 'crear', 'actualizar', 'actualizarEstadoEntrega', 'agregarNota', 'obtenerPorId', 'listar',
+  'resumenPorCliente',
 ]);
 
 /** Proyección del agregado al DTO del contrato. */
@@ -43,10 +47,12 @@ export function aOrdenDTO(o) {
     codigo: o.codigo,
     clienteId: o.clienteId,
     clienteNombre: o.clienteNombre,
+    clienteTelefono: o.clienteTelefono ?? null,
     producto: o.producto,
     descripcion: o.descripcion,
     tecnologia: o.tecnologia,
     categoriaTrabajo: o.categoriaTrabajo,
+    productoTerminado: o.productoTerminado,
     prioridad: o.prioridad,
     maquina: o.maquina,
     operador: o.operador,
@@ -62,9 +68,11 @@ export function aOrdenDTO(o) {
     vendedorId: o.vendedorId,
     vendedor: o.vendedor,
     fechaCreacion: o.fechaCreacion,
+    fechaFinalizado: o.fechaFinalizado ?? null,
     fechaEntrega: o.fechaEntrega,
     version: o.version,
     historial: o.historial.map((e) => ({ ...e })),
+    notas: (o.notas ?? []).map((n) => ({ ...n })),
   };
 }
 
@@ -100,7 +108,8 @@ export function crearCasosUsoProduccion({ ordenes, eventBus, reloj, ids, obtener
   return {
     crearOrden: casoDeUso({
       nombre: 'produccion.crearOrden',
-      entrada: NuevaOrdenSchema.extend({
+      // safeExtend: NuevaOrdenSchema tiene validaciones propias que deben conservarse.
+      entrada: NuevaOrdenSchema.safeExtend({
         actor: ActorSchema,
         /** Materias primas a descontar; hoy las fichas del frontend no las envían. */
         materiales: z.array(z.object({ materialId: z.string().uuid(), cantidad: z.number().positive() })).default([]),
@@ -177,12 +186,41 @@ export function crearCasosUsoProduccion({ ordenes, eventBus, reloj, ids, obtener
             clienteId: nueva.clienteId,
             clienteNombre: nueva.clienteNombre,
             producto: nueva.producto,
+            productoTerminado: nueva.productoTerminado,
             cantidad: nueva.cantidad,
             actor,
             fecha: nueva.historial.at(-1).fecha,
           });
         }
         return aOrdenDTO(nueva);
+      },
+    }),
+
+    /**
+     * Observación o solicitud de revisión/retrabajo. El vendedor solo anota en
+     * sus órdenes; Producción y Administración deciden el cambio de fase.
+     */
+    agregarNota: casoDeUso({
+      nombre: 'produccion.agregarNota',
+      entrada: NuevaNotaSchema.extend({ id: z.string().uuid(), actor: ActorSchema }),
+      salida: OrdenTrabajoSchema,
+      async ejecutar({ id, mensaje, solicitaRetrabajo, actor }) {
+        const orden = await cargarVisible(id, actor);
+        const r = agregarNota(orden, { id: ids.generar(), mensaje, solicitaRetrabajo, actor, fecha: reloj.ahora() });
+        await ordenes.agregarNota(orden.id, r.nota);
+        eventBus.publicar(EVENTOS.NOTA_AGREGADA, {
+          ordenId: orden.id,
+          codigo: orden.codigo,
+          producto: orden.producto,
+          clienteNombre: orden.clienteNombre,
+          vendedorId: orden.vendedorId,
+          fase: orden.fase,
+          mensaje: r.nota.mensaje,
+          solicitaRetrabajo: r.nota.solicitaRetrabajo,
+          actor,
+          fecha: r.nota.fecha,
+        });
+        return aOrdenDTO(r.orden);
       },
     }),
 

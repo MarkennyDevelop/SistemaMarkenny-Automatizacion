@@ -3,13 +3,14 @@
 // cuyo payload se valida con Zod al publicar.
 import { z } from 'zod';
 import { FaseSchema } from '@markenny/contrato';
-import { ESTADOS_ENTREGA } from '@markenny/contrato/dominio';
+import { ESTADOS_ENTREGA, TIPOS_PRODUCTO_TERMINADO } from '@markenny/contrato/dominio';
 import { ActorSchema } from '../application/actor.js';
 
 export const EVENTOS = Object.freeze({
   ORDEN_CREADA: 'produccion.orden.creada',
   ORDEN_ACTUALIZADA: 'produccion.orden.actualizada',
   ORDEN_EMPAQUETADA: 'produccion.orden.empaquetada',
+  NOTA_AGREGADA: 'produccion.orden.nota_agregada',
   PRODUCTO_ENTREGADO: 'inventario.producto.entregado',
   MATERIALES_DESCONTADOS: 'inventario.materiales.descontados',
   DESCUENTO_MATERIALES_FALLIDO: 'inventario.descuento_materiales.fallido',
@@ -48,7 +49,20 @@ export const PAYLOADS = Object.freeze({
     clienteId: Uuid,
     clienteNombre: z.string(),
     producto: z.string(),
+    productoTerminado: z.enum(TIPOS_PRODUCTO_TERMINADO),
     cantidad: z.number().int().positive(),
+    actor: ActorSchema,
+    fecha: Fecha,
+  }),
+  [EVENTOS.NOTA_AGREGADA]: z.object({
+    ordenId: Uuid,
+    codigo: z.string(),
+    producto: z.string(),
+    clienteNombre: z.string(),
+    vendedorId: Uuid,
+    fase: FaseSchema,
+    mensaje: z.string(),
+    solicitaRetrabajo: z.boolean(),
     actor: ActorSchema,
     fecha: Fecha,
   }),

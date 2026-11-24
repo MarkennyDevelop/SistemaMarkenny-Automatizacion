@@ -49,6 +49,7 @@ export function crearModuloInventario({ materiales, productos, eventBus, reloj, 
 
   const manejadores = {
     listarMateriales: ({ query }) => casosUso.listarMateriales(query),
+    disponibilidadInventario: () => casosUso.disponibilidad({}),
     crearMaterial: ({ body }) => casosUso.crearMaterial(body),
     listarMovimientos: ({ query }) => casosUso.listarMovimientos(query),
     registrarMovimiento: ({ body, usuario }) => casosUso.registrarMovimiento({ ...body, actor: actorDe(usuario) }),

@@ -4,7 +4,10 @@
 import {
   FASE_INICIAL,
   FASES,
+  ROLES_CAMBIO_FASE,
   TRANSICIONES,
+  esRetrabajo,
+  productoTerminadoDe,
   requiereMotivo,
 } from '@markenny/contrato/dominio';
 import { DomainError } from '../../../shared/domain/errors.js';
@@ -41,6 +44,7 @@ export function crearOrdenTrabajo({ id, codigo, eventoId, cliente, actor, datos,
   invariante(datos.montoTotal >= 0, 'El monto no puede ser negativo');
 
   const especificaciones = { ...(datos.especificaciones ?? {}) };
+  const tecnologiaPorDefecto = datos.categoriaTrabajo === 'GRAN_FORMATO' ? 'GRAN_FORMATO' : 'OFFSET';
   return congelarProfundo({
     id,
     codigo,
@@ -52,9 +56,10 @@ export function crearOrdenTrabajo({ id, codigo, eventoId, cliente, actor, datos,
     categoriaTrabajo: datos.categoriaTrabajo,
     producto: datos.producto.trim(),
     descripcion: (datos.descripcion ?? '').trim(),
-    tecnologia: datos.tecnologia,
-    prioridad: datos.prioridad,
-    maquina: datos.maquina,
+    tecnologia: datos.tecnologia ?? tecnologiaPorDefecto,
+    productoTerminado: datos.productoTerminado ?? productoTerminadoDe(datos.categoriaTrabajo, especificaciones),
+    prioridad: datos.prioridad ?? 'MEDIA',
+    maquina: datos.maquina?.trim() || null,
     operador: null,
     cantidad: datos.cantidad,
     sustrato: datos.sustrato,
@@ -71,18 +76,21 @@ export function crearOrdenTrabajo({ id, codigo, eventoId, cliente, actor, datos,
     historial: [
       crearEvento({ id: eventoId, fase: FASE_INICIAL, anterior: null, actor: vendedor, fecha, nota: 'Orden creada y enviada a taller' }),
     ],
+    notas: [],
   });
 }
 
 /**
  * Cambia la fase de la orden.
- * - Solo Producción o Administrador.
- * - Solo transiciones de TRANSICIONES (una fase hacia adelante, o el retrabajo
- *   EN_REVISION -> EN_PROCESO, que exige nota con el motivo).
+ * - Solo Producción o Administrador (ROLES_CAMBIO_FASE). El Vendedor no puede
+ *   autorizar cambios: solo pedirlos con una nota (ver `agregarNota`).
+ * - Solo transiciones de TRANSICIONES: una fase hacia adelante, o el retrabajo
+ *   hacia EN_PROCESO desde EN_REVISION o FINALIZADO (defecto o daño), que
+ *   exige nota con el motivo y obliga a revisar y finalizar de nuevo.
  * - La fecha no puede ser anterior al último evento (auditoría monótona).
  */
 export function transicionar(orden, { hacia, actor, nota, fecha, eventoId }) {
-  const operario = exigirRol(actor, ['PRODUCCION', 'ADMIN'], 'cambiar la fase de una orden');
+  const operario = exigirRol(actor, ROLES_CAMBIO_FASE, 'cambiar la fase de una orden');
   const desde = orden.fase;
   invariante(FASES.includes(desde), `Fase desconocida: ${desde}`);
   const permitidas = TRANSICIONES[desde];
@@ -98,7 +106,7 @@ export function transicionar(orden, { hacia, actor, nota, fecha, eventoId }) {
     });
   }
   if (requiereMotivo(desde, hacia) && !(nota?.trim().length >= 3)) {
-    throw new DomainError('Para devolver la orden a proceso indica el motivo del rechazo de calidad', {
+    throw new DomainError('Para devolver la orden a proceso indica el motivo (defecto, daño o rechazo de calidad)', {
       codigo: 'MOTIVO_REQUERIDO',
       detalles: { desde, hacia },
     });
@@ -113,7 +121,8 @@ export function transicionar(orden, { hacia, actor, nota, fecha, eventoId }) {
     fase: hacia,
     // Al empaquetar, el pedido entra al almacén y queda pendiente de entrega.
     estadoEntrega: hacia === 'EMPAQUETADO' ? 'PENDIENTE' : orden.estadoEntrega,
-    fechaFinalizado: hacia === 'FINALIZADO' ? fechaIso : hacia === 'EN_PROCESO' ? null : orden.fechaFinalizado,
+    // En un retrabajo se borra la fecha de finalizado: volverá a fijarse al finalizar de nuevo.
+    fechaFinalizado: hacia === 'FINALIZADO' ? fechaIso : esRetrabajo(desde, hacia) ? null : orden.fechaFinalizado,
     version: orden.version + 1,
     historial: [...orden.historial, crearEvento({ id: eventoId, fase: hacia, anterior: desde, actor: operario, fecha, nota })],
   });
@@ -129,4 +138,26 @@ export function registrarEstadoEntrega(orden, estadoEntrega) {
 /** Un vendedor solo accede a sus órdenes; Admin y Producción, a todas. */
 export function puedeVer(orden, actor) {
   return actor.rol !== 'VENDEDOR' || orden.vendedorId === actor.id;
+}
+
+/**
+ * Nota en la orden: observación o solicitud de revisión/retrabajo. Cualquier
+ * rol que pueda ver la orden puede anotar; las notas no cambian la fase ni la
+ * versión (no compiten con los cambios de Producción).
+ */
+export function agregarNota(orden, { id, mensaje, solicitaRetrabajo = false, actor, fecha }) {
+  const autor = crearActor(actor);
+  const texto = mensaje?.trim() ?? '';
+  invariante(texto.length >= 3 && texto.length <= 500, 'La nota debe tener entre 3 y 500 caracteres');
+  invariante(!(solicitaRetrabajo && orden.fase === 'EMPAQUETADO'), 'Una orden empaquetada ya no admite retrabajo');
+  const nota = {
+    id,
+    mensaje: texto,
+    solicitaRetrabajo: Boolean(solicitaRetrabajo),
+    usuarioId: autor.id,
+    usuario: autor.nombre,
+    rol: autor.rol,
+    fecha: aIso(fecha),
+  };
+  return { orden: congelarProfundo({ ...orden, notas: [...orden.notas, nota] }), nota: congelarProfundo(nota) };
 }

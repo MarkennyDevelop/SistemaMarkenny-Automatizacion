@@ -29,6 +29,8 @@ export function crearModuloProduccion({ ordenes, eventBus, reloj, ids, obtenerCl
     crearOrden: ({ body, usuario }) => casosUso.crearOrden({ ...body, actor: actorDe(usuario) }),
     cambiarFaseOrden: ({ params, body, usuario }) =>
       casosUso.cambiarFase({ id: params.id, ...body, actor: actorDe(usuario) }),
+    agregarNotaOrden: ({ params, body, usuario }) =>
+      casosUso.agregarNota({ id: params.id, ...body, actor: actorDe(usuario) }),
   };
 
   /**

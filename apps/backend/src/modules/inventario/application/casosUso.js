@@ -1,6 +1,7 @@
 // Casos de uso del módulo de Inventario.
 import { z } from 'zod';
 import {
+  DisponibilidadSchema,
   FiltroMaterialesSchema,
   FiltroMovimientosSchema,
   FiltroProductosTerminadosSchema,
@@ -16,6 +17,7 @@ import { ActorSchema } from '../../../shared/application/actor.js';
 import { ConflictoConcurrenciaError, RecursoNoEncontradoError } from '../../../shared/domain/errors.js';
 import { EVENTOS } from '../../../shared/events/catalogo.js';
 import {
+  aDisponibilidad,
   aplicarMovimiento,
   crearMaterial,
   crearProductoTerminado,
@@ -73,6 +75,14 @@ export function crearCasosUsoInventario({ materiales, productos, eventBus, reloj
       entrada: FiltroMaterialesSchema,
       salida: z.array(MaterialSchema),
       ejecutar: async (filtro) => (await materiales.listar(filtro)).map(aMaterialDTO),
+    }),
+
+    /** Insumos con existencia para las fichas de orden (cualquier rol). */
+    disponibilidad: casoDeUso({
+      nombre: 'inventario.disponibilidad',
+      entrada: z.object({}).strict(),
+      salida: z.array(DisponibilidadSchema),
+      ejecutar: async () => (await materiales.listar({})).map(aDisponibilidad),
     }),
 
     crearMaterial: casoDeUso({
@@ -140,10 +150,11 @@ export function crearCasosUsoInventario({ materiales, productos, eventBus, reloj
     },
 
     /** Reacción a ORDEN_EMPAQUETADA: el pedido entra al almacén pendiente de entrega. Idempotente. */
-    ingresarProductoTerminado: async ({ ordenId, codigo, clienteId, clienteNombre, producto, cantidad }) => {
+    ingresarProductoTerminado: async ({ ordenId, codigo, clienteId, clienteNombre, producto, productoTerminado, cantidad }) => {
       if (await productos.obtenerPorOrden(ordenId)) return null;
       const nuevo = crearProductoTerminado({
         id: ids.generar(),
+        tipo: productoTerminado,
         ordenId,
         codigoOrden: codigo,
         clienteId,
