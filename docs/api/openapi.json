@@ -238,6 +238,16 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "DEMASIADOS_INTENTOS",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
           }
         }
       }
@@ -376,6 +386,16 @@
           },
           "401": {
             "description": "CREDENCIALES_INVALIDAS",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "DEMASIADOS_INTENTOS",
             "content": {
               "application/json": {
                 "schema": {

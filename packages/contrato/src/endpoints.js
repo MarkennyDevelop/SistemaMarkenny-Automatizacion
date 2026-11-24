@@ -53,7 +53,7 @@ export const ENDPOINTS = Object.freeze({
     body: e.SetupAdminSchema,
     respuesta: e.UsuarioPublicoSchema,
     estadoExito: 201,
-    errores: ['CONTRATO_INVALIDO', 'ADMIN_YA_REGISTRADO', 'EMAIL_DUPLICADO'],
+    errores: ['CONTRATO_INVALIDO', 'ADMIN_YA_REGISTRADO', 'EMAIL_DUPLICADO', 'DEMASIADOS_INTENTOS'],
   },
   login: {
     metodo: 'POST',
@@ -63,7 +63,7 @@ export const ENDPOINTS = Object.freeze({
     descripcion: 'Correo inexistente, contraseña errónea o cuenta inactiva responden igual.',
     body: e.LoginSchema,
     respuesta: e.UsuarioPublicoSchema,
-    errores: ['CONTRATO_INVALIDO', 'CREDENCIALES_INVALIDAS'],
+    errores: ['CONTRATO_INVALIDO', 'CREDENCIALES_INVALIDAS', 'DEMASIADOS_INTENTOS'],
   },
   logout: {
     metodo: 'POST',
