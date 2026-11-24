@@ -88,6 +88,8 @@ export async function sembrarDemo(app) {
 
   for (const { stock, ...m } of MATERIALES) {
     const material = await inventario.casosUso.crearMaterial(m);
+    // Los agotados (Opalina, lona mesh) quedan en 0: una entrada de 0 no es válida.
+    if (stock === 0) continue;
     await inventario.casosUso.registrarMovimiento({
       materialId: material.id, tipo: 'ENTRADA', cantidad: stock, motivo: 'Inventario inicial', actor: cuentas.PRODUCCION,
     });
