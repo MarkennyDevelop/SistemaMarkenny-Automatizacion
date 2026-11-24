@@ -161,6 +161,8 @@ export const ERRORES = Object.freeze({
   NO_AUTENTICADO: 401,
   CREDENCIALES_INVALIDAS: 401,
   SIN_PERMISO: 403,
+  /** Petición de cambio desde otro sitio (protección CSRF). */
+  ORIGEN_NO_PERMITIDO: 403,
   NO_ENCONTRADO: 404,
   ADMIN_YA_REGISTRADO: 409,
   EMAIL_DUPLICADO: 409,
@@ -171,5 +173,7 @@ export const ERRORES = Object.freeze({
   ENTREGA_INVALIDA: 422,
   MOTIVO_REQUERIDO: 422,
   REGLA_NEGOCIO: 422,
+  /** Límite de intentos (p. ej. login por fuerza bruta). */
+  DEMASIADOS_INTENTOS: 429,
   ERROR_INTERNO: 500,
 });
