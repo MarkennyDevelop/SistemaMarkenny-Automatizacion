@@ -170,11 +170,14 @@ export const ENDPOINTS = Object.freeze({
     roles: VENTAS,
     resumen: 'Crea una orden de trabajo y la envía a planta (EN_PROCESO)',
     descripcion:
-      'Notifica a Producción y Admin. Publica el evento interno de orden aprobada (descuento de materiales).',
+      'Con `materialId` (gran formato) calcula el consumo: m² × (1 + merma) ÷ rendimiento del material, y lo descuenta '
+      + 'del almacén al crear la orden. Si no alcanza el stock responde 409 STOCK_INSUFICIENTE y no guarda nada. '
+      + 'Si el material no tiene rendimiento configurado, crea la orden sin descontar y avisa a Producción. '
+      + 'Notifica a Producción y Admin.',
     body: e.NuevaOrdenSchema,
     respuesta: e.OrdenTrabajoSchema,
     estadoExito: 201,
-    errores: ['CONTRATO_INVALIDO', 'NO_AUTENTICADO', 'SIN_PERMISO', 'NO_ENCONTRADO'],
+    errores: ['CONTRATO_INVALIDO', 'NO_AUTENTICADO', 'SIN_PERMISO', 'NO_ENCONTRADO', 'STOCK_INSUFICIENTE'],
   },
   cambiarFaseOrden: {
     metodo: 'POST',
@@ -233,6 +236,16 @@ export const ENDPOINTS = Object.freeze({
     query: e.FiltroMaterialesSchema,
     respuesta: z.array(e.MaterialSchema),
     errores: ['CONTRATO_INVALIDO', 'NO_AUTENTICADO', 'SIN_PERMISO'],
+  },
+  configurarConsumoMaterial: {
+    metodo: 'PATCH',
+    ruta: '/inventario/materiales/:id/consumo',
+    roles: PLANTA,
+    resumen: 'Define el rendimiento (m² por unidad) y la merma de un vinil o lona',
+    params: e.ParamsIdSchema,
+    body: e.ConfiguracionConsumoSchema,
+    respuesta: e.MaterialSchema,
+    errores: ['CONTRATO_INVALIDO', 'NO_AUTENTICADO', 'SIN_PERMISO', 'NO_ENCONTRADO', 'REGLA_NEGOCIO'],
   },
   crearMaterial: {
     metodo: 'POST',

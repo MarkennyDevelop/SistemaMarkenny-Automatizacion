@@ -32,6 +32,7 @@ import {
   ACABADOS_GRAN_FORMATO,
   UNIDADES_DIMENSION,
   UNIDADES_MEDIDA,
+  CATEGORIAS_POR_SUPERFICIE,
 } from './dominio.js';
 
 /* ------------------------------------------------------------------ */
@@ -269,6 +270,10 @@ export const OrdenTrabajoSchema = z.object({
   /** Producto terminado que ingresa al almacén al empaquetar. */
   productoTerminado: z.enum(TIPOS_PRODUCTO_TERMINADO),
   prioridad: z.enum(PRIORIDADES),
+  /** Material del almacén usado como sustrato (gran formato). */
+  materialId: IdSchema.nullable(),
+  /** Cantidad descontada de ese material, en su unidad (null si no se descontó). */
+  consumoSustrato: z.number().positive().nullable(),
   /** Asignación de taller (opcional). No es inventario. */
   maquina: z.string().nullable(),
   operador: z.string().nullable(),
@@ -308,6 +313,12 @@ export const NuevaOrdenSchema = z
     categoriaTrabajo: z.enum(CATEGORIAS_TRABAJO),
     productoTerminado: z.enum(TIPOS_PRODUCTO_TERMINADO).optional(),
     prioridad: z.enum(PRIORIDADES).default('MEDIA'),
+    /**
+     * Sustrato del almacén (gran formato). El servidor calcula el consumo con
+     * las medidas, la cantidad y el rendimiento del material, y lo descuenta
+     * al crear la orden; si no alcanza el stock, rechaza la orden.
+     */
+    materialId: IdSchema.optional(),
     maquina: textoOpcional(80),
     cantidad: z.number().int().min(1).max(1_000_000),
     sustrato: texto(120),
@@ -319,6 +330,9 @@ export const NuevaOrdenSchema = z
   })
   .strict()
   .superRefine((o, ctx) => {
+    if (o.materialId && o.categoriaTrabajo !== 'GRAN_FORMATO') {
+      ctx.addIssue({ code: 'custom', path: ['materialId'], message: 'El sustrato del almacén solo aplica a gran formato' });
+    }
     if (o.categoriaTrabajo === 'GRAN_FORMATO') {
       const ajenos = o.acabados.filter((a) => !ACABADOS_GRAN_FORMATO.includes(a));
       if (ajenos.length) {
@@ -367,6 +381,9 @@ export const TransicionSchema = z
 /* Inventario                                                          */
 /* ------------------------------------------------------------------ */
 
+const RendimientoSchema = z.number().positive('El rendimiento debe ser mayor a cero').max(100_000);
+const MermaSchema = z.number().min(0, 'La merma no puede ser negativa').max(100, 'Máximo 100 %');
+
 export const MaterialSchema = z.object({
   id: IdSchema,
   sku: z.string(),
@@ -378,6 +395,10 @@ export const MaterialSchema = z.object({
   stock: z.number().min(0),
   stockMinimo: z.number().min(0),
   costoUnitario: MontoSchema,
+  /** Viniles y lonas: m² que rinde una unidad de stock (p. ej. rollo 1,22 × 50 m = 61). */
+  rendimiento: z.number().positive().nullable(),
+  /** Desperdicio que se suma al consumo calculado (corte, pruebas), en %. */
+  mermaPorcentaje: z.number().min(0).max(100),
   ubicacion: z.string(),
   proveedor: z.string(),
   lote: z.string(),
@@ -393,6 +414,8 @@ export const NuevoMaterialSchema = z
     unidad: z.enum(UNIDADES_MEDIDA),
     stockMinimo: z.number().min(0).default(0),
     costoUnitario: MontoSchema.default(0),
+    rendimiento: RendimientoSchema.optional(),
+    mermaPorcentaje: MermaSchema.default(0),
     ubicacion: z.string().trim().max(100).default(''),
     proveedor: z.string().trim().max(120).default(''),
     lote: z.string().trim().max(60).default(''),
@@ -405,7 +428,18 @@ export const NuevoMaterialSchema = z
     if (m.categoria !== 'PAPEL' && m.subtipo) {
       ctx.addIssue({ code: 'custom', path: ['subtipo'], message: 'El tipo de papel solo aplica a materiales PAPEL' });
     }
+    if (m.rendimiento != null && !CATEGORIAS_POR_SUPERFICIE.includes(m.categoria)) {
+      ctx.addIssue({ code: 'custom', path: ['rendimiento'], message: 'El rendimiento en m² solo aplica a viniles y lonas' });
+    }
   });
+
+/** Rendimiento y merma de un material (configurables desde Inventario). */
+export const ConfiguracionConsumoSchema = z
+  .object({
+    rendimiento: RendimientoSchema.nullable(),
+    mermaPorcentaje: MermaSchema,
+  })
+  .strict();
 
 /**
  * Disponibilidad de insumos para las fichas de venta. No expone costos,
@@ -419,6 +453,9 @@ export const DisponibilidadSchema = z.object({
   unidad: z.enum(UNIDADES_MEDIDA),
   stock: z.number().min(0),
   disponible: z.boolean(),
+  /** Para estimar el consumo en la ficha de venta (el cálculo definitivo lo hace el servidor). */
+  rendimiento: z.number().positive().nullable(),
+  mermaPorcentaje: z.number().min(0).max(100),
 });
 
 export const FiltroMaterialesSchema = z
