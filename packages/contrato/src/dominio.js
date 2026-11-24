@@ -111,8 +111,13 @@ export const COLORES_TINTA = Object.freeze(/** @type {const} */ (['NEGRO', 'AZUL
 export const TIPOS_PAPEL = Object.freeze(/** @type {const} */ (['QUIMICO', 'BOND', 'GLASSE', 'BRISTOL', 'OPALINA', 'FOTOGRAFICO']));
 export const TAMANOS_PAPELERIA = Object.freeze(/** @type {const} */ (['CUARTO_CARTA', 'MEDIA_CARTA', 'CARTA', 'TABLOIDE', 'OTRO']));
 
-/** Únicos acabados del servicio de pendones y stickers (impresión y corte con plotter). */
-export const ACABADOS_GRAN_FORMATO = Object.freeze(/** @type {const} */ (['Laminado mate', 'Laminado brillante', 'Corte con plotter']));
+/**
+ * Único acabado de pendones, stickers y viniles. El acabado mate o brillante
+ * no se pide aparte: viene en el sustrato elegido del almacén (vinil mate,
+ * vinil adhesivo blanco brillante, ...), así no se duplica en la ficha y el
+ * descuento de inventario corresponde al material real.
+ */
+export const ACABADOS_GRAN_FORMATO = Object.freeze(/** @type {const} */ (['Corte con plotter']));
 
 /* ------------------------------------------------------------------ */
 /* Inventario                                                          */

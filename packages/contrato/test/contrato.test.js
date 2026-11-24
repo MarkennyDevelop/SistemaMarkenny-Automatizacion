@@ -128,9 +128,11 @@ describe('esquemas', () => {
     expect(productoTerminadoDe('PAPELERIA', tarjetas.especificaciones)).toBe('TARJETAS_PRESENTACION');
   });
 
-  it('pendones y stickers solo admiten laminado mate, brillante y corte con plotter', () => {
+  it('pendones, stickers y viniles solo admiten corte con plotter (mate/brillante va en el sustrato)', () => {
     const gf = { ...orden, categoriaTrabajo: 'GRAN_FORMATO', especificaciones: { tipoGranFormato: 'PENDON' } };
-    expect(NuevaOrdenSchema.safeParse({ ...gf, acabados: ['Corte con plotter', 'Laminado mate'] }).success).toBe(true);
+    expect(NuevaOrdenSchema.safeParse({ ...gf, acabados: ['Corte con plotter'] }).success).toBe(true);
+    expect(NuevaOrdenSchema.safeParse({ ...gf, acabados: [] }).success).toBe(true);
+    expect(NuevaOrdenSchema.safeParse({ ...gf, acabados: ['Laminado mate'] }).success).toBe(false);
     expect(NuevaOrdenSchema.safeParse({ ...gf, acabados: ['Ojales metálicos'] }).success).toBe(false);
   });
 
