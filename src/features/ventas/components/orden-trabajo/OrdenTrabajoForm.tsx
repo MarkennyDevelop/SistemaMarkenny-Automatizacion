@@ -62,6 +62,16 @@ function OrdenTrabajoFormRoot({
     reValidateMode: "onChange",
   });
 
+  // "Crear OT" desde Clientes: el id llega cuando la cartera termina de
+  // cargar. Se aplica una sola vez por cliente y no pisa lo que el vendedor
+  // ya eligió o borró a mano.
+  const clienteInicial = defaultValues?.clienteId ?? "";
+  React.useEffect(() => {
+    if (clienteInicial && !form.getFieldState("clienteId").isDirty) {
+      form.setValue("clienteId", clienteInicial);
+    }
+  }, [clienteInicial, form]);
+
   const contextValue = React.useMemo(
     () => ({ form, clientes, isSubmitting, onCancel }),
     [form, clientes, isSubmitting, onCancel],

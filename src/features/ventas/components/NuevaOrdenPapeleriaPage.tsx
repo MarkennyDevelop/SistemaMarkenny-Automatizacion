@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
 import { fechaEnDias } from "@/lib/fechas";
+import { useClientePreseleccionado } from "../hooks/useClientePreseleccionado";
 import { useClientes } from "../hooks/useClientes";
 import { useCrearOrdenTrabajo } from "../hooks/useOrdenesTrabajo";
 import { ordenDesdePapeleria } from "../lib/ordenes";
@@ -15,6 +16,7 @@ export function NuevaOrdenPapeleriaPage() {
   const navigate = useNavigate();
   const { data: clientes = [], isLoading: cargandoClientes } = useClientes();
   const crear = useCrearOrdenTrabajo();
+  const clientePreseleccionado = useClientePreseleccionado(clientes);
 
   const handleSubmit = async (values: PapeleriaFormValues) => {
     const orden = ordenDesdePapeleria(values);
@@ -37,7 +39,7 @@ export function NuevaOrdenPapeleriaPage() {
       <PageHeader
         eyebrow="Ventas · Nueva orden"
         title="Papelería corporativa"
-        description="Ficha técnica del formato físico de Markenny: partes, numeración, papel, Pantone y acabados."
+        description="Orden de trabajo con los mismos campos del formato impreso de MARKENNY, C.A."
         actions={
           <Button variant="outline" asChild>
             <Link to="/ventas/ordenes">
@@ -55,16 +57,16 @@ export function NuevaOrdenPapeleriaPage() {
         isSubmitting={crear.isPending || cargandoClientes}
         onCancel={() => navigate("/ventas/ordenes")}
         onSubmit={handleSubmit}
-        defaultValues={{ fechaEntrega: fechaEnDias(7) }}
+        defaultValues={{ clienteId: clientePreseleccionado, fechaEntrega: fechaEnDias(7) }}
       >
         <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
           <div className="space-y-4">
             <PapeleriaForm.ClienteDocumento />
-            <PapeleriaForm.Tiraje />
-            <PapeleriaForm.Numeracion />
-            <PapeleriaForm.Papel />
-            <PapeleriaForm.Tintas />
+            <PapeleriaForm.Trabajo />
             <PapeleriaForm.Acabados />
+            <PapeleriaForm.Tintas />
+            <PapeleriaForm.Papel />
+            <PapeleriaForm.Entrega />
           </div>
           <div className="space-y-4 xl:sticky xl:top-24 xl:self-start">
             <PapeleriaForm.Resumen />

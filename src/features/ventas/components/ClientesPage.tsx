@@ -32,7 +32,7 @@ export function ClientesPage() {
       <PageHeader
         eyebrow="Ventas · Catálogo comercial"
         title="Clientes"
-        description="Cartera de clientes de Artes Gráficas Markenny, con contacto y estado de cuenta."
+        description="Cartera de clientes de MARKENNY, C.A., con contacto y estado de cuenta."
         actions={<NuevoClienteDialog />}
       />
 

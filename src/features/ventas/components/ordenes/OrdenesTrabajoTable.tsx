@@ -12,7 +12,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { cn, formatCurrency, formatDate, formatNumber } from "@/lib/utils";
-import { PRIORIDAD_LABEL, type OrdenTrabajo } from "@/shared/domain";
+import { PRIORIDAD_LABEL, type OrdenTrabajo, SIN_MAQUINA } from "@/shared/domain";
 import { FASE_UI } from "@/shared/fase-ui";
 
 interface OrdenesTrabajoTableProps {
@@ -109,7 +109,7 @@ export function OrdenesTrabajoTable({
                     {orden.avance}%
                   </span>
                 </div>
-                <p className="mt-1 text-[9px] text-muted-foreground">{orden.maquina}</p>
+                <p className="mt-1 text-[9px] text-muted-foreground">{orden.maquina ?? SIN_MAQUINA}</p>
               </TableCell>
               <TableCell className="align-top">
                 <p className="text-[11px] font-medium">

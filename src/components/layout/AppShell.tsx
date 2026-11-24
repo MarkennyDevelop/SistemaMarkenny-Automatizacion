@@ -38,7 +38,7 @@ export function AppShell() {
         </main>
         <footer className="border-t border-border/70 px-6 py-4 text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
           <div className="mx-auto flex max-w-[1440px] flex-wrap items-center justify-between gap-2">
-            <span>Artes Gráficas Markenny C.A. · Print MIS</span>
+            <span>MARKENNY, C.A. · RIF J-50106023-1</span>
             <span>Rojo · Negro · Blanco</span>
           </div>
         </footer>

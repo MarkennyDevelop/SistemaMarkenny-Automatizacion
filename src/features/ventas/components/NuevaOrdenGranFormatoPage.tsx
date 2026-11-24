@@ -4,8 +4,10 @@ import { toast } from "sonner";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
 import { fechaEnDias } from "@/lib/fechas";
+import { useClientePreseleccionado } from "../hooks/useClientePreseleccionado";
 import { useClientes } from "../hooks/useClientes";
 import { useCrearOrdenTrabajo } from "../hooks/useOrdenesTrabajo";
+import { useDisponibilidad } from "../hooks/useDisponibilidad";
 import { ordenDesdeGranFormato } from "../lib/ordenes";
 import type { GranFormatoFormValues } from "../types/schemas";
 import { GranFormatoForm } from "./gran-formato/GranFormatoForm";
@@ -15,9 +17,11 @@ export function NuevaOrdenGranFormatoPage() {
   const navigate = useNavigate();
   const { data: clientes = [], isLoading: cargandoClientes } = useClientes();
   const crear = useCrearOrdenTrabajo();
+  const { insumos } = useDisponibilidad();
+  const clientePreseleccionado = useClientePreseleccionado(clientes);
 
   const handleSubmit = async (values: GranFormatoFormValues) => {
-    const orden = ordenDesdeGranFormato(values);
+    const orden = ordenDesdeGranFormato(values, insumos);
 
     try {
       const creada = await crear.mutateAsync(orden);
@@ -37,7 +41,7 @@ export function NuevaOrdenGranFormatoPage() {
       <PageHeader
         eyebrow="Ventas · Nueva orden"
         title="Pendones y stickers"
-        description="Ficha independiente para gran formato y adhesivos: dimensiones, sustrato de lona o vinil y resolución de impresión."
+        description="Ficha independiente para gran formato y adhesivos: dimensiones, vinil o lona en existencia y acabados del servicio (laminado mate, laminado brillante, corte con plotter)."
         actions={
           <Button variant="outline" asChild>
             <Link to="/ventas/ordenes">
@@ -55,7 +59,7 @@ export function NuevaOrdenGranFormatoPage() {
         isSubmitting={crear.isPending || cargandoClientes}
         onCancel={() => navigate("/ventas/ordenes")}
         onSubmit={handleSubmit}
-        defaultValues={{ fechaEntrega: fechaEnDias(5) }}
+        defaultValues={{ clienteId: clientePreseleccionado, fechaEntrega: fechaEnDias(5) }}
       >
         <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
           <div className="space-y-4">

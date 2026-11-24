@@ -1,10 +1,10 @@
 import { createContext, useContext } from "react";
 import type { UseFormReturn } from "react-hook-form";
 import type { Cliente } from "@/shared/domain";
-import type { PapeleriaFormValues } from "../../types/schemas";
+import type { PapeleriaFormInput, PapeleriaFormValues } from "../../types/schemas";
 
 export interface PapeleriaFormContextValue {
-  form: UseFormReturn<PapeleriaFormValues>;
+  form: UseFormReturn<PapeleriaFormInput, unknown, PapeleriaFormValues>;
   clientes: Cliente[];
   isSubmitting: boolean;
   onCancel?: () => void;

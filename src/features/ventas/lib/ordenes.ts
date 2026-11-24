@@ -9,7 +9,14 @@
  */
 import { fechaEntregaIso } from "@/lib/fechas";
 import { ACABADOS, SUSTRATOS } from "@/shared/catalogos";
-import type { NuevaOrdenTrabajo } from "@/shared/domain";
+import {
+  COLOR_TINTA_LABEL,
+  ENGOMADO_LABEL,
+  LAMINADO_LABEL,
+  TIPO_PAPEL_LABEL,
+  type InsumoDisponible,
+  type NuevaOrdenTrabajo,
+} from "@/shared/domain";
 import type {
   GranFormatoFormValues,
   OrdenTrabajoFormValues,
@@ -39,56 +46,131 @@ function textoOpcional(valor?: string) {
   return limpio ? limpio : undefined;
 }
 
-export function ordenDesdePapeleria(
-  values: PapeleriaFormValues
-): NuevaOrdenTrabajo {
-  const sustrato = sustratoDe(values.sustratoId);
-  const monto = estimarMontoOrden({
-    tecnologia: values.tecnologia,
-    cantidad: values.cantidad,
-    anchoMm: values.anchoMm,
-    altoMm: values.altoMm,
-    tintasTiro: values.tintasTiro,
-    tintasRetiro: 0,
-    sustratoId: values.sustratoId,
-    acabados: values.acabados,
-  });
+/** Medida de referencia (mm) de cada tamaño del formato, para estimar el costo. */
+const MEDIDAS_TAMANO: Record<PapeleriaFormValues["tamano"], [number, number]> = {
+  CUARTO_CARTA: [108, 140],
+  MEDIA_CARTA: [140, 216],
+  CARTA: [216, 279],
+  OTRO: [216, 279],
+};
 
+/** Papel del formato → sustrato del motor de costos. */
+const SUSTRATO_COSTO: Record<PapeleriaFormValues["tipoPapel"], string> = {
+  BOND: "bond-75",
+  QUIMICO: "bond-90",
+  GLASSE: "couche-150",
+  BRISTOL: "cartulina-240",
+  OPALINA: "cartulina-240",
+  FOTOGRAFICO: "couche-300",
+  OTRO: "bond-90",
+};
+
+/** Tintas por cara: "A Color" es proceso CMYK; cada color directo cuenta uno. */
+export function tintasDePapeleria(colores: PapeleriaFormValues["coloresTinta"]) {
+  return colores.includes("A_COLOR") ? 4 + colores.length - 1 : colores.length;
+}
+
+/** Acabados del formato físico, legibles para planta. */
+export function acabadosDePapeleria(values: PapeleriaFormValues): string[] {
+  return [
+    values.usaNumeracion && "Numerado",
+    values.perforacion &&
+      `Perforación ${values.perforacionOrientacion === "VERTICAL" ? "vertical" : "horizontal"}`,
+    values.engomado && `Engomado ${ENGOMADO_LABEL[values.engomado].toLowerCase()}`,
+    values.laminado && `Laminado ${LAMINADO_LABEL[values.laminado].toLowerCase()}`,
+    values.dobleCara && "Doble cara",
+  ].filter((acabado): acabado is string => Boolean(acabado));
+}
+
+/** Estimación de costo de la ficha de papelería (también la usa el resumen). */
+export function estimarPapeleria(values: Pick<
+  PapeleriaFormValues,
+  "cantidad" | "partes" | "tamano" | "tipoPapel" | "coloresTinta" | "dobleCara" | "usaNumeracion" | "perforacion" | "laminado"
+>) {
+  const [anchoMm, altoMm] = MEDIDAS_TAMANO[values.tamano];
+  const tintas = tintasDePapeleria(values.coloresTinta);
+  return estimarMontoOrden({
+    tecnologia: "OFFSET",
+    cantidad: values.cantidad * values.partes,
+    anchoMm,
+    altoMm,
+    tintasTiro: tintas,
+    tintasRetiro: values.dobleCara ? tintas : 0,
+    sustratoId: SUSTRATO_COSTO[values.tipoPapel],
+    acabados: [
+      ...(values.usaNumeracion ? ["numerado"] : []),
+      ...(values.perforacion ? ["perforado"] : []),
+      ...(values.laminado === "MATE" ? ["laminado-mate"] : []),
+      ...(values.laminado === "BRILLANTE" ? ["laminado-brillante"] : []),
+    ],
+  });
+}
+
+function nombrePapel(values: PapeleriaFormValues) {
+  const papel = values.tipoPapel === "OTRO" ? values.tipoPapelOtro ?? "Otro" : TIPO_PAPEL_LABEL[values.tipoPapel];
+  return `Papel ${papel}${values.gramaje ? ` ${values.gramaje} g` : ""}`;
+}
+
+function nombresTinta(values: PapeleriaFormValues) {
+  return values.coloresTinta.map((color) =>
+    color === "PANTONE"
+      ? `Pantone ${values.pantone ?? ""}`.trim()
+      : color === "OTRO"
+        ? textoOpcional(values.colorTintaOtro) ?? "Otro"
+        : COLOR_TINTA_LABEL[color],
+  );
+}
+
+export function ordenDesdePapeleria(values: PapeleriaFormValues): NuevaOrdenTrabajo {
+  const numeracion = values.usaNumeracion;
   return {
     clienteId: values.clienteId,
-    producto: values.producto.trim(),
-    descripcion: values.descripcion?.trim() ?? "",
-    tecnologia: values.tecnologia,
-    prioridad: values.prioridad,
-    maquina: values.maquina,
+    producto: values.nombreDocumento.trim(),
+    categoriaTrabajo: "PAPELERIA",
+    productoTerminado: values.formato === "BLOCK" ? "BLOCK" : "TALONARIO",
     cantidad: values.cantidad,
     fechaEntrega: fechaEntregaIso(values.fechaEntrega),
-    montoTotal: monto.total,
-    sustrato: sustrato?.nombre ?? "Por definir",
-    tintas:
-      values.tintasPantone.length > 0 ? values.tintasPantone : ["CMYK proceso"],
-    acabados: nombresAcabados(values.acabados),
-    categoriaTrabajo: "PAPELERIA",
+    montoTotal: estimarPapeleria(values).total,
+    sustrato: nombrePapel(values),
+    tintas: nombresTinta(values),
+    acabados: acabadosDePapeleria(values),
     especificaciones: {
-      tipoPapeleria: values.tipoPapeleria,
+      nombreDocumento: values.nombreDocumento.trim(),
+      tipoDocumento: values.tipoDocumento,
+      tipoDocumentoOtro: values.tipoDocumento === "OTRO" ? textoOpcional(values.tipoDocumentoOtro) : undefined,
+      formato: values.formato,
+      dobleCara: values.dobleCara,
       partes: values.partes,
-      numeracionDesde: values.usaNumeracion ? values.numeracionDesde : undefined,
-      numeracionHasta: values.usaNumeracion ? values.numeracionHasta : undefined,
-      numeracionPrefijo: values.usaNumeracion
-        ? textoOpcional(values.numeracionPrefijo)
-        : undefined,
-      tintasTiro: values.tintasTiro,
-      gramaje: sustrato?.gramaje,
-      pantones: values.tintasPantone,
+      numeracionPrefijo: numeracion ? textoOpcional(values.numeracionPrefijo) : undefined,
+      numeracionDesde: numeracion ? values.numeracionDesde : undefined,
+      numeracionHasta: numeracion ? values.numeracionHasta : undefined,
+      perforacion: values.perforacion,
+      perforacionOrientacion: values.perforacion ? values.perforacionOrientacion : undefined,
+      engomado: values.engomado,
+      laminado: values.laminado,
+      coloresTinta: values.coloresTinta,
+      pantone: values.coloresTinta.includes("PANTONE") ? textoOpcional(values.pantone) : undefined,
+      colorTintaOtro: values.coloresTinta.includes("OTRO") ? textoOpcional(values.colorTintaOtro) : undefined,
+      tipoPapel: values.tipoPapel,
+      tipoPapelOtro: values.tipoPapel === "OTRO" ? textoOpcional(values.tipoPapelOtro) : undefined,
+      gramaje: values.gramaje,
+      tamano: values.tamano,
+      tamanoOtro: values.tamano === "OTRO" ? textoOpcional(values.tamanoOtro) : undefined,
       observaciones: textoOpcional(values.observaciones),
     },
   };
 }
 
+/** Sustrato de costo para el insumo de gran formato elegido. */
+function sustratoCostoGranFormato(insumo?: InsumoDisponible) {
+  return insumo?.categoria === "LONA" ? "lona-front" : "vinilo-blanco";
+}
+
 export function ordenDesdeGranFormato(
-  values: GranFormatoFormValues
+  values: GranFormatoFormValues,
+  insumos: InsumoDisponible[],
 ): NuevaOrdenTrabajo {
-  const sustrato = sustratoDe(values.sustratoId);
+  const insumo = insumos.find((item) => item.id === values.sustratoId);
   const monto = estimarMontoOrden({
     tecnologia: "GRAN_FORMATO",
     cantidad: values.cantidad,
@@ -96,8 +178,8 @@ export function ordenDesdeGranFormato(
     altoMm: aMilimetros(values.alto, values.unidadDimension),
     tintasTiro: 4,
     tintasRetiro: 0,
-    sustratoId: values.sustratoId,
-    acabados: values.acabados,
+    sustratoId: sustratoCostoGranFormato(insumo),
+    acabados: idsAcabadosGranFormato(values.acabados),
   });
 
   return {
@@ -106,13 +188,13 @@ export function ordenDesdeGranFormato(
     descripcion: values.descripcion?.trim() ?? "",
     tecnologia: "GRAN_FORMATO",
     prioridad: values.prioridad,
-    maquina: values.maquina,
     cantidad: values.cantidad,
     fechaEntrega: fechaEntregaIso(values.fechaEntrega),
     montoTotal: monto.total,
-    sustrato: sustrato?.nombre ?? "Por definir",
+    sustrato: insumo?.nombre ?? "Por definir",
     tintas: ["CMYK alta cobertura"],
-    acabados: nombresAcabados(values.acabados),
+    // Ya son los nombres exactos que exige el contrato (3 acabados del servicio).
+    acabados: values.acabados,
     categoriaTrabajo: "GRAN_FORMATO",
     especificaciones: {
       tipoGranFormato: values.tipoGranFormato,
@@ -120,10 +202,19 @@ export function ordenDesdeGranFormato(
       alto: values.alto,
       unidadDimension: values.unidadDimension,
       resolucionDpi: values.resolucionDpi,
-      gramaje: sustrato?.gramaje,
       observaciones: textoOpcional(values.observaciones),
     },
   };
+}
+
+/** Acabados de gran formato → ids del motor de costos. */
+export function idsAcabadosGranFormato(acabados: GranFormatoFormValues["acabados"]) {
+  const ids: Record<GranFormatoFormValues["acabados"][number], string> = {
+    "Laminado mate": "laminado-mate",
+    "Laminado brillante": "laminado-brillante",
+    "Corte con plotter": "troquelado",
+  };
+  return acabados.map((acabado) => ids[acabado]);
 }
 
 export function ordenDesdeFichaGeneral(
@@ -147,7 +238,7 @@ export function ordenDesdeFichaGeneral(
     descripcion: values.descripcion?.trim() ?? "",
     tecnologia: values.tecnologia,
     prioridad: values.prioridad,
-    maquina: values.maquina,
+    maquina: textoOpcional(values.maquina),
     cantidad: values.cantidad,
     fechaEntrega: fechaEntregaIso(values.fechaEntrega),
     montoTotal: monto.total,

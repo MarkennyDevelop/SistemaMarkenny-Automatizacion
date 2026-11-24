@@ -1,12 +1,13 @@
 import { useMemo } from "react";
 import { ArrowLeft, Building2, FileText, Loader2 } from "lucide-react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { fechaEnDias } from "@/lib/fechas";
 import { OrdenTrabajoForm } from "./orden-trabajo/OrdenTrabajoForm";
+import { useClientePreseleccionado } from "../hooks/useClientePreseleccionado";
 import { useClientes } from "../hooks/useClientes";
 import { useCrearOrdenTrabajo } from "../hooks/useOrdenesTrabajo";
 import { ordenDesdeFichaGeneral } from "../lib/ordenes";
@@ -14,11 +15,10 @@ import type { OrdenTrabajoFormValues } from "../types/schemas";
 
 export function NuevaOrdenTrabajoPage() {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
   const { data: clientes = [], isLoading } = useClientes();
   const crearOrden = useCrearOrdenTrabajo();
 
-  const clientePreseleccionado = searchParams.get("cliente") ?? "";
+  const clientePreseleccionado = useClientePreseleccionado(clientes);
 
   const defaultValues = useMemo<Partial<OrdenTrabajoFormValues>>(
     () => ({
@@ -68,7 +68,7 @@ export function NuevaOrdenTrabajoPage() {
         </span>
         <span className="inline-flex items-center gap-1.5">
           <Building2 className="h-3.5 w-3.5 text-primary" />
-          La orden reserva sustrato automáticamente
+          Máquina opcional: la asigna el taller
         </span>
         <span className="ml-auto hidden font-medium text-foreground sm:inline">
           {crearOrden.isPending ? "Guardando..." : `${clientes.length} clientes disponibles`}

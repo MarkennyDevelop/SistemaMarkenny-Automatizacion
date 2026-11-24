@@ -28,7 +28,12 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { fechaInputLocal } from "@/lib/fechas";
 import { cn, formatCurrency, formatDate, formatNumber } from "@/lib/utils";
+import { ClienteSelect } from "@/components/forms/ClienteSelect";
 import { ACABADOS, MAQUINAS, SUSTRATOS, TINTAS_PANTONE } from "@/shared/catalogos";
+import { SIN_MAQUINA } from "@/shared/domain";
+
+/** Valor interno del Select (Radix no admite ""): equivale a máquina vacía. */
+const SIN_ASIGNAR = "__sin_asignar__";
 import type { Tecnologia } from "@/shared/domain";
 import { estimarMontoOrden } from "../../lib/cotizador";
 import { useOrdenTrabajoForm } from "./context";
@@ -66,23 +71,13 @@ export function ClienteProductoSection() {
             error={errors.clienteId?.message}
             hint={`${clientes.length} clientes activos`}
           >
-            <Select
-              value={clienteId}
-              onValueChange={(value) =>
+            <ClienteSelect
+              clientes={clientes}
+              value={clienteId ?? ""}
+              onChange={(value) =>
                 setValue("clienteId", value, { shouldValidate: true, shouldDirty: true })
               }
-            >
-              <SelectTrigger id="clienteId" aria-label="Cliente">
-                <SelectValue placeholder="Selecciona un cliente" />
-              </SelectTrigger>
-              <SelectContent>
-                {clientes.map((cliente) => (
-                  <SelectItem key={cliente.id} value={cliente.id}>
-                    {cliente.nombre}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            />
           </FormField>
 
           <FormField
@@ -246,20 +241,24 @@ export function EspecificacionesSection() {
           <FormField
             label="Máquina asignada"
             htmlFor="maquina"
-            required
+            hint="Opcional · la puede asignar el taller"
             error={errors.maquina?.message}
             className="xl:col-span-2"
           >
             <Select
-              value={maquina}
+              value={maquina || SIN_ASIGNAR}
               onValueChange={(value) =>
-                setValue("maquina", value, { shouldValidate: true, shouldDirty: true })
+                setValue("maquina", value === SIN_ASIGNAR ? "" : value, {
+                  shouldValidate: true,
+                  shouldDirty: true,
+                })
               }
             >
               <SelectTrigger id="maquina">
-                <SelectValue placeholder="Selecciona la máquina" />
+                <SelectValue />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value={SIN_ASIGNAR}>{SIN_MAQUINA}</SelectItem>
                 {MAQUINAS.map((item) => (
                   <SelectItem key={item} value={item}>
                     {item}

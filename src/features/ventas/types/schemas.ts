@@ -1,4 +1,15 @@
 import { z } from "zod";
+import {
+  ACABADOS_GRAN_FORMATO,
+  COLORES_TINTA,
+  FORMATOS_PAPELERIA,
+  LAMINADOS,
+  LUGARES_ENGOMADO,
+  ORIENTACIONES_PERFORACION,
+  TAMANOS_PAPELERIA,
+  TIPOS_DOCUMENTO,
+  TIPOS_PAPEL,
+} from "@markenny/contrato/dominio";
 import { esAnteriorAHoy, parseFecha } from "@/lib/fechas";
 
 /** Fecha "AAAA-MM-DD" válida y no anterior a hoy (común a todas las fichas). */
@@ -27,25 +38,26 @@ export const ordenTrabajoSchema = z.object({
     .or(z.literal("")),
   tecnologia: z.enum(["OFFSET", "DIGITAL", "GRAN_FORMATO", "FLEXOGRAFIA"]),
   prioridad: z.enum(["BAJA", "MEDIA", "ALTA", "URGENTE"]),
-  maquina: z.string().min(1, "Selecciona la máquina asignada"),
+  /** Asignación de taller opcional: vacío = "Sin asignar". */
+  maquina: z.string().trim().max(80),
   cantidad: z
-    .number({ invalid_type_error: "Indica una cantidad válida" })
+    .number({ error: "Indica una cantidad válida" })
     .int("Debe ser un número entero")
     .min(1, "La cantidad debe ser mayor a cero")
     .max(1_000_000, "Cantidad fuera de rango"),
   anchoMm: z
-    .number({ invalid_type_error: "Indica el ancho en mm" })
+    .number({ error: "Indica el ancho en mm" })
     .min(10, "Mínimo 10 mm")
     .max(3000, "Máximo 3000 mm"),
   altoMm: z
-    .number({ invalid_type_error: "Indica el alto en mm" })
+    .number({ error: "Indica el alto en mm" })
     .min(10, "Mínimo 10 mm")
     .max(3000, "Máximo 3000 mm"),
   sustratoId: z.string().min(1, "Selecciona el sustrato"),
   tintasTiro: z.number().int().min(0).max(8),
   tintasRetiro: z.number().int().min(0).max(8),
-  tintasPantone: z.array(z.string()).default([]),
-  acabados: z.array(z.string()).default([]),
+  tintasPantone: z.array(z.string()),
+  acabados: z.array(z.string()),
   fechaEntrega: fechaEntregaSchema,
   observaciones: z
     .string()
@@ -63,7 +75,7 @@ export const ORDEN_TRABAJO_DEFAULTS: Partial<OrdenTrabajoFormValues> = {
   descripcion: "",
   tecnologia: "OFFSET",
   prioridad: "MEDIA",
-  maquina: "Heidelberg SM 52",
+  maquina: "",
   cantidad: 1000,
   anchoMm: 210,
   altoMm: 297,
@@ -77,133 +89,115 @@ export const ORDEN_TRABAJO_DEFAULTS: Partial<OrdenTrabajoFormValues> = {
 };
 
 /* ------------------------------------------------------------------ */
-/* Ficha técnica: papelería corporativa                                */
+/* Ficha técnica: papelería corporativa (formato físico de Markenny)   */
 /* ------------------------------------------------------------------ */
 
+const textoOpcional = (max: number) =>
+  z.string().trim().max(max, `Máximo ${max} caracteres`).optional().or(z.literal(""));
+
+const enteroOpcional = (mensaje: string) =>
+  z
+    .number({ error: mensaje })
+    .int("Debe ser un número entero")
+    .min(0, "No puede ser negativo")
+    .optional()
+    .or(z.nan().transform(() => undefined));
+
+/**
+ * Campos exactos de la Orden de Trabajo impresa: tipo de trabajo (NE., RM.,
+ * F., Otro), Talonario/Block, doble cara, partes 1–4 u Otros, numeración N°,
+ * perforación, engomado, laminado, color de tinta, papel con gramaje, tamaño,
+ * observaciones y fecha de entrega. Ningún campo opcional viene marcado de
+ * antemano: el vendedor marca lo que pide el cliente.
+ */
 export const papeleriaSchema = z
   .object({
     clienteId: z.string().min(1, "Selecciona el cliente"),
-    tipoPapeleria: z.enum([
-      "FACTURA",
-      "TALONARIO",
-      "RECIPE",
-      "NOTA",
-      "ORDEN_COMPRA",
-      "RECIBO",
-      "CARTA",
-      "OTRO",
-    ]),
-    producto: z
+    nombreDocumento: z
       .string()
       .trim()
-      .min(3, "Describe el producto (mínimo 3 caracteres)")
+      .min(3, "Indica el nombre del documento (mínimo 3 caracteres)")
       .max(120, "Máximo 120 caracteres"),
-    descripcion: z
-      .string()
-      .trim()
-      .max(280, "Máximo 280 caracteres")
-      .optional()
-      .or(z.literal("")),
+    tipoDocumento: z.enum(TIPOS_DOCUMENTO, { error: "Marca el tipo de trabajo" }),
+    tipoDocumentoOtro: textoOpcional(60),
+    formato: z.enum(FORMATOS_PAPELERIA, { error: "Marca Talonario o Block" }),
+    dobleCara: z.boolean(),
     cantidad: z
-      .number({ invalid_type_error: "Indica la cantidad" })
+      .number({ error: "Indica la cantidad" })
       .int("Debe ser un número entero")
       .min(1, "La cantidad debe ser mayor a cero")
       .max(200_000, "Cantidad fuera de rango"),
     partes: z
-      .number({ invalid_type_error: "Indica las partes" })
+      .number({ error: "Indica las partes" })
       .int("Debe ser un número entero")
       .min(1, "Mínimo 1 parte")
-      .max(6, "Máximo 6 partes"),
+      .max(10, "Máximo 10 partes"),
     usaNumeracion: z.boolean(),
-    // Opcionales en el esquema: solo se exigen si "usaNumeracion" está activo
-    // (ver superRefine). Antes, un campo vacío y deshabilitado bloqueaba el
-    // envío con un error que el usuario no podía ver ni corregir.
-    numeracionDesde: z
-      .number({ invalid_type_error: "Indica el número inicial" })
-      .int("Debe ser un número entero")
-      .min(0, "No puede ser negativo")
+    numeracionPrefijo: textoOpcional(12),
+    numeracionDesde: enteroOpcional("Indica el número inicial"),
+    numeracionHasta: enteroOpcional("Indica el número final"),
+    perforacion: z.boolean(),
+    perforacionOrientacion: z.enum(ORIENTACIONES_PERFORACION).optional(),
+    engomado: z.enum(LUGARES_ENGOMADO).optional(),
+    laminado: z.enum(LAMINADOS).optional(),
+    coloresTinta: z.array(z.enum(COLORES_TINTA)).min(1, "Marca al menos un color de tinta"),
+    pantone: textoOpcional(40),
+    colorTintaOtro: textoOpcional(40),
+    tipoPapel: z.enum([...TIPOS_PAPEL, "OTRO"], { error: "Marca el papel" }),
+    tipoPapelOtro: textoOpcional(60),
+    gramaje: z
+      .number({ error: "Indica el gramaje" })
+      .min(30, "Mínimo 30 g")
+      .max(400, "Máximo 400 g")
       .optional()
       .or(z.nan().transform(() => undefined)),
-    numeracionHasta: z
-      .number({ invalid_type_error: "Indica el número final" })
-      .int("Debe ser un número entero")
-      .min(0, "No puede ser negativo")
-      .optional()
-      .or(z.nan().transform(() => undefined)),
-    numeracionPrefijo: z
-      .string()
-      .trim()
-      .max(12, "Máximo 12 caracteres")
-      .optional()
-      .or(z.literal("")),
-    tecnologia: z.enum(["OFFSET", "DIGITAL"]),
-    prioridad: z.enum(["BAJA", "MEDIA", "ALTA", "URGENTE"]),
-    maquina: z.string().min(1, "Selecciona la máquina"),
-    anchoMm: z.number().min(40, "Mínimo 40 mm").max(1000, "Máximo 1000 mm"),
-    altoMm: z.number().min(40, "Mínimo 40 mm").max(1000, "Máximo 1000 mm"),
-    sustratoId: z.string().min(1, "Selecciona el papel"),
-    tintasTiro: z.number().int().min(0).max(6),
-    tintasPantone: z.array(z.string()).default([]),
-    acabados: z.array(z.string()).default([]),
+    tamano: z.enum(TAMANOS_PAPELERIA, { error: "Marca el tamaño" }),
+    tamanoOtro: textoOpcional(40),
     fechaEntrega: fechaEntregaSchema,
-    observaciones: z
-      .string()
-      .trim()
-      .max(500, "Máximo 500 caracteres")
-      .optional()
-      .or(z.literal("")),
+    observaciones: textoOpcional(500),
   })
   .superRefine((values, ctx) => {
-    if (!values.usaNumeracion) return;
-    if (values.numeracionDesde === undefined) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["numeracionDesde"],
-        message: "Indica el número inicial",
-      });
-    }
-    if (values.numeracionHasta === undefined) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["numeracionHasta"],
-        message: "Indica el número final",
-      });
-    }
-    if (
-      values.numeracionDesde !== undefined &&
-      values.numeracionHasta !== undefined &&
-      values.numeracionHasta < values.numeracionDesde
-    ) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["numeracionHasta"],
-        message: "El número final debe ser mayor o igual al inicial",
-      });
+    const exigir = (condicion: boolean, path: string, message: string) => {
+      if (condicion) ctx.addIssue({ code: "custom", path: [path], message });
+    };
+    exigir(values.tipoDocumento === "OTRO" && !values.tipoDocumentoOtro, "tipoDocumentoOtro", "Indica qué documento es");
+    exigir(values.tipoPapel === "OTRO" && !values.tipoPapelOtro, "tipoPapelOtro", "Indica qué papel");
+    exigir(values.tamano === "OTRO" && !values.tamanoOtro, "tamanoOtro", "Indica el tamaño");
+    exigir(values.coloresTinta.includes("PANTONE") && !values.pantone, "pantone", "Indica la referencia Pantone");
+    exigir(values.coloresTinta.includes("OTRO") && !values.colorTintaOtro, "colorTintaOtro", "Indica el color");
+    exigir(values.perforacion && !values.perforacionOrientacion, "perforacionOrientacion", "Marca Horizontal o Vertical");
+    if (values.usaNumeracion) {
+      exigir(values.numeracionDesde === undefined, "numeracionDesde", "Indica el número inicial");
+      exigir(values.numeracionHasta === undefined, "numeracionHasta", "Indica el número final");
+      exigir(
+        values.numeracionDesde !== undefined &&
+          values.numeracionHasta !== undefined &&
+          values.numeracionHasta < values.numeracionDesde,
+        "numeracionHasta",
+        "El número final debe ser mayor o igual al inicial",
+      );
     }
   });
 
-export type PapeleriaFormValues = z.infer<typeof papeleriaSchema>;
+export type PapeleriaFormInput = z.input<typeof papeleriaSchema>;
+export type PapeleriaFormValues = z.output<typeof papeleriaSchema>;
 
-export const PAPELERIA_DEFAULTS: Partial<PapeleriaFormValues> = {
+/** Formulario en blanco: nada viene marcado de antemano. */
+export const PAPELERIA_DEFAULTS: Partial<PapeleriaFormInput> = {
   clienteId: "",
-  tipoPapeleria: "FACTURA",
-  producto: "",
-  descripcion: "",
-  cantidad: 1000,
-  partes: 2,
-  usaNumeracion: true,
-  numeracionDesde: 1,
-  numeracionHasta: 1000,
-  numeracionPrefijo: "",
-  tecnologia: "OFFSET",
-  prioridad: "MEDIA",
-  maquina: "Heidelberg SM 52",
-  anchoMm: 210,
-  altoMm: 140,
-  sustratoId: "bond-75",
-  tintasTiro: 2,
-  tintasPantone: [],
-  acabados: ["numerado", "engrapado", "perforado"],
+  nombreDocumento: "",
+  tipoDocumentoOtro: "",
+  dobleCara: false,
+  cantidad: 1,
+  partes: 1,
+  usaNumeracion: false,
+  numeracionPrefijo: "00-",
+  perforacion: false,
+  coloresTinta: [],
+  pantone: "",
+  colorTintaOtro: "",
+  tipoPapelOtro: "",
+  tamanoOtro: "",
   fechaEntrega: "",
   observaciones: "",
 };
@@ -235,28 +229,28 @@ export const granFormatoSchema = z.object({
     .optional()
     .or(z.literal("")),
   cantidad: z
-    .number({ invalid_type_error: "Indica la cantidad" })
+    .number({ error: "Indica la cantidad" })
     .int("Debe ser un número entero")
     .min(1, "La cantidad debe ser mayor a cero")
     .max(10_000, "Cantidad fuera de rango"),
   ancho: z
-    .number({ invalid_type_error: "Indica el ancho" })
+    .number({ error: "Indica el ancho" })
     .min(0.1, "Mínimo 0,1")
     .max(100, "Máximo 100"),
   alto: z
-    .number({ invalid_type_error: "Indica el alto" })
+    .number({ error: "Indica el alto" })
     .min(0.1, "Mínimo 0,1")
     .max(100, "Máximo 100"),
   unidadDimension: z.enum(["cm", "m"]),
   sustratoId: z.string().min(1, "Selecciona el sustrato"),
   resolucionDpi: z
-    .number({ invalid_type_error: "Indica la resolución" })
+    .number({ error: "Indica la resolución" })
     .int()
     .min(72, "Mínimo 72 dpi")
     .max(1440, "Máximo 1440 dpi"),
   prioridad: z.enum(["BAJA", "MEDIA", "ALTA", "URGENTE"]),
-  maquina: z.string().min(1, "Selecciona la máquina"),
-  acabados: z.array(z.string()).default([]),
+  /** Solo "Laminado mate", "Laminado brillante" y "Corte con plotter". */
+  acabados: z.array(z.enum(ACABADOS_GRAN_FORMATO)),
   fechaEntrega: fechaEntregaSchema,
   observaciones: z
     .string()
@@ -277,11 +271,10 @@ export const GRAN_FORMATO_DEFAULTS: Partial<GranFormatoFormValues> = {
   ancho: 1,
   alto: 2,
   unidadDimension: "m",
-  sustratoId: "lona-front",
+  sustratoId: "",
   resolucionDpi: 720,
   prioridad: "MEDIA",
-  maquina: "Mimaki JV300",
-  acabados: ["ojales", "refuerzo"],
+  acabados: [],
   fechaEntrega: "",
   observaciones: "",
 };
@@ -289,7 +282,7 @@ export const GRAN_FORMATO_DEFAULTS: Partial<GranFormatoFormValues> = {
 export const cotizacionSchema = z.object({
   tecnologia: z.enum(["OFFSET", "DIGITAL", "GRAN_FORMATO"]),
   tiraje: z
-    .number({ invalid_type_error: "Indica el tiraje" })
+    .number({ error: "Indica el tiraje" })
     .int()
     .min(1, "El tiraje debe ser mayor a cero"),
   anchoMm: z.number().min(10, "Mínimo 10 mm").max(3000, "Máximo 3000 mm"),
@@ -297,7 +290,7 @@ export const cotizacionSchema = z.object({
   tintasTiro: z.number().int().min(0).max(8),
   tintasRetiro: z.number().int().min(0).max(8),
   sustratoId: z.string().min(1, "Selecciona un sustrato"),
-  acabados: z.array(z.string()).default([]),
+  acabados: z.array(z.string()),
   margen: z.number().min(10, "Mínimo 10%").max(80, "Máximo 80%"),
 });
 

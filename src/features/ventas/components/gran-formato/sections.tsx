@@ -29,35 +29,29 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { fechaInputLocal } from "@/lib/fechas";
 import { cn, formatCurrency, formatDate, formatNumber } from "@/lib/utils";
-import { ACABADOS, SUSTRATOS } from "@/shared/catalogos";
+import { ACABADOS_GRAN_FORMATO, EMPRESA } from "@markenny/contrato/dominio";
+import { ClienteSelect } from "@/components/forms/ClienteSelect";
 import {
+  CATEGORIA_INVENTARIO_LABEL,
   TIPO_GRAN_FORMATO_LABEL,
   type TipoGranFormato,
 } from "@/shared/domain";
+import { useDisponibilidad } from "../../hooks/useDisponibilidad";
 import { estimarMontoOrden } from "../../lib/cotizador";
+import { idsAcabadosGranFormato } from "../../lib/ordenes";
 import { useGranFormatoForm } from "./context";
-
-/** Sustratos admitidos en gran formato y adhesivos. */
-const SUSTRATOS_GRAN = SUSTRATOS.filter((sustrato) =>
-  ["adhesivo-80", "vinilo-blanco", "lona-front"].includes(sustrato.id),
-);
 
 const TIPOS: TipoGranFormato[] = ["PENDON", "STICKER", "VINIL", "LONA", "BACKING", "ROTULO"];
 
-const MAQUINAS_GRAN = ["Mimaki JV300", "Konica Minolta C4080"];
+/** Para qué sirve cada acabado del servicio (los únicos que se ofrecen). */
+const DESCRIPCION_ACABADO: Record<(typeof ACABADOS_GRAN_FORMATO)[number], string> = {
+  "Laminado mate": "Protección sin brillo",
+  "Laminado brillante": "Protección con brillo",
+  "Corte con plotter": "Contorno de stickers y vinil de rotulación",
+};
 
-const ACABADOS_GRAN = ACABADOS.filter((acabado) =>
-  [
-    "ojales",
-    "refuerzo",
-    "laminado-brillante",
-    "laminado-mate",
-    "doble-cara",
-    "troquelado",
-    "media-luna",
-    "plastificado",
-  ].includes(acabado.id),
-);
+/** Sustrato de costo según la categoría del insumo elegido. */
+const sustratoCosto = (categoria?: string) => (categoria === "LONA" ? "lona-front" : "vinilo-blanco");
 
 /* ------------------------------------------------------------------ */
 /* 01 · Pieza                                                          */
@@ -90,26 +84,16 @@ export function PiezaSection() {
             error={errors.clienteId?.message}
             hint={`${clientes.length} clientes activos`}
           >
-            <Select
-              value={clienteId}
-              onValueChange={(value) =>
+            <ClienteSelect
+              clientes={clientes}
+              value={clienteId ?? ""}
+              onChange={(value) =>
                 setValue("clienteId", value, {
                   shouldValidate: true,
                   shouldDirty: true,
                 })
               }
-            >
-              <SelectTrigger id="clienteId" aria-label="Cliente">
-                <SelectValue placeholder="Selecciona un cliente" />
-              </SelectTrigger>
-              <SelectContent>
-                {clientes.map((cliente) => (
-                  <SelectItem key={cliente.id} value={cliente.id}>
-                    {cliente.nombre}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            />
           </FormField>
 
           <FormField
@@ -195,7 +179,6 @@ export function DimensionesSection() {
   const alto = Number(watch("alto")) || 0;
   const cantidad = Number(watch("cantidad")) || 0;
   const prioridad = watch("prioridad");
-  const maquina = watch("maquina");
 
   const anchoMm = aMilimetros(ancho, unidad);
   const altoMm = aMilimetros(alto, unidad);
@@ -205,7 +188,7 @@ export function DimensionesSection() {
     <FormSection
       index="02"
       title="Dimensiones y salida"
-      description="Medidas en metros o centímetros, resolución y máquina"
+      description="Medidas en metros o centímetros, resolución y entrega"
       icon={Ruler}
     >
       <div className="space-y-5">
@@ -328,34 +311,6 @@ export function DimensionesSection() {
 
         <FormGrid className="sm:grid-cols-2 xl:grid-cols-3">
           <FormField
-            label="Máquina"
-            htmlFor="maquina"
-            required
-            error={errors.maquina?.message}
-          >
-            <Select
-              value={maquina}
-              onValueChange={(value) =>
-                setValue("maquina", value, {
-                  shouldValidate: true,
-                  shouldDirty: true,
-                })
-              }
-            >
-              <SelectTrigger id="maquina">
-                <SelectValue placeholder="Selecciona la máquina" />
-              </SelectTrigger>
-              <SelectContent>
-                {MAQUINAS_GRAN.map((item) => (
-                  <SelectItem key={item} value={item}>
-                    {item}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </FormField>
-
-          <FormField
             label="Prioridad"
             htmlFor="prioridad"
             error={errors.prioridad?.message}
@@ -411,39 +366,52 @@ export function DimensionesSection() {
 
 export function SustratoSection() {
   const { form } = useGranFormatoForm();
+  const { deCategoria, isLoading } = useDisponibilidad();
   const {
     setValue,
     watch,
     formState: { errors },
   } = form;
   const sustratoId = watch("sustratoId");
-  const seleccionado = SUSTRATOS_GRAN.find((item) => item.id === sustratoId);
+  const insumos = deCategoria("VINIL", "LONA");
+  const seleccionado = insumos.find((item) => item.id === sustratoId);
 
   return (
     <FormSection
       index="03"
       title="Sustrato"
-      description="Lona, vinil adhesivo o papel adhesivo para stickers"
+      description="Viniles y lonas del almacén: los agotados no se pueden elegir"
       icon={Layers}
     >
       <div className="space-y-4">
-        <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
-          {SUSTRATOS_GRAN.map((sustrato) => (
-            <ToggleCard
-              key={sustrato.id}
-              selected={sustratoId === sustrato.id}
-              onToggle={() =>
-                setValue("sustratoId", sustrato.id, {
-                  shouldValidate: true,
-                  shouldDirty: true,
-                })
-              }
-              title={sustrato.nombre}
-              description={`${sustrato.gramaje} g/m²`}
-              meta={`${formatCurrency(sustrato.precioHoja)} / pliego`}
-            />
-          ))}
-        </div>
+        {isLoading ? (
+          <p className="text-[11px] text-muted-foreground">Consultando existencias...</p>
+        ) : insumos.length === 0 ? (
+          <p className="text-[11px] text-muted-foreground">No hay viniles ni lonas registrados en inventario.</p>
+        ) : (
+          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+            {insumos.map((insumo) => (
+              <ToggleCard
+                key={insumo.id}
+                selected={sustratoId === insumo.id}
+                disabled={!insumo.disponible}
+                onToggle={() =>
+                  setValue("sustratoId", sustratoId === insumo.id ? "" : insumo.id, {
+                    shouldValidate: true,
+                    shouldDirty: true,
+                  })
+                }
+                title={insumo.nombre}
+                description={CATEGORIA_INVENTARIO_LABEL[insumo.categoria]}
+                meta={
+                  insumo.disponible
+                    ? `${formatNumber(insumo.stock)} ${insumo.unidad} en existencia`
+                    : "Sin existencia"
+                }
+              />
+            ))}
+          </div>
+        )}
         {errors.sustratoId && (
           <p className="text-[11px] font-medium text-destructive" role="alert">
             {errors.sustratoId.message}
@@ -453,9 +421,8 @@ export function SustratoSection() {
           <div className="flex items-start gap-2 rounded-lg border border-dashed border-border bg-muted/40 px-3 py-2.5">
             <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
             <p className="text-[11px] leading-relaxed text-muted-foreground">
-              <span className="font-medium text-foreground">{seleccionado.nombre}</span> ·
-              impresión sobre {seleccionado.gramaje} g/m². La reserva del rollo se
-              descuenta del inventario de vinilos y lonas al aprobar la orden.
+              <span className="font-medium text-foreground">{seleccionado.nombre}</span> se
+              descuenta del inventario cuando planta registra el consumo.
             </p>
           </div>
         )}
@@ -478,10 +445,10 @@ export function AcabadosSection() {
   } = form;
   const acabados = watch("acabados") ?? [];
 
-  const toggleAcabado = (id: string) => {
-    const next = acabados.includes(id)
-      ? acabados.filter((item) => item !== id)
-      : [...acabados, id];
+  const toggleAcabado = (acabado: (typeof ACABADOS_GRAN_FORMATO)[number]) => {
+    const next = acabados.includes(acabado)
+      ? acabados.filter((item) => item !== acabado)
+      : [...acabados, acabado];
     setValue("acabados", next, { shouldDirty: true, shouldValidate: true });
   };
 
@@ -489,7 +456,7 @@ export function AcabadosSection() {
     <FormSection
       index="04"
       title="Acabados y observaciones"
-      description="Ojales, refuerzos, laminado y corte de adhesivos"
+      description="Laminado mate, laminado brillante y corte con plotter"
       icon={Scissors}
     >
       <div className="space-y-5">
@@ -497,17 +464,17 @@ export function AcabadosSection() {
           <div className="mb-2 flex items-center justify-between">
             <span className="section-label">Procesos de acabado</span>
             <span className="text-[10px] font-medium text-muted-foreground">
-              {acabados.length} de {ACABADOS_GRAN.length} seleccionados
+              {acabados.length} de {ACABADOS_GRAN_FORMATO.length} seleccionados
             </span>
           </div>
           <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
-            {ACABADOS_GRAN.map((acabado) => (
+            {ACABADOS_GRAN_FORMATO.map((acabado) => (
               <ToggleCard
-                key={acabado.id}
-                selected={acabados.includes(acabado.id)}
-                onToggle={() => toggleAcabado(acabado.id)}
-                title={acabado.nombre}
-                meta={`+${formatCurrency(acabado.precio)} / unidad`}
+                key={acabado}
+                selected={acabados.includes(acabado)}
+                onToggle={() => toggleAcabado(acabado)}
+                title={acabado}
+                description={DESCRIPCION_ACABADO[acabado]}
               />
             ))}
           </div>
@@ -522,7 +489,7 @@ export function AcabadosSection() {
           <Textarea
             id="observaciones"
             rows={3}
-            placeholder="Sentido de la trama, ubicación de ojales, pruebas de adhesión..."
+            placeholder="Sentido de la trama, contorno de corte, pruebas de adhesión..."
             {...register("observaciones")}
           />
         </FormField>
@@ -537,6 +504,7 @@ export function AcabadosSection() {
 
 export function ResumenSection() {
   const { form, clientes } = useGranFormatoForm();
+  const { insumos } = useDisponibilidad();
   const valores = useWatch({ control: form.control });
 
   const cliente = clientes.find((item) => item.id === valores.clienteId);
@@ -545,7 +513,7 @@ export function ResumenSection() {
   const alto = Number(valores.alto) || 0;
   const unidad = valores.unidadDimension ?? "m";
   const acabados = valores.acabados ?? [];
-  const sustrato = SUSTRATOS_GRAN.find((item) => item.id === valores.sustratoId);
+  const sustrato = insumos.find((item) => item.id === valores.sustratoId);
 
   const anchoMm = aMilimetros(ancho, unidad);
   const altoMm = aMilimetros(alto, unidad);
@@ -560,8 +528,8 @@ export function ResumenSection() {
       altoMm,
       tintasTiro: 4,
       tintasRetiro: 0,
-      sustratoId: valores.sustratoId,
-      acabados,
+      sustratoId: sustratoCosto(sustrato?.categoria),
+      acabados: idsAcabadosGranFormato(acabados),
     });
   }
 
@@ -578,7 +546,7 @@ export function ResumenSection() {
       <div className="border-b border-white/10 px-5 py-4">
         <div className="flex items-center justify-between">
           <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/45">
-            Ficha de gran formato
+            {EMPRESA.nombre} · Gran formato
           </span>
           <span className="inline-flex items-center gap-1.5 rounded-full border border-white/15 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-widest text-white/60">
             <span className="h-1.5 w-1.5 rounded-full bg-primary" />

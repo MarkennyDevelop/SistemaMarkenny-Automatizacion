@@ -1,5 +1,5 @@
 import { FileStack, FileText, Layers3, type LucideIcon } from "lucide-react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useSearchParams } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/features/auth";
 
@@ -45,6 +45,10 @@ interface TipoTrabajoTabsProps {
  */
 export function TipoTrabajoTabs({ activo }: TipoTrabajoTabsProps) {
   const { usuario } = useAuth();
+  const [searchParams] = useSearchParams();
+  // Al cambiar de ficha se conserva el cliente elegido desde Clientes.
+  const cliente = searchParams.get("cliente");
+  const sufijo = cliente ? `?cliente=${encodeURIComponent(cliente)}` : "";
   const tabs = TABS.filter(
     (tab) => tab.id !== "general" || usuario?.rol === "ADMIN",
   );
@@ -57,7 +61,7 @@ export function TipoTrabajoTabs({ activo }: TipoTrabajoTabsProps) {
       {tabs.map((tab) => (
         <NavLink
           key={tab.id}
-          to={tab.to}
+          to={`${tab.to}${sufijo}`}
           end={tab.id === "papeleria"}
           aria-current={activo === tab.id ? "page" : undefined}
           className={cn(
