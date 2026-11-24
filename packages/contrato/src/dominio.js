@@ -129,6 +129,37 @@ export const ACABADOS_GRAN_FORMATO = Object.freeze(/** @type {const} */ (['Corte
  */
 export const CATEGORIAS_INVENTARIO = Object.freeze(/** @type {const} */ (['PAPEL', 'VINIL', 'LONA', 'SELLO']));
 export const UNIDADES_MEDIDA = Object.freeze(/** @type {const} */ (['resma', 'pliego', 'unidad', 'rollo', 'metro', 'caja']));
+
+/** Las cantidades de stock llevan 3 decimales (0,001 rollo ≈ 0,06 m²). */
+export const DECIMALES_STOCK = 3;
+const FACTOR_STOCK = 10 ** DECIMALES_STOCK;
+
+/** Categorías que se consumen por superficie (m²): tienen rendimiento en m² por unidad. */
+export const CATEGORIAS_POR_SUPERFICIE = Object.freeze(/** @type {const} */ (['VINIL', 'LONA']));
+
+/**
+ * Superficie impresa de una orden de gran formato, en m².
+ * @returns {number | null} null si la ficha no tiene medidas completas.
+ */
+export function areaImpresionM2({ ancho, alto, unidadDimension } = {}, cantidad = 0) {
+  if (!(ancho > 0) || !(alto > 0) || !unidadDimension || !(cantidad > 0)) return null;
+  const aMetros = unidadDimension === 'cm' ? 0.01 : 1;
+  return ancho * aMetros * alto * aMetros * cantidad;
+}
+
+/**
+ * Cantidad a descontar del stock (en la unidad del material, p. ej. rollos)
+ * para cubrir `m2` de impresión, con la merma del material. Se redondea
+ * hacia arriba a 3 decimales: nunca se descuenta menos de lo consumido.
+ * @param {{ rendimiento: number | null, mermaPorcentaje?: number }} material
+ * @returns {number | null} null si el material no tiene rendimiento configurado.
+ */
+export function consumoDeSustrato({ rendimiento, mermaPorcentaje = 0 }, m2) {
+  if (!(rendimiento > 0) || !(m2 > 0)) return null;
+  const exacto = (m2 * (1 + mermaPorcentaje / 100)) / rendimiento;
+  // El épsilon evita que 0.1 + 0.2 = 0.30000000000000004 suba a 0.301.
+  return Math.ceil(exacto * FACTOR_STOCK - 1e-9) / FACTOR_STOCK;
+}
 export const TIPOS_MOVIMIENTO = Object.freeze(/** @type {const} */ (['ENTRADA', 'SALIDA', 'AJUSTE', 'RESERVA']));
 
 /**
