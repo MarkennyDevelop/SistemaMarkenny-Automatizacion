@@ -5,7 +5,7 @@ import {
   FORMATOS_PAPELERIA,
   LAMINADOS,
   LUGARES_ENGOMADO,
-  ORIENTACIONES_PERFORACION,
+  ORIENTACIONES,
   TAMANOS_PAPELERIA,
   TIPOS_DOCUMENTO,
   TIPOS_PAPEL,
@@ -95,7 +95,7 @@ export const ORDEN_TRABAJO_DEFAULTS: Partial<OrdenTrabajoFormValues> = {
 const textoOpcional = (max: number) =>
   z.string().trim().max(max, `Máximo ${max} caracteres`).optional().or(z.literal(""));
 
-const enteroOpcional = (mensaje: string) =>
+const rangoOpcional = (mensaje: string) =>
   z
     .number({ error: mensaje })
     .int("Debe ser un número entero")
@@ -104,11 +104,13 @@ const enteroOpcional = (mensaje: string) =>
     .or(z.nan().transform(() => undefined));
 
 /**
- * Campos exactos de la Orden de Trabajo impresa: tipo de trabajo (NE., RM.,
- * F., Otro), Talonario/Block, doble cara, partes 1–4 u Otros, numeración N°,
- * perforación, engomado, laminado, color de tinta, papel con gramaje, tamaño,
- * observaciones y fecha de entrega. Ningún campo opcional viene marcado de
- * antemano: el vendedor marca lo que pide el cliente.
+ * Campos de la Orden de Trabajo impresa de MARKENNY, C.A. (papelería):
+ * cliente, nombre del documento, cantidad, tipo de trabajo (NE., RM., F.,
+ * tarjetas de presentación u otro), vista horizontal/vertical, perforación,
+ * talonario o block, doble cara, engomado (solo blocks), laminado, color de
+ * tinta, papel con gramaje opcional, tamaño, partes, N° de encabezado,
+ * número de control del pie de página, observaciones y fecha de entrega.
+ * Ninguna casilla viene marcada de antemano.
  */
 export const papeleriaSchema = z
   .object({
@@ -120,28 +122,30 @@ export const papeleriaSchema = z
       .max(120, "Máximo 120 caracteres"),
     tipoDocumento: z.enum(TIPOS_DOCUMENTO, { error: "Marca el tipo de trabajo" }),
     tipoDocumentoOtro: textoOpcional(60),
-    formato: z.enum(FORMATOS_PAPELERIA, { error: "Marca Talonario o Block" }),
-    dobleCara: z.boolean(),
     cantidad: z
       .number({ error: "Indica la cantidad" })
       .int("Debe ser un número entero")
       .min(1, "La cantidad debe ser mayor a cero")
       .max(200_000, "Cantidad fuera de rango"),
+    orientacion: z.enum(ORIENTACIONES, { error: "Marca la vista: horizontal o vertical" }),
+    perforacion: z.boolean(),
+    formato: z.enum(FORMATOS_PAPELERIA).optional(),
+    dobleCara: z.boolean(),
+    engomado: z.enum(LUGARES_ENGOMADO).optional(),
+    laminado: z.enum(LAMINADOS).optional(),
     partes: z
       .number({ error: "Indica las partes" })
       .int("Debe ser un número entero")
       .min(1, "Mínimo 1 parte")
       .max(10, "Máximo 10 partes"),
     usaNumeracion: z.boolean(),
-    numeracionPrefijo: textoOpcional(12),
-    numeracionDesde: enteroOpcional("Indica el número inicial"),
-    numeracionHasta: enteroOpcional("Indica el número final"),
-    perforacion: z.boolean(),
-    perforacionOrientacion: z.enum(ORIENTACIONES_PERFORACION).optional(),
-    engomado: z.enum(LUGARES_ENGOMADO).optional(),
-    laminado: z.enum(LAMINADOS).optional(),
+    numeracionDesde: rangoOpcional("Indica el número inicial"),
+    numeracionHasta: rangoOpcional("Indica el número final"),
+    usaNumeroControl: z.boolean(),
+    numeroControlPrefijo: textoOpcional(12),
+    numeroControlDesde: rangoOpcional("Indica el número de control inicial"),
+    numeroControlHasta: rangoOpcional("Indica el número de control final"),
     coloresTinta: z.array(z.enum(COLORES_TINTA)).min(1, "Marca al menos un color de tinta"),
-    pantone: textoOpcional(40),
     colorTintaOtro: textoOpcional(40),
     tipoPapel: z.enum([...TIPOS_PAPEL, "OTRO"], { error: "Marca el papel" }),
     tipoPapelOtro: textoOpcional(60),
@@ -160,23 +164,28 @@ export const papeleriaSchema = z
     const exigir = (condicion: boolean, path: string, message: string) => {
       if (condicion) ctx.addIssue({ code: "custom", path: [path], message });
     };
-    exigir(values.tipoDocumento === "OTRO" && !values.tipoDocumentoOtro, "tipoDocumentoOtro", "Indica qué documento es");
+    const rango = (activo: boolean, desde: string, hasta: string, d?: number, h?: number) => {
+      if (!activo) return;
+      exigir(d === undefined, desde, "Indica el número inicial");
+      exigir(h === undefined, hasta, "Indica el número final");
+      exigir(d !== undefined && h !== undefined && h < d, hasta, "Debe ser mayor o igual al inicial");
+    };
+    const esTalonarioOBlock = values.tipoDocumento !== "TARJETAS";
+
+    exigir(values.tipoDocumento === "OTRO" && !values.tipoDocumentoOtro, "tipoDocumentoOtro", "Indica el tipo de trabajo");
+    exigir(esTalonarioOBlock && !values.formato, "formato", "Marca Talonario o Block");
+    exigir(values.engomado !== undefined && values.formato !== "BLOCK", "engomado", "El engomado solo aplica a blocks");
     exigir(values.tipoPapel === "OTRO" && !values.tipoPapelOtro, "tipoPapelOtro", "Indica qué papel");
     exigir(values.tamano === "OTRO" && !values.tamanoOtro, "tamanoOtro", "Indica el tamaño");
-    exigir(values.coloresTinta.includes("PANTONE") && !values.pantone, "pantone", "Indica la referencia Pantone");
     exigir(values.coloresTinta.includes("OTRO") && !values.colorTintaOtro, "colorTintaOtro", "Indica el color");
-    exigir(values.perforacion && !values.perforacionOrientacion, "perforacionOrientacion", "Marca Horizontal o Vertical");
-    if (values.usaNumeracion) {
-      exigir(values.numeracionDesde === undefined, "numeracionDesde", "Indica el número inicial");
-      exigir(values.numeracionHasta === undefined, "numeracionHasta", "Indica el número final");
-      exigir(
-        values.numeracionDesde !== undefined &&
-          values.numeracionHasta !== undefined &&
-          values.numeracionHasta < values.numeracionDesde,
-        "numeracionHasta",
-        "El número final debe ser mayor o igual al inicial",
-      );
-    }
+    rango(esTalonarioOBlock && values.usaNumeracion, "numeracionDesde", "numeracionHasta", values.numeracionDesde, values.numeracionHasta);
+    rango(
+      esTalonarioOBlock && values.usaNumeroControl,
+      "numeroControlDesde",
+      "numeroControlHasta",
+      values.numeroControlDesde,
+      values.numeroControlHasta,
+    );
   });
 
 export type PapeleriaFormInput = z.input<typeof papeleriaSchema>;
@@ -187,14 +196,14 @@ export const PAPELERIA_DEFAULTS: Partial<PapeleriaFormInput> = {
   clienteId: "",
   nombreDocumento: "",
   tipoDocumentoOtro: "",
-  dobleCara: false,
   cantidad: 1,
+  perforacion: false,
+  dobleCara: false,
   partes: 1,
   usaNumeracion: false,
-  numeracionPrefijo: "00-",
-  perforacion: false,
+  usaNumeroControl: false,
+  numeroControlPrefijo: "00-",
   coloresTinta: [],
-  pantone: "",
   colorTintaOtro: "",
   tipoPapelOtro: "",
   tamanoOtro: "",

@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
 import { mensajeDeError } from "@/shared/api/cliente";
 import { ROL_LABEL, type OrdenTrabajo } from "@/shared/domain";
 import { useAgregarNota } from "../hooks/useOrdenesTrabajo";
@@ -84,12 +85,10 @@ export function NotasOrdenCard({ orden }: { orden: OrdenTrabajo }) {
           placeholder="Observación para el taller (ej. el cliente pidió cambiar el color de tinta)..."
         />
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <label
-            className={puedeSolicitar ? "flex items-center gap-2 text-[11px]" : "flex items-center gap-2 text-[11px] opacity-50"}
-          >
+          <label className={cn("flex items-center gap-2 text-[11px]", !puedeSolicitar && "opacity-50")}>
             <input
               type="checkbox"
-              className="h-3.5 w-3.5 accent-[hsl(var(--primary))]"
+              className="h-3.5 w-3.5 accent-primary"
               checked={puedeSolicitar && solicitaRetrabajo}
               disabled={!puedeSolicitar}
               onChange={(event) => setSolicitaRetrabajo(event.target.checked)}

@@ -7,6 +7,7 @@
  * enviaban los acabados como identificadores ("numerado") mientras la ficha
  * general enviaba nombres ("Numerado").
  */
+import { productoTerminadoDe } from "@markenny/contrato/dominio";
 import { fechaEntregaIso } from "@/lib/fechas";
 import { ACABADOS, SUSTRATOS } from "@/shared/catalogos";
 import {
@@ -51,6 +52,7 @@ const MEDIDAS_TAMANO: Record<PapeleriaFormValues["tamano"], [number, number]> = 
   CUARTO_CARTA: [108, 140],
   MEDIA_CARTA: [140, 216],
   CARTA: [216, 279],
+  TABLOIDE: [279, 432],
   OTRO: [216, 279],
 };
 
@@ -65,18 +67,22 @@ const SUSTRATO_COSTO: Record<PapeleriaFormValues["tipoPapel"], string> = {
   OTRO: "bond-90",
 };
 
-/** Tintas por cara: "A Color" es proceso CMYK; cada color directo cuenta uno. */
+/** Tintas por cara: "A color" es proceso CMYK; cada color directo cuenta uno. */
 export function tintasDePapeleria(colores: PapeleriaFormValues["coloresTinta"]) {
   return colores.includes("A_COLOR") ? 4 + colores.length - 1 : colores.length;
 }
 
-/** Acabados del formato físico, legibles para planta. */
+const esTalonarioOBlock = (values: Pick<PapeleriaFormValues, "tipoDocumento">) =>
+  values.tipoDocumento !== "TARJETAS";
+
+/** Acabados del formato impreso, legibles para planta. */
 export function acabadosDePapeleria(values: PapeleriaFormValues): string[] {
+  const talonario = esTalonarioOBlock(values);
   return [
-    values.usaNumeracion && "Numerado",
-    values.perforacion &&
-      `Perforación ${values.perforacionOrientacion === "VERTICAL" ? "vertical" : "horizontal"}`,
-    values.engomado && `Engomado ${ENGOMADO_LABEL[values.engomado].toLowerCase()}`,
+    talonario && values.usaNumeracion && "Numerado",
+    talonario && values.usaNumeroControl && "Número de control",
+    values.perforacion && "Perforación",
+    talonario && values.formato === "BLOCK" && values.engomado && `Engomado ${ENGOMADO_LABEL[values.engomado].toLowerCase()}`,
     values.laminado && `Laminado ${LAMINADO_LABEL[values.laminado].toLowerCase()}`,
     values.dobleCara && "Doble cara",
   ].filter((acabado): acabado is string => Boolean(acabado));
@@ -85,20 +91,20 @@ export function acabadosDePapeleria(values: PapeleriaFormValues): string[] {
 /** Estimación de costo de la ficha de papelería (también la usa el resumen). */
 export function estimarPapeleria(values: Pick<
   PapeleriaFormValues,
-  "cantidad" | "partes" | "tamano" | "tipoPapel" | "coloresTinta" | "dobleCara" | "usaNumeracion" | "perforacion" | "laminado"
+  "cantidad" | "partes" | "tamano" | "tipoPapel" | "coloresTinta" | "dobleCara" | "usaNumeracion" | "perforacion" | "laminado" | "tipoDocumento"
 >) {
   const [anchoMm, altoMm] = MEDIDAS_TAMANO[values.tamano];
   const tintas = tintasDePapeleria(values.coloresTinta);
   return estimarMontoOrden({
     tecnologia: "OFFSET",
-    cantidad: values.cantidad * values.partes,
+    cantidad: values.cantidad * (esTalonarioOBlock(values) ? values.partes : 1),
     anchoMm,
     altoMm,
     tintasTiro: tintas,
     tintasRetiro: values.dobleCara ? tintas : 0,
     sustratoId: SUSTRATO_COSTO[values.tipoPapel],
     acabados: [
-      ...(values.usaNumeracion ? ["numerado"] : []),
+      ...(esTalonarioOBlock(values) && values.usaNumeracion ? ["numerado"] : []),
       ...(values.perforacion ? ["perforado"] : []),
       ...(values.laminado === "MATE" ? ["laminado-mate"] : []),
       ...(values.laminado === "BRILLANTE" ? ["laminado-brillante"] : []),
@@ -113,51 +119,54 @@ function nombrePapel(values: PapeleriaFormValues) {
 
 function nombresTinta(values: PapeleriaFormValues) {
   return values.coloresTinta.map((color) =>
-    color === "PANTONE"
-      ? `Pantone ${values.pantone ?? ""}`.trim()
-      : color === "OTRO"
-        ? textoOpcional(values.colorTintaOtro) ?? "Otro"
-        : COLOR_TINTA_LABEL[color],
+    color === "OTRO" ? textoOpcional(values.colorTintaOtro) ?? "Otro" : COLOR_TINTA_LABEL[color],
   );
 }
 
 export function ordenDesdePapeleria(values: PapeleriaFormValues): NuevaOrdenTrabajo {
-  const numeracion = values.usaNumeracion;
+  const talonario = esTalonarioOBlock(values);
+  const numeracion = talonario && values.usaNumeracion;
+  const control = talonario && values.usaNumeroControl;
+  const especificaciones: NonNullable<NuevaOrdenTrabajo["especificaciones"]> = {
+    nombreDocumento: values.nombreDocumento.trim(),
+    tipoDocumento: values.tipoDocumento,
+    tipoDocumentoOtro: values.tipoDocumento === "OTRO" ? textoOpcional(values.tipoDocumentoOtro) : undefined,
+    orientacion: values.orientacion,
+    perforacion: values.perforacion,
+    formato: talonario ? values.formato : undefined,
+    dobleCara: values.dobleCara,
+    engomado: talonario && values.formato === "BLOCK" ? values.engomado : undefined,
+    laminado: values.laminado,
+    partes: talonario ? values.partes : undefined,
+    numeracionDesde: numeracion ? values.numeracionDesde : undefined,
+    numeracionHasta: numeracion ? values.numeracionHasta : undefined,
+    numeroControlPrefijo: control ? textoOpcional(values.numeroControlPrefijo) : undefined,
+    numeroControlDesde: control ? values.numeroControlDesde : undefined,
+    numeroControlHasta: control ? values.numeroControlHasta : undefined,
+    coloresTinta: values.coloresTinta,
+    colorTintaOtro: values.coloresTinta.includes("OTRO") ? textoOpcional(values.colorTintaOtro) : undefined,
+    tipoPapel: values.tipoPapel,
+    tipoPapelOtro: values.tipoPapel === "OTRO" ? textoOpcional(values.tipoPapelOtro) : undefined,
+    gramaje: values.gramaje,
+    tamano: values.tamano,
+    tamanoOtro: values.tamano === "OTRO" ? textoOpcional(values.tamanoOtro) : undefined,
+    observaciones: textoOpcional(values.observaciones),
+  };
   return {
     clienteId: values.clienteId,
     producto: values.nombreDocumento.trim(),
     categoriaTrabajo: "PAPELERIA",
-    productoTerminado: values.formato === "BLOCK" ? "BLOCK" : "TALONARIO",
+    productoTerminado: productoTerminadoDe("PAPELERIA", especificaciones),
     cantidad: values.cantidad,
     fechaEntrega: fechaEntregaIso(values.fechaEntrega),
     montoTotal: estimarPapeleria(values).total,
     sustrato: nombrePapel(values),
     tintas: nombresTinta(values),
     acabados: acabadosDePapeleria(values),
-    especificaciones: {
-      nombreDocumento: values.nombreDocumento.trim(),
-      tipoDocumento: values.tipoDocumento,
-      tipoDocumentoOtro: values.tipoDocumento === "OTRO" ? textoOpcional(values.tipoDocumentoOtro) : undefined,
-      formato: values.formato,
-      dobleCara: values.dobleCara,
-      partes: values.partes,
-      numeracionPrefijo: numeracion ? textoOpcional(values.numeracionPrefijo) : undefined,
-      numeracionDesde: numeracion ? values.numeracionDesde : undefined,
-      numeracionHasta: numeracion ? values.numeracionHasta : undefined,
-      perforacion: values.perforacion,
-      perforacionOrientacion: values.perforacion ? values.perforacionOrientacion : undefined,
-      engomado: values.engomado,
-      laminado: values.laminado,
-      coloresTinta: values.coloresTinta,
-      pantone: values.coloresTinta.includes("PANTONE") ? textoOpcional(values.pantone) : undefined,
-      colorTintaOtro: values.coloresTinta.includes("OTRO") ? textoOpcional(values.colorTintaOtro) : undefined,
-      tipoPapel: values.tipoPapel,
-      tipoPapelOtro: values.tipoPapel === "OTRO" ? textoOpcional(values.tipoPapelOtro) : undefined,
-      gramaje: values.gramaje,
-      tamano: values.tamano,
-      tamanoOtro: values.tamano === "OTRO" ? textoOpcional(values.tamanoOtro) : undefined,
-      observaciones: textoOpcional(values.observaciones),
-    },
+    // Sin claves vacías: el contrato es estricto y la ficha queda limpia.
+    especificaciones: Object.fromEntries(
+      Object.entries(especificaciones).filter(([, valor]) => valor !== undefined),
+    ),
   };
 }
 

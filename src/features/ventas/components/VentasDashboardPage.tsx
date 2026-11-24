@@ -188,7 +188,7 @@ export function VentasDashboardPage() {
         </div>
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
         <section className="space-y-3">
           <div className="flex items-center justify-between">
             <h2 className="font-display text-lg font-semibold uppercase tracking-wide">

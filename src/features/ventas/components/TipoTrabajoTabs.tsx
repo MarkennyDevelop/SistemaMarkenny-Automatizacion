@@ -16,7 +16,7 @@ const TABS: {
     id: "papeleria",
     to: "/ventas/nueva-orden",
     label: "Papelería corporativa",
-    hint: "Facturas · talonarios · récipes",
+    hint: "Facturas · talonarios · récipes · tarjetas",
     icon: FileText,
   },
   {

@@ -61,7 +61,7 @@ export function NuevaOrdenGranFormatoPage() {
         onSubmit={handleSubmit}
         defaultValues={{ clienteId: clientePreseleccionado, fechaEntrega: fechaEnDias(5) }}
       >
-        <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
+        <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
           <div className="space-y-4">
             <GranFormatoForm.Pieza />
             <GranFormatoForm.Dimensiones />

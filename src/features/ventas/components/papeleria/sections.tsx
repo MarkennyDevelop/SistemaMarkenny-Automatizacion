@@ -12,6 +12,7 @@ import {
   StickyNote,
   Wallet,
 } from "lucide-react";
+import { EMPRESA } from "@markenny/contrato/dominio";
 import { ClienteSelect } from "@/components/forms/ClienteSelect";
 import { OptionGroup, type Opcion } from "@/components/forms/OptionGroup";
 import { FormField, FormGrid, FormSection } from "@/components/forms/primitives";
@@ -21,13 +22,13 @@ import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/features/auth";
 import { fechaInputLocal } from "@/lib/fechas";
-import { cn, formatCurrency, formatDate, formatNumber } from "@/lib/utils";
+import { formatCurrency, formatDate, formatNumber } from "@/lib/utils";
 import {
   COLOR_TINTA_LABEL,
   ENGOMADO_LABEL,
   FORMATO_PAPELERIA_LABEL,
   LAMINADO_LABEL,
-  PERFORACION_LABEL,
+  ORIENTACION_LABEL,
   TAMANO_PAPELERIA_LABEL,
   TIPO_DOCUMENTO_LABEL,
   TIPO_PAPEL_LABEL,
@@ -35,7 +36,6 @@ import {
   resumenEspecificaciones,
   type ColorTinta,
 } from "@/shared/domain";
-import { EMPRESA } from "@markenny/contrato/dominio";
 import { useDisponibilidad } from "../../hooks/useDisponibilidad";
 import { estimarPapeleria, ordenDesdePapeleria } from "../../lib/ordenes";
 import { papeleriaSchema } from "../../types/schemas";
@@ -45,13 +45,13 @@ function opcionesDe<T extends string>(etiquetas: Record<T, string>): Opcion<T>[]
   return (Object.keys(etiquetas) as T[]).map((value) => ({ value, label: etiquetas[value] }));
 }
 
-const OPCIONES_DOCUMENTO = opcionesDe(TIPO_DOCUMENTO_LABEL).map((opcion) => ({
-  ...opcion,
-  label: opcion.value === "OTRO" ? "Otro:" : opcion.label.split(" · ")[0],
-  hint: opcion.value === "OTRO" ? undefined : opcion.label.split(" · ")[1],
-}));
+/** "NE. · Nota de entrega" → etiqueta "NE." con la descripción debajo. */
+const OPCIONES_DOCUMENTO = opcionesDe(TIPO_DOCUMENTO_LABEL).map((opcion) => {
+  const [label, hint] = opcion.label.split(" · ");
+  return { ...opcion, label: opcion.value === "OTRO" ? "Otro:" : label, hint };
+});
 const OPCIONES_FORMATO = opcionesDe(FORMATO_PAPELERIA_LABEL);
-const OPCIONES_PERFORACION = opcionesDe(PERFORACION_LABEL);
+const OPCIONES_ORIENTACION = opcionesDe(ORIENTACION_LABEL);
 const OPCIONES_ENGOMADO = opcionesDe(ENGOMADO_LABEL);
 const OPCIONES_LAMINADO = opcionesDe(LAMINADO_LABEL);
 const OPCIONES_TINTA = opcionesDe(COLOR_TINTA_LABEL);
@@ -60,9 +60,17 @@ const OPCIONES_SI_NO: Opcion<"SI" | "NO">[] = [
   { value: "SI", label: "Sí" },
   { value: "NO", label: "No" },
 ];
-const PARTES_FIJAS = [1, 2, 3, 4] as const;
+const OPCIONES_PARTES: Opcion<string>[] = [
+  { value: "1", label: "1 parte" },
+  { value: "2", label: "2 partes" },
+  { value: "3", label: "3 partes" },
+  { value: "4", label: "4 partes" },
+  { value: "OTROS", label: "Otros" },
+];
 
-/** Escribe un valor del formulario validando y marcándolo como modificado. */
+const siNo = (valor: boolean | undefined) => (valor ? "SI" : "NO");
+
+/** Escribe un valor del formulario; revalida en vivo tras el primer envío. */
 function useAsignar() {
   const { form } = usePapeleriaForm();
   const asignar: typeof form.setValue = (campo, valor) =>
@@ -71,7 +79,7 @@ function useAsignar() {
 }
 
 /* ------------------------------------------------------------------ */
-/* 01 · Encabezado: empresa, cliente y documento                       */
+/* 01 · Encabezado: empresa, cliente, documento y vendedor              */
 /* ------------------------------------------------------------------ */
 
 export function ClienteDocumentoSection() {
@@ -124,24 +132,24 @@ export function ClienteDocumentoSection() {
         </FormGrid>
 
         <dl className="grid gap-x-4 gap-y-2 rounded-lg border border-dashed border-border px-4 py-3 text-[12px] sm:grid-cols-2 lg:grid-cols-3">
-          <div>
+          <div className="min-w-0">
             <dt className="text-muted-foreground">RIF del cliente</dt>
-            <dd className="font-medium">{cliente?.rif ?? "—"}</dd>
+            <dd className="truncate font-medium">{cliente?.rif ?? "—"}</dd>
           </div>
-          <div>
+          <div className="min-w-0">
             <dt className="text-muted-foreground">Teléfono</dt>
-            <dd className="font-medium">{cliente?.telefono ?? "—"}</dd>
+            <dd className="truncate font-medium">{cliente?.telefono ?? "—"}</dd>
           </div>
-          <div>
+          <div className="min-w-0">
             <dt className="text-muted-foreground">Vendedor</dt>
-            <dd className="font-medium">{usuario?.nombre ?? "—"}</dd>
+            <dd className="truncate font-medium">{usuario?.nombre ?? "—"}</dd>
           </div>
-          <div>
+          <div className="min-w-0">
             <dt className="text-muted-foreground">Fecha de aprobación</dt>
             <dd className="font-medium">Al enviar la orden</dd>
           </div>
-          <div>
-            <dt className="text-muted-foreground">Fecha finalizado</dt>
+          <div className="min-w-0">
+            <dt className="text-muted-foreground">Fecha de finalizado</dt>
             <dd className="font-medium">La registra planta</dd>
           </div>
         </dl>
@@ -151,7 +159,7 @@ export function ClienteDocumentoSection() {
 }
 
 /* ------------------------------------------------------------------ */
-/* 02 · Tipo de trabajo, presentación, cantidad y partes               */
+/* 02 · Tipo de trabajo, cantidad, vista y perforación                  */
 /* ------------------------------------------------------------------ */
 
 export function TrabajoSection() {
@@ -162,17 +170,16 @@ export function TrabajoSection() {
     control,
     formState: { errors },
   } = form;
-  const [tipoDocumento, formato, dobleCara, partes] = useWatch({
+  const [tipoDocumento, orientacion, perforacion] = useWatch({
     control,
-    name: ["tipoDocumento", "formato", "dobleCara", "partes"],
+    name: ["tipoDocumento", "orientacion", "perforacion"],
   });
-  const partesOtros = typeof partes === "number" && partes > 4;
 
   return (
     <FormSection
       index="02"
       title="Tipo de trabajo"
-      description="NE., RM., F. u otro · Talonario o Block · partes"
+      description="NE., RM., F., tarjetas u otro · cantidad · vista · perforación"
       icon={FileText}
     >
       <div className="space-y-5">
@@ -182,10 +189,11 @@ export function TrabajoSection() {
           value={tipoDocumento}
           onChange={(valor) => valor && asignar("tipoDocumento", valor)}
           error={errors.tipoDocumento?.message}
+          columnas="grid-cols-2 sm:grid-cols-3 xl:grid-cols-5"
         />
         {tipoDocumento === "OTRO" && (
           <FormField
-            label="Otro documento"
+            label="Nombre del tipo de trabajo"
             htmlFor="tipoDocumentoOtro"
             required
             error={errors.tipoDocumentoOtro?.message}
@@ -194,66 +202,39 @@ export function TrabajoSection() {
           </FormField>
         )}
 
-        <div className="grid gap-5 sm:grid-cols-2">
+        <FormField
+          label="Cantidad"
+          htmlFor="cantidad"
+          required
+          error={errors.cantidad?.message}
+          className="sm:max-w-[12rem]"
+        >
+          <Input
+            id="cantidad"
+            type="number"
+            inputMode="numeric"
+            min={1}
+            step={1}
+            {...register("cantidad", { valueAsNumber: true })}
+          />
+        </FormField>
+
+        <FormGrid>
           <OptionGroup
-            label="Presentación"
-            opciones={OPCIONES_FORMATO}
-            value={formato}
-            onChange={(valor) => valor && asignar("formato", valor)}
-            error={errors.formato?.message}
+            label="Vista del trabajo"
+            opciones={OPCIONES_ORIENTACION}
+            value={orientacion}
+            onChange={(valor) => valor && asignar("orientacion", valor)}
+            error={errors.orientacion?.message}
             columnas="grid-cols-2"
           />
           <OptionGroup
-            label="Doble cara"
+            label="Perforación"
             opciones={OPCIONES_SI_NO}
-            value={dobleCara ? "SI" : "NO"}
-            onChange={(valor) => asignar("dobleCara", valor === "SI")}
+            value={siNo(perforacion)}
+            onChange={(valor) => asignar("perforacion", valor === "SI")}
             columnas="grid-cols-2"
           />
-        </div>
-
-        <FormGrid className="sm:grid-cols-2">
-          <FormField
-            label="Cantidad"
-            htmlFor="cantidad"
-            required
-            error={errors.cantidad?.message}
-            hint="Talonarios o blocks"
-          >
-            <Input
-              id="cantidad"
-              type="number"
-              inputMode="numeric"
-              min={1}
-              step={1}
-              {...register("cantidad", { valueAsNumber: true })}
-            />
-          </FormField>
-
-          <div>
-            <OptionGroup
-              label="Partes"
-              opciones={[
-                ...PARTES_FIJAS.map((n) => ({ value: String(n), label: String(n) })),
-                { value: "OTROS", label: "Otros" },
-              ]}
-              value={partesOtros ? "OTROS" : String(partes ?? "")}
-              onChange={(valor) => valor && asignar("partes", valor === "OTROS" ? 5 : Number(valor))}
-              error={errors.partes?.message}
-              columnas="grid-cols-5"
-            />
-            {partesOtros && (
-              <Input
-                aria-label="Número de partes"
-                className="mt-2"
-                type="number"
-                inputMode="numeric"
-                min={5}
-                max={10}
-                {...register("partes", { valueAsNumber: true })}
-              />
-            )}
-          </div>
         </FormGrid>
       </div>
     </FormSection>
@@ -261,10 +242,11 @@ export function TrabajoSection() {
 }
 
 /* ------------------------------------------------------------------ */
-/* 03 · Numeración, perforación, engomado y laminado                    */
+/* 03 · Presentación: talonario/block, doble cara, engomado, laminado,  */
+/*      partes y numeración                                             */
 /* ------------------------------------------------------------------ */
 
-export function AcabadosSection() {
+export function PresentacionSection() {
   const { form } = usePapeleriaForm();
   const asignar = useAsignar();
   const {
@@ -272,97 +254,190 @@ export function AcabadosSection() {
     control,
     formState: { errors },
   } = form;
-  const [usaNumeracion, perforacion, perforacionOrientacion, engomado, laminado] = useWatch({
-    control,
-    name: ["usaNumeracion", "perforacion", "perforacionOrientacion", "engomado", "laminado"],
-  });
+  const [tipoDocumento, formato, dobleCara, engomado, laminado, partes, usaNumeracion, usaNumeroControl] =
+    useWatch({
+      control,
+      name: [
+        "tipoDocumento",
+        "formato",
+        "dobleCara",
+        "engomado",
+        "laminado",
+        "partes",
+        "usaNumeracion",
+        "usaNumeroControl",
+      ],
+    });
+  // Las tarjetas de presentación no son talonario ni block: no llevan
+  // partes, numeración ni engomado.
+  const talonarioOBlock = tipoDocumento !== "TARJETAS";
+  const partesOtros = typeof partes === "number" && partes > 4;
 
   return (
     <FormSection
       index="03"
-      title="Numeración y acabados"
-      description="N°, perforación, engomado y laminado"
+      title="Presentación y acabados"
+      description="Talonario o block · doble cara · engomado · laminado · partes · numeración"
       icon={Hash}
     >
       <div className="space-y-5">
-        <div className="space-y-3">
-          <OptionGroup
-            label="Numeración"
-            opciones={OPCIONES_SI_NO}
-            value={usaNumeracion ? "SI" : "NO"}
-            onChange={(valor) => asignar("usaNumeracion", valor === "SI")}
-            columnas="grid-cols-2 max-w-xs"
-          />
-          {usaNumeracion && (
-            <FormGrid className="sm:grid-cols-3">
-              <FormField label="Prefijo" htmlFor="numeracionPrefijo" error={errors.numeracionPrefijo?.message}>
-                <Input id="numeracionPrefijo" placeholder="00-" {...register("numeracionPrefijo")} />
-              </FormField>
-              <FormField label="N° desde" htmlFor="numeracionDesde" required error={errors.numeracionDesde?.message}>
-                <Input
-                  id="numeracionDesde"
-                  type="number"
-                  inputMode="numeric"
-                  min={0}
-                  {...register("numeracionDesde", { valueAsNumber: true })}
-                />
-              </FormField>
-              <FormField label="N° hasta" htmlFor="numeracionHasta" required error={errors.numeracionHasta?.message}>
-                <Input
-                  id="numeracionHasta"
-                  type="number"
-                  inputMode="numeric"
-                  min={0}
-                  {...register("numeracionHasta", { valueAsNumber: true })}
-                />
-              </FormField>
-            </FormGrid>
+        <FormGrid>
+          {talonarioOBlock && (
+            <OptionGroup
+              label="Presentación"
+              opciones={OPCIONES_FORMATO}
+              value={formato}
+              onChange={(valor) => {
+                if (!valor) return;
+                asignar("formato", valor);
+                // El engomado es exclusivo de los blocks.
+                if (valor !== "BLOCK") asignar("engomado", undefined);
+              }}
+              error={errors.formato?.message}
+              columnas="grid-cols-2"
+            />
           )}
-        </div>
-
-        <div className="grid gap-5 sm:grid-cols-2">
           <OptionGroup
-            label="Perforación"
+            label="Doble cara"
             opciones={OPCIONES_SI_NO}
-            value={perforacion ? "SI" : "NO"}
-            onChange={(valor) => {
-              asignar("perforacion", valor === "SI");
-              if (valor !== "SI") asignar("perforacionOrientacion", undefined);
-            }}
+            value={siNo(dobleCara)}
+            onChange={(valor) => asignar("dobleCara", valor === "SI")}
             columnas="grid-cols-2"
           />
-          <OptionGroup
-            label="Sentido de la perforación"
-            opciones={OPCIONES_PERFORACION.map((opcion) => ({ ...opcion, disabled: !perforacion }))}
-            value={perforacionOrientacion}
-            onChange={(valor) => asignar("perforacionOrientacion", valor)}
-            error={errors.perforacionOrientacion?.message}
-            columnas="grid-cols-2"
-          />
-        </div>
+        </FormGrid>
 
-        <OptionGroup
-          label="Engomado"
-          opciones={OPCIONES_ENGOMADO}
-          value={engomado}
-          onChange={(valor) => asignar("engomado", valor)}
-          vaciable
-        />
+        {talonarioOBlock && formato === "BLOCK" && (
+          <OptionGroup
+            label="Lugar de engomado"
+            opciones={OPCIONES_ENGOMADO}
+            value={engomado}
+            onChange={(valor) => asignar("engomado", valor)}
+            error={errors.engomado?.message}
+            vaciable
+          />
+        )}
+
         <OptionGroup
           label="Laminado"
           opciones={OPCIONES_LAMINADO}
           value={laminado}
           onChange={(valor) => asignar("laminado", valor)}
           vaciable
-          columnas="grid-cols-2 max-w-sm"
+          columnas="grid-cols-2"
+          className="sm:max-w-sm"
         />
+
+        {talonarioOBlock && (
+          <>
+            <div className="space-y-2">
+              <OptionGroup
+                label="Partes"
+                opciones={OPCIONES_PARTES}
+                value={partesOtros ? "OTROS" : String(partes ?? "")}
+                onChange={(valor) => valor && asignar("partes", valor === "OTROS" ? 5 : Number(valor))}
+                error={errors.partes?.message}
+                columnas="grid-cols-3 sm:grid-cols-5"
+              />
+              {partesOtros && (
+                <Input
+                  aria-label="Número de partes"
+                  className="sm:max-w-[12rem]"
+                  type="number"
+                  inputMode="numeric"
+                  min={5}
+                  max={10}
+                  {...register("partes", { valueAsNumber: true })}
+                />
+              )}
+            </div>
+
+            <div className="grid gap-5 lg:grid-cols-2">
+              <div className="space-y-3">
+                <OptionGroup
+                  label="N° del encabezado"
+                  opciones={OPCIONES_SI_NO}
+                  value={siNo(usaNumeracion)}
+                  onChange={(valor) => asignar("usaNumeracion", valor === "SI")}
+                  columnas="grid-cols-2"
+                />
+                {usaNumeracion && (
+                  <FormGrid className="grid-cols-2">
+                    <FormField label="Desde" htmlFor="numeracionDesde" required error={errors.numeracionDesde?.message}>
+                      <Input
+                        id="numeracionDesde"
+                        type="number"
+                        inputMode="numeric"
+                        min={0}
+                        {...register("numeracionDesde", { valueAsNumber: true })}
+                      />
+                    </FormField>
+                    <FormField label="Hasta" htmlFor="numeracionHasta" required error={errors.numeracionHasta?.message}>
+                      <Input
+                        id="numeracionHasta"
+                        type="number"
+                        inputMode="numeric"
+                        min={0}
+                        {...register("numeracionHasta", { valueAsNumber: true })}
+                      />
+                    </FormField>
+                  </FormGrid>
+                )}
+              </div>
+
+              <div className="space-y-3">
+                <OptionGroup
+                  label="N° de control (pie de página)"
+                  opciones={OPCIONES_SI_NO}
+                  value={siNo(usaNumeroControl)}
+                  onChange={(valor) => asignar("usaNumeroControl", valor === "SI")}
+                  columnas="grid-cols-2"
+                />
+                {usaNumeroControl && (
+                  <FormGrid className="grid-cols-3 sm:grid-cols-3">
+                    <FormField label="Prefijo" htmlFor="numeroControlPrefijo" error={errors.numeroControlPrefijo?.message}>
+                      <Input id="numeroControlPrefijo" placeholder="00-" {...register("numeroControlPrefijo")} />
+                    </FormField>
+                    <FormField
+                      label="Desde"
+                      htmlFor="numeroControlDesde"
+                      required
+                      error={errors.numeroControlDesde?.message}
+                    >
+                      <Input
+                        id="numeroControlDesde"
+                        type="number"
+                        inputMode="numeric"
+                        min={0}
+                        {...register("numeroControlDesde", { valueAsNumber: true })}
+                      />
+                    </FormField>
+                    <FormField
+                      label="Hasta"
+                      htmlFor="numeroControlHasta"
+                      required
+                      error={errors.numeroControlHasta?.message}
+                    >
+                      <Input
+                        id="numeroControlHasta"
+                        type="number"
+                        inputMode="numeric"
+                        min={0}
+                        {...register("numeroControlHasta", { valueAsNumber: true })}
+                      />
+                    </FormField>
+                  </FormGrid>
+                )}
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </FormSection>
   );
 }
 
 /* ------------------------------------------------------------------ */
-/* 04 · Color de tinta                                                 */
+/* 04 · Color de tinta (columna "Pantone" del formato)                  */
 /* ------------------------------------------------------------------ */
 
 export function TintasSection() {
@@ -376,29 +451,21 @@ export function TintasSection() {
   const coloresTinta = useWatch({ control, name: "coloresTinta" }) ?? [];
 
   return (
-    <FormSection index="04" title="Color de tinta" description="Marca uno o varios" icon={Palette}>
+    <FormSection index="04" title="Color de tinta" description="Pantone de la impresión · marca uno o varios" icon={Palette}>
       <div className="space-y-4">
         <OptionGroup<ColorTinta>
           multiple
-          label="Color tinta"
+          label="Pantone"
           opciones={OPCIONES_TINTA}
           value={coloresTinta}
           onChange={(valor) => asignar("coloresTinta", valor)}
           error={errors.coloresTinta?.message}
+          columnas="grid-cols-2 sm:grid-cols-3"
         />
-        {(coloresTinta.includes("PANTONE") || coloresTinta.includes("OTRO")) && (
-          <FormGrid>
-            {coloresTinta.includes("PANTONE") && (
-              <FormField label="Referencia Pantone" htmlFor="pantone" required error={errors.pantone?.message}>
-                <Input id="pantone" placeholder="Ej. 186 C" {...register("pantone")} />
-              </FormField>
-            )}
-            {coloresTinta.includes("OTRO") && (
-              <FormField label="Otro color" htmlFor="colorTintaOtro" required error={errors.colorTintaOtro?.message}>
-                <Input id="colorTintaOtro" placeholder="Ej. Dorado" {...register("colorTintaOtro")} />
-              </FormField>
-            )}
-          </FormGrid>
+        {coloresTinta.includes("OTRO") && (
+          <FormField label="Nombre del color" htmlFor="colorTintaOtro" required error={errors.colorTintaOtro?.message}>
+            <Input id="colorTintaOtro" placeholder="Ej. Dorado" className="sm:max-w-xs" {...register("colorTintaOtro")} />
+          </FormField>
         )}
       </div>
     </FormSection>
@@ -406,7 +473,7 @@ export function TintasSection() {
 }
 
 /* ------------------------------------------------------------------ */
-/* 05 · Papel, gramaje y tamaño                                        */
+/* 05 · Tipo de papel, gramaje y tamaño                                 */
 /* ------------------------------------------------------------------ */
 
 export function PapelSection() {
@@ -436,26 +503,25 @@ export function PapelSection() {
   return (
     <FormSection
       index="05"
-      title="Papel y tamaño"
+      title="Tipo de papel y tamaño"
       description="Solo se ofrecen los papeles con existencia en almacén"
       icon={Layers}
     >
       <div className="space-y-5">
         <OptionGroup
-          label="Papel"
+          label="Tipo de papel"
           opciones={opcionesPapel}
           value={tipoPapel}
           onChange={(valor) => valor && asignar("tipoPapel", valor)}
           error={errors.tipoPapel?.message}
-          columnas="grid-cols-2 sm:grid-cols-4"
         />
         <FormGrid>
           {tipoPapel === "OTRO" && (
-            <FormField label="Otro papel" htmlFor="tipoPapelOtro" required error={errors.tipoPapelOtro?.message}>
+            <FormField label="Nombre del papel" htmlFor="tipoPapelOtro" required error={errors.tipoPapelOtro?.message}>
               <Input id="tipoPapelOtro" placeholder="Ej. Kraft" {...register("tipoPapelOtro")} />
             </FormField>
           )}
-          <FormField label="Gramaje" htmlFor="gramaje" error={errors.gramaje?.message} hint="g/m²">
+          <FormField label="Gramaje" htmlFor="gramaje" error={errors.gramaje?.message} hint="Opcional · g/m²">
             <Input
               id="gramaje"
               type="number"
@@ -474,10 +540,11 @@ export function PapelSection() {
           value={tamano}
           onChange={(valor) => valor && asignar("tamano", valor)}
           error={errors.tamano?.message}
+          columnas="grid-cols-2 sm:grid-cols-3 xl:grid-cols-5"
         />
         {tamano === "OTRO" && (
-          <FormField label="Otro tamaño" htmlFor="tamanoOtro" required error={errors.tamanoOtro?.message}>
-            <Input id="tamanoOtro" placeholder="Ej. 10 × 15 cm" {...register("tamanoOtro")} />
+          <FormField label="Medida" htmlFor="tamanoOtro" required error={errors.tamanoOtro?.message}>
+            <Input id="tamanoOtro" placeholder="Ej. 10 × 15 cm" className="sm:max-w-xs" {...register("tamanoOtro")} />
           </FormField>
         )}
       </div>
@@ -486,7 +553,7 @@ export function PapelSection() {
 }
 
 /* ------------------------------------------------------------------ */
-/* 06 · Observaciones y entrega                                        */
+/* 06 · Observaciones y fecha de entrega                               */
 /* ------------------------------------------------------------------ */
 
 export function EntregaSection() {
@@ -508,7 +575,7 @@ export function EntregaSection() {
           <Textarea id="observaciones" rows={3} {...register("observaciones")} />
         </FormField>
         <FormField label="Fecha de entrega" htmlFor="fechaEntrega" required error={errors.fechaEntrega?.message}>
-          <div className="relative max-w-xs">
+          <div className="relative sm:max-w-xs">
             <Input
               id="fechaEntrega"
               type="date"
@@ -530,21 +597,24 @@ export function EntregaSection() {
 
 export function ResumenSection() {
   const { form, clientes } = usePapeleriaForm();
+  const { usuario } = useAuth();
   const valores = useWatch({ control: form.control });
   const cliente = clientes.find((item) => item.id === valores.clienteId);
 
-  // Solo se muestra el detalle y el monto cuando la ficha es válida: la vista
-  // previa usa exactamente lo que se enviará a planta.
+  // El detalle y el monto se muestran solo cuando la ficha es válida: la
+  // vista previa usa exactamente lo que se enviará a planta.
   const valida = papeleriaSchema.safeParse(valores);
   const orden = valida.success ? ordenDesdePapeleria(valida.data) : null;
   const monto = valida.success ? estimarPapeleria(valida.data) : null;
   const filas = orden ? resumenEspecificaciones(orden.especificaciones ?? {}) : [];
 
+  const talonarioOBlock = valores.tipoDocumento !== "TARJETAS";
   const obligatorios = [
     valores.clienteId,
     valores.nombreDocumento?.trim(),
     valores.tipoDocumento,
-    valores.formato,
+    valores.orientacion,
+    !talonarioOBlock || valores.formato,
     valores.coloresTinta?.length,
     valores.tipoPapel,
     valores.tamano,
@@ -555,22 +625,26 @@ export function ResumenSection() {
   return (
     <aside className="overflow-hidden rounded-xl bg-markenny-ink text-white shadow-raised">
       <div className="border-b border-white/10 px-5 py-4">
-        <div className="flex items-center justify-between">
-          <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/45">
-            {EMPRESA.nombre} · {EMPRESA.rif}
-          </span>
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-white/15 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-widest text-white/60">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 text-[10px] font-semibold uppercase tracking-[0.22em] text-white/45">
+            <p className="truncate">{EMPRESA.nombre}</p>
+            <p className="mt-0.5 tracking-[0.12em]">RIF {EMPRESA.rif}</p>
+          </div>
+          <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-white/15 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-widest text-white/60">
             <span className="h-1.5 w-1.5 rounded-full bg-primary" />
             Borrador
           </span>
         </div>
-        <p className="mt-2 font-display text-xl font-semibold uppercase leading-tight tracking-wide">
+        <p className="mt-3 font-display text-xl font-semibold uppercase leading-tight tracking-wide">
           {valores.nombreDocumento?.trim() || "Nueva orden de papelería"}
         </p>
-        <p className="mt-1 flex items-center gap-1.5 text-xs text-white/50">
-          <Building2 className="h-3 w-3" />
-          {cliente ? `${cliente.nombre} · ${cliente.telefono}` : "Cliente sin seleccionar"}
+        <p className="mt-1 flex min-w-0 items-center gap-1.5 text-xs text-white/50">
+          <Building2 className="h-3 w-3 shrink-0" />
+          <span className="truncate">
+            {cliente ? `${cliente.nombre} · ${cliente.telefono}` : "Cliente sin seleccionar"}
+          </span>
         </p>
+        <p className="mt-1 text-xs text-white/50">Vendedor: {usuario?.nombre ?? "—"}</p>
       </div>
 
       <div className="space-y-2.5 px-5 py-4 text-xs">
@@ -579,8 +653,8 @@ export function ResumenSection() {
         ) : (
           filas.map(([etiqueta, valor]) => (
             <div key={etiqueta} className="flex items-start justify-between gap-3">
-              <span className="text-white/45">{etiqueta}</span>
-              <span className="max-w-[62%] text-right font-medium">{valor}</span>
+              <span className="shrink-0 text-white/45">{etiqueta}</span>
+              <span className="min-w-0 break-words text-right font-medium">{valor}</span>
             </div>
           ))
         )}
@@ -591,7 +665,7 @@ export function ResumenSection() {
               <span className="font-medium tabular-nums">{formatNumber(orden.cantidad)}</span>
             </div>
             <div className="flex items-center justify-between gap-3">
-              <span className="text-white/45">Entrega</span>
+              <span className="text-white/45">Fecha de entrega</span>
               <span className="font-medium">{formatDate(orden.fechaEntrega)}</span>
             </div>
           </>
@@ -654,7 +728,7 @@ export function Acciones() {
         Cancelar
       </Button>
       {errores > 0 && (
-        <p className={cn("flex items-start gap-1.5 text-[11px] leading-snug text-destructive")}>
+        <p className="flex items-start gap-1.5 text-[11px] leading-snug text-destructive">
           <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
           Revisa {errores} campo(s) antes de enviar la orden.
         </p>

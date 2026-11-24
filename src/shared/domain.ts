@@ -135,43 +135,50 @@ export const CATEGORIA_TRABAJO_LABEL: Record<CategoriaTrabajo, string> = {
   GENERAL: "Trabajo general",
 };
 
-/** Tipo de trabajo del formato físico: NE., RM., F., Otro. */
+/** Tipo de trabajo del formato impreso: NE., RM., F., tarjetas de presentación u Otro. */
 export const TIPO_DOCUMENTO_LABEL: Record<TipoDocumento, string> = {
   NE: "NE. · Nota de entrega",
   RM: "RM. · Récipe médico",
   F: "F. · Factura",
+  TARJETAS: "Tarjetas de presentación",
   OTRO: "Otro",
 };
 
+/** Columna "Pantone" del formato: color de la tinta. */
 export const COLOR_TINTA_LABEL: Record<ColorTinta, string> = {
-  PANTONE: "Pantone",
   NEGRO: "Negro",
   AZUL: "Azul",
   VERDE: "Verde",
   ROJO: "Rojo",
-  A_COLOR: "A Color",
+  A_COLOR: "A color",
   OTRO: "Otro",
 };
 
 export const TAMANO_PAPELERIA_LABEL: Record<TamanoPapeleria, string> = {
-  CUARTO_CARTA: "1/4 Carta",
-  MEDIA_CARTA: "1/2 Carta",
+  CUARTO_CARTA: "1/4 Cuarto de carta",
+  MEDIA_CARTA: "1/2 Media carta",
   CARTA: "Carta",
+  TABLOIDE: "Tabloide",
   OTRO: "Otro",
 };
 
 export const ENGOMADO_LABEL: Record<LugarEngomado, string> = {
   ARRIBA: "Arriba",
   ABAJO: "Abajo",
-  DERECHA: "Der.",
-  IZQUIERDA: "Izq.",
+  IZQUIERDA: "Izquierda",
+  DERECHA: "Derecha",
 };
 
 export const FORMATO_PAPELERIA_LABEL = { TALONARIO: "Talonario", BLOCK: "Block" } as const;
 export const LAMINADO_LABEL = { BRILLANTE: "Brillante", MATE: "Mate" } as const;
-export const PERFORACION_LABEL = { HORIZONTAL: "Horizontal", VERTICAL: "Vertical" } as const;
+export const ORIENTACION_LABEL = { HORIZONTAL: "Horizontal", VERTICAL: "Vertical" } as const;
 
-/** Resumen legible de la ficha técnica (detalle de planta y seguimiento). */
+function rango(prefijo: string | undefined, desde: number, hasta: number | undefined) {
+  const p = prefijo ?? "";
+  return `${p}${desde} → ${p}${hasta ?? ""}`;
+}
+
+/** Resumen legible de la ficha técnica (vista previa, detalle de planta y seguimiento). */
 export function resumenEspecificaciones(e: EspecificacionesTrabajo): [string, string][] {
   const filas: [string, string][] = [];
   const agregar = (etiqueta: string, valor: string | undefined | false) => {
@@ -183,28 +190,24 @@ export function resumenEspecificaciones(e: EspecificacionesTrabajo): [string, st
     e.tipoDocumento &&
       (e.tipoDocumento === "OTRO" ? `Otro: ${e.tipoDocumentoOtro ?? ""}` : TIPO_DOCUMENTO_LABEL[e.tipoDocumento]),
   );
-  agregar("Presentación", e.formato && `${FORMATO_PAPELERIA_LABEL[e.formato]}${e.dobleCara ? " · Doble cara" : ""}`);
-  agregar("Partes", e.partes !== undefined && String(e.partes));
-  agregar(
-    "Numeración",
-    e.numeracionDesde !== undefined &&
-      `N° ${e.numeracionPrefijo ?? ""}${e.numeracionDesde} → ${e.numeracionPrefijo ?? ""}${e.numeracionHasta ?? ""}`,
-  );
-  agregar(
-    "Perforación",
-    e.perforacion !== undefined &&
-      (e.perforacion ? `Sí · ${e.perforacionOrientacion ? PERFORACION_LABEL[e.perforacionOrientacion] : ""}` : "No"),
-  );
+  agregar("Vista", e.orientacion && ORIENTACION_LABEL[e.orientacion]);
+  agregar("Perforación", e.perforacion !== undefined && (e.perforacion ? "Sí" : "No"));
+  agregar("Presentación", e.formato && FORMATO_PAPELERIA_LABEL[e.formato]);
+  agregar("Doble cara", e.dobleCara !== undefined && (e.dobleCara ? "Sí" : "No"));
   agregar("Engomado", e.engomado && ENGOMADO_LABEL[e.engomado]);
   agregar("Laminado", e.laminado && LAMINADO_LABEL[e.laminado]);
+  agregar("Partes", e.partes !== undefined && String(e.partes));
+  agregar("N° encabezado", e.numeracionDesde !== undefined && rango(e.numeracionPrefijo, e.numeracionDesde, e.numeracionHasta));
+  agregar(
+    "N° de control",
+    e.numeroControlDesde !== undefined && rango(e.numeroControlPrefijo, e.numeroControlDesde, e.numeroControlHasta),
+  );
   agregar(
     "Color de tinta",
     e.coloresTinta !== undefined &&
       e.coloresTinta.length > 0 &&
       e.coloresTinta
-        .map((color) =>
-          color === "PANTONE" ? `Pantone ${e.pantone ?? ""}` : color === "OTRO" ? e.colorTintaOtro ?? "Otro" : COLOR_TINTA_LABEL[color],
-        )
+        .map((color) => (color === "OTRO" ? e.colorTintaOtro ?? "Otro" : COLOR_TINTA_LABEL[color]))
         .join(", "),
   );
   agregar(
@@ -249,6 +252,7 @@ export const PRODUCTO_TERMINADO_LABEL: Record<ProductoTerminadoTipo, string> = {
   PLIEGO_STICKERS: "Pliego de stickers",
   TALONARIO: "Talonario",
   BLOCK: "Block",
+  TARJETAS_PRESENTACION: "Tarjetas de presentación",
   SELLO_PERSONALIZADO: "Sello personalizado",
   PENDON: "Pendón",
   VINIL_ROTULACION: "Vinil para rotulación",

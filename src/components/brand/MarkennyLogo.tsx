@@ -53,19 +53,13 @@ export function MarkennyLogo({
       >
         <svg viewBox="0 0 48 48" className="h-[78%] w-[78%]" role="img">
           <title>Markenny</title>
-          <path
-            d="M6 8h5.4v32H6z"
-            fill={isLight ? "#FFFFFF" : "#FFFFFF"}
-          />
+          {/* Colores de la paleta de Tailwind (markenny-red), no valores fijos. */}
+          <path d="M6 8h5.4v32H6z" className="fill-white" />
           <path
             d="M15.5 10.5 33 24 15.5 37.5v-8.2L24.6 24l-9.1-5.3z"
-            fill={isLight ? "#FFFFFF" : "#FFFFFF"}
-            opacity={isLight ? 0.92 : 1}
+            className={cn("fill-white", isLight && "opacity-[0.92]")}
           />
-          <path
-            d="M23.5 20.8h10.9V14l7.6 10-7.6 10v-6.8H23.5z"
-            fill="#C9182B"
-          />
+          <path d="M23.5 20.8h10.9V14l7.6 10-7.6 10v-6.8H23.5z" className="fill-markenny-red" />
         </svg>
       </div>
 

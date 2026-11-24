@@ -13,6 +13,7 @@ interface OptionGroupBaseProps<T extends string> {
   opciones: readonly Opcion<T>[];
   error?: string;
   className?: string;
+  /** Solo clases de columnas de la cuadrícula (p. ej. "grid-cols-2"). */
   columnas?: string;
 }
 
@@ -56,11 +57,18 @@ export function OptionGroup<T extends string>(props: UnicaProps<T> | MultiplePro
   };
 
   return (
-    <fieldset className={className}>
-      <div className="mb-2 flex items-center justify-between gap-2">
-        <legend className="section-label">{label}</legend>
-        {error && <span className="text-[11px] text-destructive">{error}</span>}
-      </div>
+    // min-w-0: un fieldset no se encoge por debajo de su contenido y
+    // desbordaba la página en pantallas angostas.
+    <fieldset className={cn("min-w-0", className)}>
+      {/* La leyenda debe ser el primer hijo del fieldset para nombrar el grupo. */}
+      <legend className="mb-2 flex w-full items-center justify-between gap-2">
+        <span className="section-label">{label}</span>
+        {error && (
+          <span className="text-[11px] font-normal normal-case tracking-normal text-destructive" role="alert">
+            {error}
+          </span>
+        )}
+      </legend>
       <div
         role={props.multiple ? "group" : "radiogroup"}
         aria-label={label}
@@ -94,7 +102,7 @@ export function OptionGroup<T extends string>(props: UnicaProps<T> | MultiplePro
                 {activo && <Check className="h-2.5 w-2.5" />}
               </span>
               <span className="min-w-0">
-                <span className="block text-[12px] font-semibold leading-tight">{opcion.label}</span>
+                <span className="block break-words text-[12px] font-semibold leading-tight">{opcion.label}</span>
                 {opcion.hint && (
                   <span
                     className={cn(

@@ -99,7 +99,7 @@ export function DashboardView({ data, fecha }: DashboardViewProps) {
         />
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[1.65fr_1fr]">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.65fr)_minmax(0,1fr)]">
         <div className="space-y-6">
           <Card className="overflow-hidden">
             <CardHeader className="flex-row items-center justify-between space-y-0 border-b border-border/70 pb-4">

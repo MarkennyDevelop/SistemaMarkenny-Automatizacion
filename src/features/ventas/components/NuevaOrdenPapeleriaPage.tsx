@@ -59,11 +59,11 @@ export function NuevaOrdenPapeleriaPage() {
         onSubmit={handleSubmit}
         defaultValues={{ clienteId: clientePreseleccionado, fechaEntrega: fechaEnDias(7) }}
       >
-        <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
+        <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
           <div className="space-y-4">
             <PapeleriaForm.ClienteDocumento />
             <PapeleriaForm.Trabajo />
-            <PapeleriaForm.Acabados />
+            <PapeleriaForm.Presentacion />
             <PapeleriaForm.Tintas />
             <PapeleriaForm.Papel />
             <PapeleriaForm.Entrega />

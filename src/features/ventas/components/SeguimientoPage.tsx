@@ -372,7 +372,7 @@ export function SeguimientoPage() {
         description="Consulta en tiempo real en qué fase está cada trabajo y el historial auditable de cambios."
       />
 
-      <div className="grid gap-5 xl:grid-cols-[340px_minmax(0,1fr)]">
+      <div className="grid grid-cols-1 gap-5 xl:grid-cols-[340px_minmax(0,1fr)]">
         <Card className="flex max-h-[720px] flex-col overflow-hidden">
           <div className="border-b border-border p-3">
             <div className="relative">

@@ -27,7 +27,7 @@ function DashboardSkeleton() {
           <Card key={index} className="h-[138px] animate-pulse bg-muted/40" />
         ))}
       </div>
-      <div className="grid gap-6 xl:grid-cols-[1.65fr_1fr]">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.65fr)_minmax(0,1fr)]">
         <div className="space-y-6">
           <Card className="h-[320px] animate-pulse bg-muted/30" />
           <Card className="h-[300px] animate-pulse bg-muted/30" />

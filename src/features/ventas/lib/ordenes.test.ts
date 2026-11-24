@@ -27,21 +27,24 @@ const papeleria = papeleriaSchema.parse({
   clienteId: CLIENTE,
   nombreDocumento: "Nota de entrega Farmacia Central",
   tipoDocumento: "NE",
-  formato: "TALONARIO",
   cantidad: 10,
+  orientacion: "VERTICAL",
+  perforacion: true,
+  formato: "TALONARIO",
   partes: 3,
   usaNumeracion: true,
   numeracionDesde: 1,
   numeracionHasta: 500,
-  perforacion: true,
-  perforacionOrientacion: "HORIZONTAL",
-  coloresTinta: ["NEGRO", "PANTONE"],
-  pantone: "186 C",
+  usaNumeroControl: true,
+  numeroControlDesde: 1,
+  numeroControlHasta: 500,
+  coloresTinta: ["NEGRO", "OTRO"],
+  colorTintaOtro: "Dorado",
   tipoPapel: "QUIMICO",
   gramaje: 56,
   tamano: "MEDIA_CARTA",
   fechaEntrega: entrega,
-  observaciones: "  Logo en Pantone 186  ",
+  observaciones: "  Logo centrado  ",
 });
 
 const INSUMOS: InsumoDisponible[] = [
@@ -53,7 +56,7 @@ const INSUMOS: InsumoDisponible[] = [
 const validarContrato = (orden: unknown) =>
   NuevaOrdenSchema.safeParse({ ...(orden as object), clienteId: "00000000-0000-4000-8000-000000000001" });
 
-describe("ordenDesdePapeleria (formato físico)", () => {
+describe("ordenDesdePapeleria (formato impreso)", () => {
   const orden = ordenDesdePapeleria(papeleria);
 
   it("cumple el contrato de la API", () => {
@@ -67,26 +70,29 @@ describe("ordenDesdePapeleria (formato físico)", () => {
       categoriaTrabajo: "PAPELERIA",
       productoTerminado: "TALONARIO",
       sustrato: "Papel Químico 56 g",
-      tintas: ["Negro", "Pantone 186 C"],
-      acabados: ["Numerado", "Perforación horizontal"],
+      tintas: ["Negro", "Dorado"],
+      acabados: ["Numerado", "Número de control", "Perforación"],
       especificaciones: {
         tipoDocumento: "NE",
+        orientacion: "VERTICAL",
+        perforacion: true,
         formato: "TALONARIO",
         dobleCara: false,
         partes: 3,
-        numeracionPrefijo: "00-",
         numeracionDesde: 1,
         numeracionHasta: 500,
-        perforacion: true,
-        perforacionOrientacion: "HORIZONTAL",
-        coloresTinta: ["NEGRO", "PANTONE"],
-        pantone: "186 C",
+        numeroControlPrefijo: "00-",
+        numeroControlDesde: 1,
+        numeroControlHasta: 500,
+        coloresTinta: ["NEGRO", "OTRO"],
+        colorTintaOtro: "Dorado",
         tipoPapel: "QUIMICO",
         gramaje: 56,
         tamano: "MEDIA_CARTA",
-        observaciones: "Logo en Pantone 186",
+        observaciones: "Logo centrado",
       },
     });
+    expect(orden.especificaciones).not.toHaveProperty("engomado");
     expect(orden.montoTotal).toBeGreaterThan(0);
   });
 
@@ -95,14 +101,34 @@ describe("ordenDesdePapeleria (formato físico)", () => {
     expect(orden.fechaEntrega).toMatch(/T16:00:00\.000Z$/);
   });
 
-  it("un Block ingresa como Block al almacén", () => {
-    expect(ordenDesdePapeleria({ ...papeleria, formato: "BLOCK" }).productoTerminado).toBe("BLOCK");
+  it("un Block lleva su engomado y entra como Block al almacén", () => {
+    const block = ordenDesdePapeleria({ ...papeleria, formato: "BLOCK", engomado: "IZQUIERDA" });
+    expect(block.productoTerminado).toBe("BLOCK");
+    expect(block.especificaciones).toMatchObject({ formato: "BLOCK", engomado: "IZQUIERDA" });
+    expect(block.acabados).toContain("Engomado izquierda");
+    expect(validarContrato(block).success).toBe(true);
   });
 
-  it("omite la numeración cuando está desactivada", () => {
-    const sinNumeracion = ordenDesdePapeleria({ ...papeleria, usaNumeracion: false });
-    expect(sinNumeracion.especificaciones?.numeracionDesde).toBeUndefined();
-    expect(sinNumeracion.acabados).not.toContain("Numerado");
+  it("las tarjetas de presentación no llevan talonario, partes, numeración ni engomado", () => {
+    const tarjetas = ordenDesdePapeleria({
+      ...papeleria,
+      tipoDocumento: "TARJETAS",
+      formato: "BLOCK",
+      engomado: "ARRIBA",
+      tamano: "TABLOIDE",
+    });
+    expect(tarjetas.productoTerminado).toBe("TARJETAS_PRESENTACION");
+    for (const campo of ["formato", "partes", "engomado", "numeracionDesde", "numeroControlDesde"]) {
+      expect(tarjetas.especificaciones).not.toHaveProperty(campo);
+    }
+    expect(validarContrato(tarjetas).success).toBe(true);
+  });
+
+  it("omite la numeración y el número de control cuando están desactivados", () => {
+    const sin = ordenDesdePapeleria({ ...papeleria, usaNumeracion: false, usaNumeroControl: false });
+    expect(sin.especificaciones).not.toHaveProperty("numeracionDesde");
+    expect(sin.especificaciones).not.toHaveProperty("numeroControlDesde");
+    expect(sin.acabados).not.toContain("Numerado");
   });
 });
 
@@ -169,7 +195,7 @@ describe("esquemas de las fichas", () => {
     expect(r.error?.issues[0]).toMatchObject({ path: ["fechaEntrega"] });
   });
 
-  it("el formato en blanco no viene marcado: exige tipo, presentación, tinta, papel y tamaño", () => {
+  it("el formato en blanco no viene marcado: exige tipo, vista, presentación, tinta, papel y tamaño", () => {
     const r = papeleriaSchema.safeParse({
       ...PAPELERIA_DEFAULTS,
       clienteId: CLIENTE,
@@ -178,7 +204,20 @@ describe("esquemas de las fichas", () => {
     });
     expect(r.success).toBe(false);
     const campos = r.error?.issues.map((i) => i.path.join("."));
-    expect(campos).toEqual(expect.arrayContaining(["tipoDocumento", "formato", "coloresTinta", "tipoPapel", "tamano"]));
+    expect(campos).toEqual(
+      expect.arrayContaining(["tipoDocumento", "orientacion", "coloresTinta", "tipoPapel", "tamano"]),
+    );
+  });
+
+  it("exige Talonario o Block salvo en tarjetas de presentación", () => {
+    const sinFormato = { ...papeleria, formato: undefined };
+    expect(papeleriaSchema.safeParse(sinFormato).error?.issues.map((i) => i.path.join("."))).toContain("formato");
+    expect(papeleriaSchema.safeParse({ ...sinFormato, tipoDocumento: "TARJETAS" }).success).toBe(true);
+  });
+
+  it("el engomado solo se admite en blocks", () => {
+    const r = papeleriaSchema.safeParse({ ...papeleria, engomado: "ARRIBA" });
+    expect(r.error?.issues.map((i) => i.path.join("."))).toContain("engomado");
   });
 
   it("no bloquean el envío si la numeración está desactivada y vacía", () => {
@@ -187,27 +226,29 @@ describe("esquemas de las fichas", () => {
       usaNumeracion: false,
       numeracionDesde: Number.NaN,
       numeracionHasta: Number.NaN,
+      usaNumeroControl: false,
+      numeroControlDesde: Number.NaN,
     });
     expect(r.success).toBe(true);
   });
 
-  it("exigen la numeración cuando está activada", () => {
-    const r = papeleriaSchema.safeParse({ ...papeleria, numeracionHasta: Number.NaN });
-    expect(r.success).toBe(false);
-    expect(r.error?.issues.map((i) => i.path.join("."))).toContain("numeracionHasta");
+  it("validan el N° del encabezado y el de control por separado", () => {
+    const r = papeleriaSchema.safeParse({ ...papeleria, numeracionHasta: Number.NaN, numeroControlHasta: 0 });
+    expect(r.error?.issues.map((i) => i.path.join("."))).toEqual(
+      expect.arrayContaining(["numeracionHasta", "numeroControlHasta"]),
+    );
   });
 
-  it("piden el detalle de las casillas 'Otro', Pantone y perforación", () => {
+  it("piden el nombre en las casillas 'Otro'", () => {
     const r = papeleriaSchema.safeParse({
       ...papeleria,
       tipoDocumento: "OTRO",
       tipoPapel: "OTRO",
       tamano: "OTRO",
-      pantone: "",
-      perforacionOrientacion: undefined,
+      colorTintaOtro: "",
     });
     expect(r.error?.issues.map((i) => i.path.join("."))).toEqual(
-      expect.arrayContaining(["tipoDocumentoOtro", "tipoPapelOtro", "tamanoOtro", "pantone", "perforacionOrientacion"]),
+      expect.arrayContaining(["tipoDocumentoOtro", "tipoPapelOtro", "tamanoOtro", "colorTintaOtro"]),
     );
   });
 

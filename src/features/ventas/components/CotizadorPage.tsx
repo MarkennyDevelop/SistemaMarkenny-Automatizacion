@@ -29,7 +29,7 @@ export function CotizadorPage() {
       />
 
       <CotizadorForm.Root>
-        <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
+        <div className="grid items-start grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
           <div className="space-y-4">
             <CotizadorForm.Tecnologia />
             <CotizadorForm.Tiraje />

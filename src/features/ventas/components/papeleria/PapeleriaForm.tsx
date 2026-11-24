@@ -11,11 +11,11 @@ import {
 } from "../../types/schemas";
 import { PapeleriaFormContext } from "./context";
 import {
-  AcabadosSection,
   Acciones,
   ClienteDocumentoSection,
   EntregaSection,
   PapelSection,
+  PresentacionSection,
   ResumenSection,
   TintasSection,
   TrabajoSection,
@@ -34,9 +34,10 @@ export interface PapeleriaFormRootProps {
 /**
  * Compound Component de la ficha de papelería corporativa.
  *
- * Reproduce la Orden de Trabajo impresa de MARKENNY, C.A.: cliente, tipo de
- * trabajo, Talonario/Block, partes, numeración, perforación, engomado,
- * laminado, color de tinta, papel con gramaje, tamaño y entrega. Cada sección
+ * Reproduce la Orden de Trabajo impresa de MARKENNY, C.A.: cliente y
+ * vendedor, tipo de trabajo, cantidad, vista, perforación, talonario o block,
+ * doble cara, engomado, laminado, partes, N° de encabezado y de control,
+ * color de tinta, papel con gramaje, tamaño, observaciones y entrega. Cada sección
  * lee y escribe el mismo formulario mediante contexto; el consumidor decide
  * el orden y el layout.
  */
@@ -92,7 +93,7 @@ export const PapeleriaForm = Object.assign(PapeleriaFormRoot, {
   Root: PapeleriaFormRoot,
   ClienteDocumento: ClienteDocumentoSection,
   Trabajo: TrabajoSection,
-  Acabados: AcabadosSection,
+  Presentacion: PresentacionSection,
   Tintas: TintasSection,
   Papel: PapelSection,
   Entrega: EntregaSection,
