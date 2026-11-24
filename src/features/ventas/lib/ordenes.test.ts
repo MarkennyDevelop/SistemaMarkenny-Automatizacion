@@ -17,6 +17,7 @@ import {
   ordenDesdeFichaGeneral,
   ordenDesdeGranFormato,
   ordenDesdePapeleria,
+  SustratoNoDisponibleError,
 } from "./ordenes";
 
 const CLIENTE = "cli-001";
@@ -137,16 +138,20 @@ describe("ordenDesdeGranFormato", () => {
     ...GRAN_FORMATO_DEFAULTS,
     clienteId: CLIENTE,
     producto: "Pendón feria",
+    tipoGranFormato: "PENDON",
+    ancho: 1,
+    alto: 2,
+    unidadDimension: "m",
     sustratoId: "mat-lona",
-    acabados: ["Laminado mate", "Corte con plotter"],
+    acabados: ["Corte con plotter"],
     fechaEntrega: entrega,
   });
   const orden = ordenDesdeGranFormato(valores, INSUMOS);
 
-  it("usa el insumo real y solo los acabados del servicio", () => {
+  it("usa el insumo real del almacén y solo corte con plotter", () => {
     expect(orden).toMatchObject({
       sustrato: "Lona front 13 oz",
-      acabados: ["Laminado mate", "Corte con plotter"],
+      acabados: ["Corte con plotter"],
       categoriaTrabajo: "GRAN_FORMATO",
     });
     expect(orden).not.toHaveProperty("maquina");
@@ -156,14 +161,31 @@ describe("ordenDesdeGranFormato", () => {
     expect(aMilimetros(80, "cm")).toBe(800);
   });
 
-  it("rechaza acabados fuera del servicio", () => {
-    const r = granFormatoSchema.safeParse({ ...valores, acabados: ["Ojales metálicos"] });
-    expect(r.success).toBe(false);
+  it("el laminado mate o brillante ya no es un acabado: viene en el sustrato", () => {
+    for (const acabado of ["Laminado mate", "Laminado brillante", "Ojales metálicos"]) {
+      expect(granFormatoSchema.safeParse({ ...valores, acabados: [acabado] }).success).toBe(false);
+    }
   });
 
-  it("no trae acabados ni sustrato marcados de antemano", () => {
+  it("no arma la orden con un sustrato agotado o que no existe en almacén", () => {
+    expect(() => ordenDesdeGranFormato({ ...valores, sustratoId: "mat-vinil" }, INSUMOS)).toThrow(
+      SustratoNoDisponibleError,
+    );
+    expect(() => ordenDesdeGranFormato({ ...valores, sustratoId: "no-existe" }, INSUMOS)).toThrow(
+      SustratoNoDisponibleError,
+    );
+  });
+
+  it("la ficha llega en blanco: sin tipo, medidas, unidad, sustrato ni acabado", () => {
+    expect(GRAN_FORMATO_DEFAULTS).not.toHaveProperty("tipoGranFormato");
+    expect(GRAN_FORMATO_DEFAULTS).not.toHaveProperty("unidadDimension");
+    expect(GRAN_FORMATO_DEFAULTS).not.toHaveProperty("ancho");
     expect(GRAN_FORMATO_DEFAULTS.acabados).toEqual([]);
     expect(GRAN_FORMATO_DEFAULTS.sustratoId).toBe("");
+    const r = granFormatoSchema.safeParse({ ...GRAN_FORMATO_DEFAULTS, clienteId: CLIENTE, producto: "Pendón", fechaEntrega: entrega });
+    expect(r.error?.issues.map((i) => i.path.join("."))).toEqual(
+      expect.arrayContaining(["tipoGranFormato", "unidadDimension", "ancho", "alto", "sustratoId"]),
+    );
   });
 });
 

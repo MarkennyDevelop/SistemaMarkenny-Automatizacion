@@ -37,7 +37,7 @@ const ACCESOS = [
   },
   {
     to: "/ventas/nueva-orden/pendones",
-    label: "Pendones y stickers",
+    label: "Pendones, stickers y viniles",
     hint: "Gran formato y adhesivos",
     icon: Layers3,
   },

@@ -5,7 +5,7 @@ import {
   ClipboardList,
   FilePlus2,
   LayoutDashboard,
-  Stamp,
+  PackageCheck,
   Users,
   UsersRound,
   Waypoints,
@@ -59,8 +59,8 @@ const NAV_POR_ROL: Record<Rol, NavGroup[]> = {
       label: "Taller y almacén",
       items: [
         { to: "/produccion", label: "Producción", icon: Waypoints, hint: "4 fases" },
-        { to: "/inventario", label: "Inventario", icon: Boxes },
-        { to: "/inventario/sellos", label: "Sellos y PT", icon: Stamp },
+        { to: "/inventario", label: "Inventario", icon: Boxes, end: true },
+        { to: "/inventario/producto-terminado", label: "Producto Terminado", icon: PackageCheck },
       ],
     },
   ],
@@ -83,8 +83,8 @@ const NAV_POR_ROL: Record<Rol, NavGroup[]> = {
     {
       label: "Almacén",
       items: [
-        { to: "/inventario", label: "Inventario", icon: Boxes },
-        { to: "/inventario/sellos", label: "Sellos y PT", icon: Stamp },
+        { to: "/inventario", label: "Inventario", icon: Boxes, end: true },
+        { to: "/inventario/producto-terminado", label: "Producto Terminado", icon: PackageCheck },
       ],
     },
   ],

@@ -11,7 +11,7 @@ import {
   useAuth,
 } from "@/features/auth";
 import { DashboardPage } from "@/features/dashboard";
-import { InventarioPage, SellosPage } from "@/features/inventario";
+import { InventarioPage, ProductoTerminadoPage } from "@/features/inventario";
 import { ProduccionDashboardPage } from "@/features/planta-kanban";
 import {
   ClientesPage,
@@ -128,13 +128,15 @@ export function App() {
               }
             />
             <Route
-              path="inventario/sellos"
+              path="inventario/producto-terminado"
               element={
                 <RequireRole roles={["ADMIN", "PRODUCCION"]}>
-                  <SellosPage />
+                  <ProductoTerminadoPage />
                 </RequireRole>
               }
             />
+            {/* Enlaces guardados de la versión anterior ("Sellos y PT"). */}
+            <Route path="inventario/sellos" element={<Navigate to="/inventario/producto-terminado" replace />} />
 
             <Route path="*" element={<NotFoundPage />} />
           </Route>

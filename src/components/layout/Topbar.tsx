@@ -23,7 +23,7 @@ import { initials } from "@/lib/utils";
 import { ROL_LABEL } from "@/shared/domain";
 
 const SECTION_LABELS: { path: string; label: string }[] = [
-  { path: "/ventas/nueva-orden/pendones", label: "Nueva orden · pendones" },
+  { path: "/ventas/nueva-orden/pendones", label: "Nueva orden · pendones, stickers y viniles" },
   { path: "/ventas/nueva-orden/otros", label: "Nueva orden · general" },
   { path: "/ventas/nueva-orden", label: "Nueva orden · papelería" },
   { path: "/ventas/ordenes", label: "Órdenes de trabajo" },
@@ -34,7 +34,7 @@ const SECTION_LABELS: { path: string; label: string }[] = [
   { path: "/admin/empleados", label: "Empleados y roles" },
   { path: "/admin", label: "Dashboard general" },
   { path: "/produccion", label: "Producción y calidad" },
-  { path: "/inventario/sellos", label: "Sellos y producto terminado" },
+  { path: "/inventario/producto-terminado", label: "Producto terminado" },
   { path: "/inventario", label: "Inventario" },
 ];
 

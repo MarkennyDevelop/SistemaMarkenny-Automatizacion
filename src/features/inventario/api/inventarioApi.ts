@@ -9,7 +9,7 @@ export const inventarioApi = {
   listar: () => api.listarMateriales(),
   listarMovimientos: (limite = 50) => api.listarMovimientos({ query: { limite } }),
   registrarMovimiento: (input: NuevoMovimiento) => api.registrarMovimiento({ body: input }),
-  /** Sellos y productos terminados que siguen en almacén. */
+  /** Producto terminado: órdenes EMPAQUETADAS que siguen en almacén. */
   listarProductosPendientes: () => api.listarProductosTerminados({ query: { soloPendientes: "true" } }),
   registrarEntrega: (productoId: string, cantidad: number, recibidoPor?: string) =>
     api.registrarEntrega({ params: { id: productoId }, body: { cantidad, recibidoPor: recibidoPor || undefined } }),

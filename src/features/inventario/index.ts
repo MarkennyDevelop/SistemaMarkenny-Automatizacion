@@ -1,5 +1,5 @@
 export { InventarioPage } from "./components/InventarioPage";
-export { SellosPage } from "./components/SellosPage";
+export { ProductoTerminadoPage } from "./components/ProductoTerminadoPage";
 export { InventarioTable } from "./components/InventarioTable";
 export { MovimientosPanel } from "./components/MovimientosPanel";
 export { inventarioApi } from "./api/inventarioApi";

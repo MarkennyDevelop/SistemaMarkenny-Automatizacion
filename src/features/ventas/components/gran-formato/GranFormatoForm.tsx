@@ -6,6 +6,7 @@ import type { Cliente } from "@/shared/domain";
 import {
   GRAN_FORMATO_DEFAULTS,
   granFormatoSchema,
+  type GranFormatoFormInput,
   type GranFormatoFormValues,
 } from "../../types/schemas";
 import { GranFormatoFormContext } from "./context";
@@ -23,7 +24,7 @@ export interface GranFormatoFormRootProps {
   onSubmit: (values: GranFormatoFormValues) => void | Promise<void>;
   onCancel?: () => void;
   isSubmitting?: boolean;
-  defaultValues?: Partial<GranFormatoFormValues>;
+  defaultValues?: Partial<GranFormatoFormInput>;
   className?: string;
   children: React.ReactNode;
 }
@@ -31,9 +32,9 @@ export interface GranFormatoFormRootProps {
 /**
  * Compound Component de gran formato y adhesivos.
  *
- * Separado de la papelería corporativa porque su ficha técnica es distinta:
- * dimensiones en metros o centímetros, sustrato de lona/vinil y resolución
- * de salida. Comparte el mismo contrato de envío (NuevaOrdenTrabajo).
+ * Pendones, stickers y viniles: dimensiones en metros o centímetros,
+ * sustrato tomado de las existencias reales del almacén, resolución de
+ * salida y corte con plotter como único acabado. Comparte el mismo contrato de envío (NuevaOrdenTrabajo).
  */
 function GranFormatoFormRoot({
   clientes,
@@ -44,7 +45,7 @@ function GranFormatoFormRoot({
   className,
   children,
 }: GranFormatoFormRootProps) {
-  const form = useForm<GranFormatoFormValues>({
+  const form = useForm<GranFormatoFormInput, unknown, GranFormatoFormValues>({
     resolver: zodResolver(granFormatoSchema),
     defaultValues: { ...GRAN_FORMATO_DEFAULTS, ...defaultValues },
     mode: "onTouched",

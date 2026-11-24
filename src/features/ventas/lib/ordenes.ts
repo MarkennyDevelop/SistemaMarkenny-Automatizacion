@@ -171,15 +171,31 @@ export function ordenDesdePapeleria(values: PapeleriaFormValues): NuevaOrdenTrab
 }
 
 /** Sustrato de costo para el insumo de gran formato elegido. */
-function sustratoCostoGranFormato(insumo?: InsumoDisponible) {
+export function sustratoCostoGranFormato(insumo?: Pick<InsumoDisponible, "categoria">) {
   return insumo?.categoria === "LONA" ? "lona-front" : "vinilo-blanco";
+}
+
+export class SustratoNoDisponibleError extends Error {
+  constructor() {
+    super("El sustrato elegido ya no tiene existencia en almacén. Elige otro.");
+    this.name = "SustratoNoDisponibleError";
+  }
 }
 
 export function ordenDesdeGranFormato(
   values: GranFormatoFormValues,
   insumos: InsumoDisponible[],
 ): NuevaOrdenTrabajo {
-  const insumo = insumos.find((item) => item.id === values.sustratoId);
+  // Solo un vinil o lona con existencia: si se agotó mientras se llenaba la
+  // ficha, la orden no se arma con un sustrato que no hay.
+  const insumo = insumos.find(
+    (item) =>
+      item.id === values.sustratoId &&
+      (item.categoria === "VINIL" || item.categoria === "LONA") &&
+      item.disponible &&
+      item.stock > 0,
+  );
+  if (!insumo) throw new SustratoNoDisponibleError();
   const monto = estimarMontoOrden({
     tecnologia: "GRAN_FORMATO",
     cantidad: values.cantidad,
@@ -200,7 +216,7 @@ export function ordenDesdeGranFormato(
     cantidad: values.cantidad,
     fechaEntrega: fechaEntregaIso(values.fechaEntrega),
     montoTotal: monto.total,
-    sustrato: insumo?.nombre ?? "Por definir",
+    sustrato: insumo.nombre,
     tintas: ["CMYK alta cobertura"],
     // Ya son los nombres exactos que exige el contrato (3 acabados del servicio).
     acabados: values.acabados,
@@ -217,10 +233,9 @@ export function ordenDesdeGranFormato(
 }
 
 /** Acabados de gran formato → ids del motor de costos. */
-export function idsAcabadosGranFormato(acabados: GranFormatoFormValues["acabados"]) {
+/** Acabados de gran formato → ids del motor de costos. */
+export function idsAcabadosGranFormato(acabados: readonly GranFormatoFormValues["acabados"][number][]) {
   const ids: Record<GranFormatoFormValues["acabados"][number], string> = {
-    "Laminado mate": "laminado-mate",
-    "Laminado brillante": "laminado-brillante",
     "Corte con plotter": "troquelado",
   };
   return acabados.map((acabado) => ids[acabado]);

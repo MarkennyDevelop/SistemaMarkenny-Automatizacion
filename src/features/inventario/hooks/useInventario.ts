@@ -68,7 +68,7 @@ export function useRegistrarMovimiento() {
   });
 }
 
-/** Sellos y productos terminados en almacén pendientes de entrega. */
+/** Producto terminado: órdenes EMPAQUETADAS pendientes de entrega. */
 export function useProductosPendientes() {
   return useQuery({
     queryKey: queryKeys.productosTerminados,

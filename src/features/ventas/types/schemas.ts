@@ -1,6 +1,8 @@
 import { z } from "zod";
 import {
   ACABADOS_GRAN_FORMATO,
+  TIPOS_GRAN_FORMATO,
+  UNIDADES_DIMENSION,
   COLORES_TINTA,
   FORMATOS_PAPELERIA,
   LAMINADOS,
@@ -215,71 +217,51 @@ export const PAPELERIA_DEFAULTS: Partial<PapeleriaFormInput> = {
 /* Ficha técnica: gran formato y adhesivos                             */
 /* ------------------------------------------------------------------ */
 
+/**
+ * Pendones, stickers y viniles. El sustrato es el id de un material de
+ * almacén con existencia (vinil o lona); su acabado mate o brillante viene
+ * en el propio material, por eso el único acabado de la orden es el corte
+ * con plotter.
+ */
 export const granFormatoSchema = z.object({
   clienteId: z.string().min(1, "Selecciona el cliente"),
-  tipoGranFormato: z.enum([
-    "PENDON",
-    "STICKER",
-    "VINIL",
-    "LONA",
-    "BACKING",
-    "ROTULO",
-    "OTRO",
-  ]),
+  tipoGranFormato: z.enum(TIPOS_GRAN_FORMATO, { error: "Marca el tipo de pieza" }),
   producto: z
     .string()
     .trim()
     .min(3, "Describe la pieza (mínimo 3 caracteres)")
     .max(120, "Máximo 120 caracteres"),
-  descripcion: z
-    .string()
-    .trim()
-    .max(280, "Máximo 280 caracteres")
-    .optional()
-    .or(z.literal("")),
+  descripcion: textoOpcional(280),
   cantidad: z
     .number({ error: "Indica la cantidad" })
     .int("Debe ser un número entero")
     .min(1, "La cantidad debe ser mayor a cero")
     .max(10_000, "Cantidad fuera de rango"),
-  ancho: z
-    .number({ error: "Indica el ancho" })
-    .min(0.1, "Mínimo 0,1")
-    .max(100, "Máximo 100"),
-  alto: z
-    .number({ error: "Indica el alto" })
-    .min(0.1, "Mínimo 0,1")
-    .max(100, "Máximo 100"),
-  unidadDimension: z.enum(["cm", "m"]),
-  sustratoId: z.string().min(1, "Selecciona el sustrato"),
+  ancho: z.number({ error: "Indica el ancho" }).min(0.1, "Mínimo 0,1").max(100, "Máximo 100"),
+  alto: z.number({ error: "Indica el alto" }).min(0.1, "Mínimo 0,1").max(100, "Máximo 100"),
+  unidadDimension: z.enum(UNIDADES_DIMENSION, { error: "Marca metros o centímetros" }),
+  sustratoId: z.string().min(1, "Selecciona un sustrato con existencia"),
   resolucionDpi: z
     .number({ error: "Indica la resolución" })
     .int()
     .min(72, "Mínimo 72 dpi")
     .max(1440, "Máximo 1440 dpi"),
   prioridad: z.enum(["BAJA", "MEDIA", "ALTA", "URGENTE"]),
-  /** Solo "Laminado mate", "Laminado brillante" y "Corte con plotter". */
+  /** Solo "Corte con plotter". */
   acabados: z.array(z.enum(ACABADOS_GRAN_FORMATO)),
   fechaEntrega: fechaEntregaSchema,
-  observaciones: z
-    .string()
-    .trim()
-    .max(500, "Máximo 500 caracteres")
-    .optional()
-    .or(z.literal("")),
+  observaciones: textoOpcional(500),
 });
 
-export type GranFormatoFormValues = z.infer<typeof granFormatoSchema>;
+export type GranFormatoFormInput = z.input<typeof granFormatoSchema>;
+export type GranFormatoFormValues = z.output<typeof granFormatoSchema>;
 
-export const GRAN_FORMATO_DEFAULTS: Partial<GranFormatoFormValues> = {
+/** Ficha en blanco: ni tipo, ni medidas, ni sustrato, ni acabado marcados. */
+export const GRAN_FORMATO_DEFAULTS: Partial<GranFormatoFormInput> = {
   clienteId: "",
-  tipoGranFormato: "PENDON",
   producto: "",
   descripcion: "",
-  cantidad: 10,
-  ancho: 1,
-  alto: 2,
-  unidadDimension: "m",
+  cantidad: 1,
   sustratoId: "",
   resolucionDpi: 720,
   prioridad: "MEDIA",

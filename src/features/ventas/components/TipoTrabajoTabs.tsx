@@ -22,7 +22,7 @@ const TABS: {
   {
     id: "gran-formato",
     to: "/ventas/nueva-orden/pendones",
-    label: "Pendones y stickers",
+    label: "Pendones, stickers y viniles",
     hint: "Lona · vinil · adhesivos",
     icon: Layers3,
   },

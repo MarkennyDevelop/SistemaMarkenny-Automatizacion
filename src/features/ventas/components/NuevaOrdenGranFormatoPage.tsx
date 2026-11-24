@@ -21,9 +21,8 @@ export function NuevaOrdenGranFormatoPage() {
   const clientePreseleccionado = useClientePreseleccionado(clientes);
 
   const handleSubmit = async (values: GranFormatoFormValues) => {
-    const orden = ordenDesdeGranFormato(values, insumos);
-
     try {
+      const orden = ordenDesdeGranFormato(values, insumos);
       const creada = await crear.mutateAsync(orden);
       toast.success(`Orden ${creada.codigo} enviada a producción`, {
         description: "El taller recibe la pieza con medidas, sustrato y resolución de salida.",
@@ -40,8 +39,8 @@ export function NuevaOrdenGranFormatoPage() {
     <div className="space-y-6">
       <PageHeader
         eyebrow="Ventas · Nueva orden"
-        title="Pendones y stickers"
-        description="Ficha independiente para gran formato y adhesivos: dimensiones, vinil o lona en existencia y acabados del servicio (laminado mate, laminado brillante, corte con plotter)."
+        title="Pendones, stickers y viniles"
+        description="Ficha de gran formato: medidas, sustrato con existencia en almacén y corte con plotter."
         actions={
           <Button variant="outline" asChild>
             <Link to="/ventas/ordenes">

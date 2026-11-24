@@ -95,9 +95,9 @@ export function InventarioPage() {
         actions={
           <>
             <Button variant="outline" asChild>
-              <Link to="/inventario/sellos">
+              <Link to="/inventario/producto-terminado">
                 <PackageCheck className="h-4 w-4" />
-                Sellos y PT
+                Producto Terminado
               </Link>
             </Button>
             <Button variant="outline" onClick={() => void refetch()}>
@@ -142,11 +142,11 @@ export function InventarioPage() {
         </div>
         <div className="flex items-center justify-between rounded-lg border border-border bg-card px-4 py-3">
           <div>
-            <p className="section-label">Sellos sin entregar</p>
+            <p className="section-label">Sellos (materia prima)</p>
             <p className="mt-1 font-display text-2xl font-semibold tabular-nums">
               {formatNumber(sellos.reduce((total, material) => total + material.stock, 0))}
             </p>
-            <p className="text-[9px] text-muted-foreground">{formatCurrency(sellosValor)} en producto</p>
+            <p className="text-[9px] text-muted-foreground">{formatCurrency(sellosValor)} en existencia</p>
           </div>
           <PackageCheck className="h-5 w-5 text-muted-foreground" />
         </div>
@@ -209,7 +209,7 @@ export function InventarioPage() {
             })}
             {categoria === "SELLO" && (
               <Badge variant="solid" className="ml-auto shrink-0">
-                Sellos en almacén
+                Sellos vírgenes · materia prima
               </Badge>
             )}
           </div>

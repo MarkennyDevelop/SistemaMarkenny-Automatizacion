@@ -1,5 +1,5 @@
 import * as React from "react";
-import { ChevronDown, type LucideIcon } from "lucide-react";
+import { Check, ChevronDown, type LucideIcon } from "lucide-react";
 import {
   Collapsible,
   CollapsibleContent,
@@ -145,8 +145,9 @@ export function ToggleCard({
       disabled={disabled}
       className={cn(
         "group relative flex w-full items-start gap-3 rounded-lg border p-3 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 disabled:cursor-not-allowed disabled:opacity-50",
+        // Estado activo inequívoco: borde rojo Markenny, fondo tenue y check.
         selected
-          ? "border-primary bg-primary/[0.045] shadow-[inset_0_0_0_1px_hsl(var(--primary)/0.25)]"
+          ? "border-primary bg-primary/[0.06] ring-1 ring-primary"
           : "border-border bg-background hover:border-foreground/20 hover:bg-muted/40",
         className,
       )}
@@ -172,9 +173,17 @@ export function ToggleCard({
       <span className="min-w-0 flex-1">
         <span className="flex items-center gap-2">
           <span className="truncate text-[13px] font-medium">{title}</span>
-          {selected && (
-            <span className="ml-auto h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
-          )}
+          <span
+            aria-hidden="true"
+            className={cn(
+              "ml-auto grid h-4 w-4 shrink-0 place-items-center rounded-full border transition-colors",
+              selected
+                ? "border-primary bg-primary text-primary-foreground"
+                : "border-muted-foreground/40",
+            )}
+          >
+            {selected && <Check className="h-2.5 w-2.5" />}
+          </span>
         </span>
         {description && (
           <span className="mt-0.5 block text-[11px] leading-snug text-muted-foreground">

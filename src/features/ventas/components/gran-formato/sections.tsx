@@ -1,21 +1,21 @@
 import { useWatch } from "react-hook-form";
-import { aMilimetros } from "../../lib/ordenes";
 import {
   AlertCircle,
   Building2,
   CalendarDays,
-  CheckCircle2,
   Image as ImageIcon,
   Layers,
   Loader2,
   Ruler,
   Scissors,
   Send,
-  Sparkles,
   UserRound,
   Wallet,
 } from "lucide-react";
-import { FormField, FormGrid, FormSection, ToggleCard } from "@/components/forms/primitives";
+import { ACABADOS_GRAN_FORMATO, EMPRESA } from "@markenny/contrato/dominio";
+import { ClienteSelect } from "@/components/forms/ClienteSelect";
+import { OptionGroup, type Opcion } from "@/components/forms/OptionGroup";
+import { FormField, FormGrid, FormSection } from "@/components/forms/primitives";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
@@ -28,51 +28,66 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { fechaInputLocal } from "@/lib/fechas";
-import { cn, formatCurrency, formatDate, formatNumber } from "@/lib/utils";
-import { ACABADOS_GRAN_FORMATO, EMPRESA } from "@markenny/contrato/dominio";
-import { ClienteSelect } from "@/components/forms/ClienteSelect";
+import { formatCurrency, formatDate, formatNumber } from "@/lib/utils";
 import {
   CATEGORIA_INVENTARIO_LABEL,
+  PRIORIDAD_LABEL,
   TIPO_GRAN_FORMATO_LABEL,
-  type TipoGranFormato,
+  type Prioridad,
 } from "@/shared/domain";
 import { useDisponibilidad } from "../../hooks/useDisponibilidad";
 import { estimarMontoOrden } from "../../lib/cotizador";
-import { idsAcabadosGranFormato } from "../../lib/ordenes";
+import { aMilimetros, idsAcabadosGranFormato, sustratoCostoGranFormato } from "../../lib/ordenes";
+import type { GranFormatoFormValues } from "../../types/schemas";
 import { useGranFormatoForm } from "./context";
 
-const TIPOS: TipoGranFormato[] = ["PENDON", "STICKER", "VINIL", "LONA", "BACKING", "ROTULO"];
+const OPCIONES_TIPO: Opcion<GranFormatoFormValues["tipoGranFormato"]>[] = (
+  Object.keys(TIPO_GRAN_FORMATO_LABEL) as GranFormatoFormValues["tipoGranFormato"][]
+).map((value) => ({ value, label: TIPO_GRAN_FORMATO_LABEL[value] }));
 
-/** Para qué sirve cada acabado del servicio (los únicos que se ofrecen). */
-const DESCRIPCION_ACABADO: Record<(typeof ACABADOS_GRAN_FORMATO)[number], string> = {
-  "Laminado mate": "Protección sin brillo",
-  "Laminado brillante": "Protección con brillo",
-  "Corte con plotter": "Contorno de stickers y vinil de rotulación",
-};
+const OPCIONES_UNIDAD: Opcion<GranFormatoFormValues["unidadDimension"]>[] = [
+  { value: "m", label: "Metros (m)" },
+  { value: "cm", label: "Centímetros (cm)" },
+];
 
-/** Sustrato de costo según la categoría del insumo elegido. */
-const sustratoCosto = (categoria?: string) => (categoria === "LONA" ? "lona-front" : "vinilo-blanco");
+const OPCIONES_ACABADO: Opcion<GranFormatoFormValues["acabados"][number]>[] = ACABADOS_GRAN_FORMATO.map(
+  (value) => ({ value, label: value, hint: "Contorno de stickers y vinil de rotulación" }),
+);
+
+/** Escribe un valor del formulario; revalida en vivo tras el primer envío. */
+function useAsignar() {
+  const { form } = useGranFormatoForm();
+  const asignar: typeof form.setValue = (campo, valor) =>
+    form.setValue(campo, valor, { shouldValidate: form.formState.isSubmitted, shouldDirty: true });
+  return asignar;
+}
+
+/** Sustratos que se pueden ofrecer: viniles y lonas con existencia real. */
+function useSustratosDisponibles() {
+  const { deCategoria, isLoading, isError } = useDisponibilidad();
+  const sustratos = deCategoria("VINIL", "LONA").filter((insumo) => insumo.disponible && insumo.stock > 0);
+  return { sustratos, isLoading, isError };
+}
 
 /* ------------------------------------------------------------------ */
-/* 01 · Pieza                                                          */
+/* 01 · Cliente y pieza                                                */
 /* ------------------------------------------------------------------ */
 
 export function PiezaSection() {
   const { form, clientes } = useGranFormatoForm();
+  const asignar = useAsignar();
   const {
     register,
-    setValue,
-    watch,
+    control,
     formState: { errors },
   } = form;
-  const clienteId = watch("clienteId");
-  const tipo = watch("tipoGranFormato");
+  const [clienteId, tipo] = useWatch({ control, name: ["clienteId", "tipoGranFormato"] });
 
   return (
     <FormSection
       index="01"
       title="Cliente y pieza"
-      description="Pendones, stickers, vinilos y lonas de gran formato"
+      description="Pendones, stickers y viniles"
       icon={UserRound}
     >
       <div className="space-y-5">
@@ -82,67 +97,28 @@ export function PiezaSection() {
             htmlFor="clienteId"
             required
             error={errors.clienteId?.message}
-            hint={`${clientes.length} clientes activos`}
+            hint={`${clientes.length} clientes`}
           >
             <ClienteSelect
               clientes={clientes}
               value={clienteId ?? ""}
-              onChange={(value) =>
-                setValue("clienteId", value, {
-                  shouldValidate: true,
-                  shouldDirty: true,
-                })
-              }
+              onChange={(valor) => asignar("clienteId", valor)}
             />
           </FormField>
 
-          <FormField
-            label="Nombre de la pieza"
-            htmlFor="producto"
-            required
-            error={errors.producto?.message}
-          >
-            <Input
-              id="producto"
-              placeholder="Pendón promocional 1 × 2 m"
-              {...register("producto")}
-            />
+          <FormField label="Nombre de la pieza" htmlFor="producto" required error={errors.producto?.message}>
+            <Input id="producto" placeholder="Ej. Pendón promocional 1 × 2 m" {...register("producto")} />
           </FormField>
         </FormGrid>
 
-        <div>
-          <div className="mb-2 flex items-center justify-between">
-            <span className="section-label">Tipo de gran formato</span>
-            {errors.tipoGranFormato && (
-              <span className="text-[11px] text-destructive">
-                {errors.tipoGranFormato.message}
-              </span>
-            )}
-          </div>
-          <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
-            {TIPOS.map((item) => (
-              <button
-                key={item}
-                type="button"
-                onClick={() =>
-                  setValue("tipoGranFormato", item, {
-                    shouldValidate: true,
-                    shouldDirty: true,
-                  })
-                }
-                aria-pressed={tipo === item}
-                className={cn(
-                  "rounded-lg border px-3 py-2.5 text-left text-[12px] font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40",
-                  tipo === item
-                    ? "border-primary bg-primary text-primary-foreground shadow-sm"
-                    : "border-border bg-background hover:border-foreground/25",
-                )}
-              >
-                {TIPO_GRAN_FORMATO_LABEL[item]}
-              </button>
-            ))}
-          </div>
-        </div>
+        <OptionGroup
+          label="Tipo de pieza"
+          opciones={OPCIONES_TIPO}
+          value={tipo}
+          onChange={(valor) => valor && asignar("tipoGranFormato", valor)}
+          error={errors.tipoGranFormato?.message}
+          columnas="grid-cols-2 sm:grid-cols-3 xl:grid-cols-4"
+        />
 
         <FormField
           label="Descripción del arte"
@@ -163,26 +139,27 @@ export function PiezaSection() {
 }
 
 /* ------------------------------------------------------------------ */
-/* 02 · Dimensiones y producción                                       */
+/* 02 · Dimensiones, resolución y entrega                              */
 /* ------------------------------------------------------------------ */
 
 export function DimensionesSection() {
   const { form } = useGranFormatoForm();
+  const asignar = useAsignar();
   const {
     register,
-    setValue,
-    watch,
+    control,
     formState: { errors },
   } = form;
-  const unidad = watch("unidadDimension");
-  const ancho = Number(watch("ancho")) || 0;
-  const alto = Number(watch("alto")) || 0;
-  const cantidad = Number(watch("cantidad")) || 0;
-  const prioridad = watch("prioridad");
-
-  const anchoMm = aMilimetros(ancho, unidad);
-  const altoMm = aMilimetros(alto, unidad);
-  const m2 = (anchoMm / 1000) * (altoMm / 1000) * Math.max(cantidad, 0);
+  const [unidad, anchoValor, altoValor, cantidadValor, prioridad] = useWatch({
+    control,
+    name: ["unidadDimension", "ancho", "alto", "cantidad", "prioridad"],
+  });
+  const ancho = Number(anchoValor) || 0;
+  const alto = Number(altoValor) || 0;
+  const cantidad = Number(cantidadValor) || 0;
+  const m2 = unidad
+    ? (aMilimetros(ancho, unidad) / 1000) * (aMilimetros(alto, unidad) / 1000) * Math.max(cantidad, 0)
+    : 0;
 
   return (
     <FormSection
@@ -192,46 +169,18 @@ export function DimensionesSection() {
       icon={Ruler}
     >
       <div className="space-y-5">
-        <div>
-          <div className="mb-2 flex items-center justify-between">
-            <span className="section-label">Unidad de medida</span>
-            <span className="text-[10px] text-muted-foreground">
-              Se convierte a milímetros para cotizar
-            </span>
-          </div>
-          <div className="grid max-w-[280px] grid-cols-2 gap-2">
-            {(["m", "cm"] as const).map((valor) => (
-              <button
-                key={valor}
-                type="button"
-                onClick={() =>
-                  setValue("unidadDimension", valor, {
-                    shouldValidate: true,
-                    shouldDirty: true,
-                  })
-                }
-                aria-pressed={unidad === valor}
-                className={cn(
-                  "rounded-lg border px-3 py-2 text-center text-[12px] font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40",
-                  unidad === valor
-                    ? "border-markenny-ink bg-markenny-ink text-white dark:border-white dark:bg-white dark:text-markenny-ink"
-                    : "border-border bg-background hover:border-foreground/25",
-                )}
-              >
-                {valor === "m" ? "Metros (m)" : "Centímetros (cm)"}
-              </button>
-            ))}
-          </div>
-        </div>
+        <OptionGroup
+          label="Unidad de medida"
+          opciones={OPCIONES_UNIDAD}
+          value={unidad}
+          onChange={(valor) => valor && asignar("unidadDimension", valor)}
+          error={errors.unidadDimension?.message}
+          columnas="grid-cols-2"
+          className="sm:max-w-sm"
+        />
 
         <FormGrid className="sm:grid-cols-2 xl:grid-cols-4">
-          <FormField
-            label="Ancho"
-            htmlFor="ancho"
-            required
-            error={errors.ancho?.message}
-            hint={unidad}
-          >
+          <FormField label="Ancho" htmlFor="ancho" required error={errors.ancho?.message} hint={unidad}>
             <Input
               id="ancho"
               type="number"
@@ -241,14 +190,7 @@ export function DimensionesSection() {
               {...register("ancho", { valueAsNumber: true })}
             />
           </FormField>
-
-          <FormField
-            label="Alto"
-            htmlFor="alto"
-            required
-            error={errors.alto?.message}
-            hint={unidad}
-          >
+          <FormField label="Alto" htmlFor="alto" required error={errors.alto?.message} hint={unidad}>
             <Input
               id="alto"
               type="number"
@@ -258,14 +200,7 @@ export function DimensionesSection() {
               {...register("alto", { valueAsNumber: true })}
             />
           </FormField>
-
-          <FormField
-            label="Cantidad"
-            htmlFor="cantidad"
-            required
-            error={errors.cantidad?.message}
-            hint="piezas"
-          >
+          <FormField label="Cantidad" htmlFor="cantidad" required error={errors.cantidad?.message} hint="piezas">
             <Input
               id="cantidad"
               type="number"
@@ -275,7 +210,6 @@ export function DimensionesSection() {
               {...register("cantidad", { valueAsNumber: true })}
             />
           </FormField>
-
           <FormField
             label="Resolución"
             htmlFor="resolucionDpi"
@@ -295,54 +229,35 @@ export function DimensionesSection() {
           </FormField>
         </FormGrid>
 
-        <div className="flex flex-wrap items-center gap-3 rounded-lg border border-dashed border-border bg-muted/40 px-3.5 py-2.5">
-          <ImageIcon className="h-4 w-4 shrink-0 text-primary" />
-          <p className="text-[11px] leading-relaxed text-muted-foreground">
-            <span className="font-medium text-foreground">
-              {ancho} × {alto} {unidad}
-            </span>{" "}
-            = {formatNumber(Math.round(anchoMm))} × {formatNumber(Math.round(altoMm))} mm ·{" "}
-            <span className="font-medium text-foreground tabular-nums">
-              {m2 > 0 ? `${m2.toFixed(2)} m²` : "—"}
-            </span>{" "}
-            totales de impresión.
-          </p>
-        </div>
+        {m2 > 0 && (
+          <div className="flex items-center gap-3 rounded-lg border border-dashed border-border bg-muted/40 px-3.5 py-2.5">
+            <ImageIcon className="h-4 w-4 shrink-0 text-primary" />
+            <p className="text-[11px] leading-relaxed text-muted-foreground">
+              <span className="font-medium text-foreground">
+                {ancho} × {alto} {unidad}
+              </span>{" "}
+              · <span className="font-medium tabular-nums text-foreground">{m2.toFixed(2)} m²</span> totales de
+              impresión.
+            </p>
+          </div>
+        )}
 
-        <FormGrid className="sm:grid-cols-2 xl:grid-cols-3">
-          <FormField
-            label="Prioridad"
-            htmlFor="prioridad"
-            error={errors.prioridad?.message}
-          >
-            <Select
-              value={prioridad}
-              onValueChange={(value) =>
-                setValue(
-                  "prioridad",
-                  value as "BAJA" | "MEDIA" | "ALTA" | "URGENTE",
-                  { shouldValidate: true, shouldDirty: true },
-                )
-              }
-            >
+        <FormGrid>
+          <FormField label="Prioridad" htmlFor="prioridad" error={errors.prioridad?.message}>
+            <Select value={prioridad} onValueChange={(valor) => asignar("prioridad", valor as Prioridad)}>
               <SelectTrigger id="prioridad">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="BAJA">Baja</SelectItem>
-                <SelectItem value="MEDIA">Media</SelectItem>
-                <SelectItem value="ALTA">Alta</SelectItem>
-                <SelectItem value="URGENTE">Urgente</SelectItem>
+                {(Object.keys(PRIORIDAD_LABEL) as Prioridad[]).map((item) => (
+                  <SelectItem key={item} value={item}>
+                    {PRIORIDAD_LABEL[item]}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </FormField>
-
-          <FormField
-            label="Fecha de entrega"
-            htmlFor="fechaEntrega"
-            required
-            error={errors.fechaEntrega?.message}
-          >
+          <FormField label="Fecha de entrega" htmlFor="fechaEntrega" required error={errors.fechaEntrega?.message}>
             <div className="relative">
               <Input
                 id="fechaEntrega"
@@ -361,125 +276,87 @@ export function DimensionesSection() {
 }
 
 /* ------------------------------------------------------------------ */
-/* 03 · Sustrato                                                       */
+/* 03 · Sustrato (existencias reales del almacén)                       */
 /* ------------------------------------------------------------------ */
 
 export function SustratoSection() {
   const { form } = useGranFormatoForm();
-  const { deCategoria, isLoading } = useDisponibilidad();
-  const {
-    setValue,
-    watch,
-    formState: { errors },
-  } = form;
-  const sustratoId = watch("sustratoId");
-  const insumos = deCategoria("VINIL", "LONA");
-  const seleccionado = insumos.find((item) => item.id === sustratoId);
+  const asignar = useAsignar();
+  const { sustratos, isLoading, isError } = useSustratosDisponibles();
+  const sustratoId = useWatch({ control: form.control, name: "sustratoId" });
+  const error = form.formState.errors.sustratoId?.message;
+
+  const opciones: Opcion<string>[] = sustratos.map((insumo) => ({
+    value: insumo.id,
+    label: insumo.nombre,
+    hint: `${CATEGORIA_INVENTARIO_LABEL[insumo.categoria]} · ${formatNumber(insumo.stock)} ${insumo.unidad} en existencia`,
+  }));
 
   return (
     <FormSection
       index="03"
       title="Sustrato"
-      description="Viniles y lonas del almacén: los agotados no se pueden elegir"
+      description="Viniles y lonas con existencia en almacén"
       icon={Layers}
     >
-      <div className="space-y-4">
-        {isLoading ? (
-          <p className="text-[11px] text-muted-foreground">Consultando existencias...</p>
-        ) : insumos.length === 0 ? (
-          <p className="text-[11px] text-muted-foreground">No hay viniles ni lonas registrados en inventario.</p>
-        ) : (
-          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
-            {insumos.map((insumo) => (
-              <ToggleCard
-                key={insumo.id}
-                selected={sustratoId === insumo.id}
-                disabled={!insumo.disponible}
-                onToggle={() =>
-                  setValue("sustratoId", sustratoId === insumo.id ? "" : insumo.id, {
-                    shouldValidate: true,
-                    shouldDirty: true,
-                  })
-                }
-                title={insumo.nombre}
-                description={CATEGORIA_INVENTARIO_LABEL[insumo.categoria]}
-                meta={
-                  insumo.disponible
-                    ? `${formatNumber(insumo.stock)} ${insumo.unidad} en existencia`
-                    : "Sin existencia"
-                }
-              />
-            ))}
-          </div>
-        )}
-        {errors.sustratoId && (
-          <p className="text-[11px] font-medium text-destructive" role="alert">
-            {errors.sustratoId.message}
-          </p>
-        )}
-        {seleccionado && (
-          <div className="flex items-start gap-2 rounded-lg border border-dashed border-border bg-muted/40 px-3 py-2.5">
-            <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
-            <p className="text-[11px] leading-relaxed text-muted-foreground">
-              <span className="font-medium text-foreground">{seleccionado.nombre}</span> se
-              descuenta del inventario cuando planta registra el consumo.
-            </p>
-          </div>
-        )}
-      </div>
+      {isLoading ? (
+        <p className="text-[11px] text-muted-foreground">Consultando existencias del almacén...</p>
+      ) : isError ? (
+        <p className="text-[11px] text-destructive" role="alert">
+          No se pudo consultar el almacén. Intenta de nuevo en unos segundos.
+        </p>
+      ) : opciones.length === 0 ? (
+        <p className="text-[11px] text-muted-foreground">
+          No hay viniles ni lonas con existencia. Registra una entrada en Inventario para poder ofrecerlos.
+        </p>
+      ) : (
+        <OptionGroup
+          label="Sustrato"
+          opciones={opciones}
+          value={sustratoId || undefined}
+          onChange={(valor) => asignar("sustratoId", valor ?? "")}
+          error={error}
+          columnas="grid-cols-1 sm:grid-cols-2 xl:grid-cols-3"
+        />
+      )}
+      {!isLoading && opciones.length === 0 && error && (
+        <p className="mt-2 text-[11px] text-destructive" role="alert">
+          {error}
+        </p>
+      )}
     </FormSection>
   );
 }
 
 /* ------------------------------------------------------------------ */
-/* 04 · Acabados                                                       */
+/* 04 · Acabado y observaciones                                         */
 /* ------------------------------------------------------------------ */
 
 export function AcabadosSection() {
   const { form } = useGranFormatoForm();
+  const asignar = useAsignar();
   const {
     register,
-    setValue,
-    watch,
     formState: { errors },
   } = form;
-  const acabados = watch("acabados") ?? [];
-
-  const toggleAcabado = (acabado: (typeof ACABADOS_GRAN_FORMATO)[number]) => {
-    const next = acabados.includes(acabado)
-      ? acabados.filter((item) => item !== acabado)
-      : [...acabados, acabado];
-    setValue("acabados", next, { shouldDirty: true, shouldValidate: true });
-  };
+  const acabados = useWatch({ control: form.control, name: "acabados" }) ?? [];
 
   return (
     <FormSection
       index="04"
-      title="Acabados y observaciones"
-      description="Laminado mate, laminado brillante y corte con plotter"
+      title="Acabado y observaciones"
+      description="El mate o brillante viene en el sustrato elegido"
       icon={Scissors}
     >
       <div className="space-y-5">
-        <div>
-          <div className="mb-2 flex items-center justify-between">
-            <span className="section-label">Procesos de acabado</span>
-            <span className="text-[10px] font-medium text-muted-foreground">
-              {acabados.length} de {ACABADOS_GRAN_FORMATO.length} seleccionados
-            </span>
-          </div>
-          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
-            {ACABADOS_GRAN_FORMATO.map((acabado) => (
-              <ToggleCard
-                key={acabado}
-                selected={acabados.includes(acabado)}
-                onToggle={() => toggleAcabado(acabado)}
-                title={acabado}
-                description={DESCRIPCION_ACABADO[acabado]}
-              />
-            ))}
-          </div>
-        </div>
-
+        <OptionGroup<GranFormatoFormValues["acabados"][number]>
+          multiple
+          label="Acabado"
+          opciones={OPCIONES_ACABADO}
+          value={acabados}
+          onChange={(valor) => asignar("acabados", valor)}
+          columnas="grid-cols-1 sm:grid-cols-2"
+        />
         <FormField
           label="Observaciones para planta"
           htmlFor="observaciones"
@@ -499,130 +376,98 @@ export function AcabadosSection() {
 }
 
 /* ------------------------------------------------------------------ */
-/* Resumen sticky                                                      */
+/* Resumen                                                             */
 /* ------------------------------------------------------------------ */
 
 export function ResumenSection() {
   const { form, clientes } = useGranFormatoForm();
-  const { insumos } = useDisponibilidad();
+  const { sustratos } = useSustratosDisponibles();
   const valores = useWatch({ control: form.control });
 
   const cliente = clientes.find((item) => item.id === valores.clienteId);
   const cantidad = Number(valores.cantidad) || 0;
   const ancho = Number(valores.ancho) || 0;
   const alto = Number(valores.alto) || 0;
-  const unidad = valores.unidadDimension ?? "m";
+  const unidad = valores.unidadDimension;
   const acabados = valores.acabados ?? [];
-  const sustrato = insumos.find((item) => item.id === valores.sustratoId);
+  const sustrato = sustratos.find((item) => item.id === valores.sustratoId);
 
-  const anchoMm = aMilimetros(ancho, unidad);
-  const altoMm = aMilimetros(alto, unidad);
+  const anchoMm = unidad ? aMilimetros(ancho, unidad) : 0;
+  const altoMm = unidad ? aMilimetros(alto, unidad) : 0;
   const m2 = (anchoMm / 1000) * (altoMm / 1000) * Math.max(cantidad, 0);
 
-  let resultado: ReturnType<typeof estimarMontoOrden> | null = null;
-  if (cantidad >= 1 && anchoMm >= 100 && altoMm >= 100 && valores.sustratoId) {
-    resultado = estimarMontoOrden({
-      tecnologia: "GRAN_FORMATO",
-      cantidad,
-      anchoMm,
-      altoMm,
-      tintasTiro: 4,
-      tintasRetiro: 0,
-      sustratoId: sustratoCosto(sustrato?.categoria),
-      acabados: idsAcabadosGranFormato(acabados),
-    });
-  }
+  const resultado =
+    cantidad >= 1 && anchoMm >= 100 && altoMm >= 100 && sustrato
+      ? estimarMontoOrden({
+          tecnologia: "GRAN_FORMATO",
+          cantidad,
+          anchoMm,
+          altoMm,
+          tintasTiro: 4,
+          tintasRetiro: 0,
+          sustratoId: sustratoCostoGranFormato(sustrato),
+          acabados: idsAcabadosGranFormato(acabados),
+        })
+      : null;
 
-  const completados = [
-    Boolean(valores.clienteId),
-    Boolean(valores.producto?.trim()),
-    Boolean(valores.fechaEntrega),
-    ancho > 0 && alto > 0,
-    Boolean(valores.sustratoId) && Number(valores.resolucionDpi) >= 72,
-  ].filter(Boolean).length;
+  const obligatorios = [
+    valores.clienteId,
+    valores.producto?.trim(),
+    valores.tipoGranFormato,
+    unidad && ancho > 0 && alto > 0,
+    sustrato,
+    valores.fechaEntrega,
+  ];
+  const completados = obligatorios.filter(Boolean).length;
+
+  const filas: [string, string][] = [
+    ["Pieza", valores.tipoGranFormato ? TIPO_GRAN_FORMATO_LABEL[valores.tipoGranFormato] : "—"],
+    ["Medidas", unidad && ancho && alto ? `${ancho} × ${alto} ${unidad}` : "—"],
+    ["Superficie", m2 > 0 ? `${m2.toFixed(2)} m²` : "—"],
+    ["Cantidad", cantidad ? `${formatNumber(cantidad)} pieza(s)` : "—"],
+    ["Sustrato", sustrato?.nombre ?? "—"],
+    ["Resolución", `${Number(valores.resolucionDpi) || 0} dpi`],
+    ["Acabado", acabados.length > 0 ? acabados.join(", ") : "Sin acabado"],
+    ["Entrega", valores.fechaEntrega ? formatDate(valores.fechaEntrega) : "—"],
+  ];
 
   return (
     <aside className="overflow-hidden rounded-xl bg-markenny-ink text-white shadow-raised">
       <div className="border-b border-white/10 px-5 py-4">
-        <div className="flex items-center justify-between">
-          <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/45">
-            {EMPRESA.nombre} · Gran formato
-          </span>
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-white/15 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-widest text-white/60">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 text-[10px] font-semibold uppercase tracking-[0.22em] text-white/45">
+            <p className="truncate">{EMPRESA.nombre}</p>
+            <p className="mt-0.5 tracking-[0.12em]">Pendones, stickers y viniles</p>
+          </div>
+          <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-white/15 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-widest text-white/60">
             <span className="h-1.5 w-1.5 rounded-full bg-primary" />
             Borrador
           </span>
         </div>
-        <p className="mt-2 font-display text-xl font-semibold uppercase leading-tight tracking-wide">
-          {valores.producto?.trim() || "Nueva pieza de gran formato"}
+        <p className="mt-3 font-display text-xl font-semibold uppercase leading-tight tracking-wide">
+          {valores.producto?.trim() || "Nueva pieza"}
         </p>
-        <p className="mt-1 flex items-center gap-1.5 text-xs text-white/50">
-          <Building2 className="h-3 w-3" />
-          {cliente?.nombre ?? "Cliente sin seleccionar"}
+        <p className="mt-1 flex min-w-0 items-center gap-1.5 text-xs text-white/50">
+          <Building2 className="h-3 w-3 shrink-0" />
+          <span className="truncate">{cliente?.nombre ?? "Cliente sin seleccionar"}</span>
         </p>
       </div>
 
-      <div className="space-y-3 px-5 py-4 text-xs">
-        <div className="flex items-center justify-between gap-3">
-          <span className="text-white/45">Pieza</span>
-          <span className="text-right font-medium">
-            {valores.tipoGranFormato
-              ? TIPO_GRAN_FORMATO_LABEL[valores.tipoGranFormato]
-              : "—"}
-          </span>
-        </div>
-        <div className="flex items-center justify-between gap-3">
-          <span className="text-white/45">Medidas</span>
-          <span className="font-medium tabular-nums">
-            {ancho && alto ? `${ancho} × ${alto} ${unidad}` : "—"}
-          </span>
-        </div>
-        <div className="flex items-center justify-between gap-3">
-          <span className="text-white/45">Superficie</span>
-          <span className="font-medium tabular-nums">
-            {m2 > 0 ? `${m2.toFixed(2)} m²` : "—"}
-          </span>
-        </div>
-        <div className="flex items-center justify-between gap-3">
-          <span className="text-white/45">Cantidad</span>
-          <span className="font-medium tabular-nums">
-            {cantidad ? `${formatNumber(cantidad)} pieza(s)` : "—"}
-          </span>
-        </div>
-        <div className="flex items-center justify-between gap-3">
-          <span className="text-white/45">Sustrato</span>
-          <span className="max-w-[60%] truncate text-right font-medium">
-            {sustrato?.nombre ?? "—"}
-          </span>
-        </div>
-        <div className="flex items-center justify-between gap-3">
-          <span className="text-white/45">Resolución</span>
-          <span className="font-medium tabular-nums">
-            {Number(valores.resolucionDpi) || 0} dpi
-          </span>
-        </div>
-        <div className="flex items-center justify-between gap-3">
-          <span className="text-white/45">Acabados</span>
-          <span className="font-medium tabular-nums">
-            {acabados.length > 0 ? `${acabados.length} proceso(s)` : "Sin acabados"}
-          </span>
-        </div>
-        <div className="flex items-center justify-between gap-3">
-          <span className="text-white/45">Entrega</span>
-          <span className="font-medium">
-            {valores.fechaEntrega ? formatDate(valores.fechaEntrega) : "—"}
-          </span>
-        </div>
-      </div>
+      <dl className="space-y-2.5 px-5 py-4 text-xs">
+        {filas.map(([etiqueta, valor]) => (
+          <div key={etiqueta} className="flex items-start justify-between gap-3">
+            <dt className="shrink-0 text-white/45">{etiqueta}</dt>
+            <dd className="min-w-0 break-words text-right font-medium tabular-nums">{valor}</dd>
+          </div>
+        ))}
+      </dl>
 
       <div className="mx-5 h-px bg-white/10" />
 
       <div className="px-5 py-4">
         <div className="flex items-end justify-between gap-3">
           <div>
-            <p className="text-[10px] uppercase tracking-widest text-white/40">
-              Total estimado
-            </p>
+            <p className="text-[10px] uppercase tracking-widest text-white/40">Total estimado</p>
             <p className="mt-1 font-display text-3xl font-semibold leading-none tabular-nums">
               {resultado ? formatCurrency(resultado.total) : "—"}
             </p>
@@ -631,19 +476,19 @@ export function ResumenSection() {
         </div>
         <div className="mt-2 flex items-center justify-between text-[10px] text-white/40">
           <span>USD · no incluye IVA</span>
-          <span>
-            {resultado ? `${formatCurrency(resultado.costoUnitario)} / u.` : "Margen 35%"}
-          </span>
+          <span>{resultado ? `${formatCurrency(resultado.costoUnitario)} / u.` : "Margen 35%"}</span>
         </div>
       </div>
 
       <div className="border-t border-white/10 px-5 py-3.5">
         <div className="flex items-center justify-between text-[10px] text-white/45">
-          <span>Preparación de la ficha</span>
-          <span className="font-semibold text-white/75">{completados}/5</span>
+          <span>Campos obligatorios</span>
+          <span className="font-semibold text-white/75">
+            {completados}/{obligatorios.length}
+          </span>
         </div>
         <Progress
-          value={(completados / 5) * 100}
+          value={(completados / obligatorios.length) * 100}
           className="mt-2 bg-white/10"
           indicatorClassName="bg-primary"
         />
@@ -665,32 +510,21 @@ export function Acciones() {
   return (
     <div className="space-y-3 rounded-xl border border-border bg-card p-4 shadow-card">
       <Button type="submit" size="lg" className="w-full" disabled={enviando}>
-        {enviando ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
-        ) : (
-          <Send className="h-4 w-4" />
-        )}
+        {enviando ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
         {enviando ? "Enviando a taller..." : "Enviar orden a producción"}
       </Button>
-      <Button
-        type="button"
-        variant="outline"
-        className="w-full"
-        onClick={onCancel}
-        disabled={enviando}
-      >
+      <Button type="button" variant="outline" className="w-full" onClick={onCancel} disabled={enviando}>
         Cancelar
       </Button>
       {errores > 0 && (
         <p className="flex items-start gap-1.5 text-[11px] leading-snug text-destructive">
           <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-          Revisa {errores} campo(s) obligatorio(s) antes de enviar la orden.
+          Revisa {errores} campo(s) antes de enviar la orden.
         </p>
       )}
-      <p className="flex items-start gap-1.5 text-[10px] leading-relaxed text-muted-foreground">
-        <Sparkles className="mt-0.5 h-3 w-3 shrink-0 text-primary" />
-        La pieza entra a <span className="font-medium text-foreground">En Proceso</span> y
-        se reserva el rollo de lona o vinil en almacén.
+      <p className="text-center text-[10px] leading-relaxed text-muted-foreground">
+        La orden entra a <span className="font-medium text-foreground">En Proceso</span> y notifica
+        al taller en tiempo real.
       </p>
     </div>
   );
