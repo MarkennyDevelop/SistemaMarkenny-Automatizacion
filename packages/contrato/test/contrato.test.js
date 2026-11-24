@@ -19,6 +19,9 @@ import {
   NuevoMaterialSchema,
   productoTerminadoDe,
   CATEGORIAS_INVENTARIO,
+  areaImpresionM2,
+  consumoDeSustrato,
+  ConfiguracionConsumoSchema,
 } from '../src/index.js';
 import { generarOpenApi } from '../src/openapi.js';
 
@@ -183,6 +186,47 @@ describe('esquemas', () => {
   it('OrdenTrabajo exige código OT-AAAA-NNNN', () => {
     expect(OrdenTrabajoSchema.shape.codigo.safeParse('OT-2026-0185').success).toBe(true);
     expect(OrdenTrabajoSchema.shape.codigo.safeParse('OP-2026-000001').success).toBe(false);
+  });
+});
+
+describe('consumo de sustrato (descuento automático)', () => {
+  it('calcula la superficie impresa en m² desde cm o m', () => {
+    expect(areaImpresionM2({ ancho: 30, alto: 45, unidadDimension: 'cm' }, 20)).toBeCloseTo(2.7);
+    expect(areaImpresionM2({ ancho: 1, alto: 2, unidadDimension: 'm' }, 3)).toBe(6);
+    expect(areaImpresionM2({ ancho: 1, unidadDimension: 'm' }, 3)).toBeNull();
+  });
+
+  it('convierte m² a unidades de stock con la merma, redondeando hacia arriba a 3 decimales', () => {
+    // 2,7 m² en un rollo de 61 m² = 0,04426 → 0,045 rollo
+    expect(consumoDeSustrato({ rendimiento: 61, mermaPorcentaje: 0 }, 2.7)).toBe(0.045);
+    // con 10 % de merma: 2,97 m² → 0,04869 → 0,049
+    expect(consumoDeSustrato({ rendimiento: 61, mermaPorcentaje: 10 }, 2.7)).toBe(0.049);
+    // un sticker mínimo nunca queda en 0
+    expect(consumoDeSustrato({ rendimiento: 61, mermaPorcentaje: 0 }, 0.01)).toBe(0.001);
+    // exacto: no sube por error de coma flotante
+    expect(consumoDeSustrato({ rendimiento: 10, mermaPorcentaje: 0 }, 3)).toBe(0.3);
+    expect(consumoDeSustrato({ rendimiento: null, mermaPorcentaje: 0 }, 2.7)).toBeNull();
+  });
+
+  it('el sustrato del almacén solo se indica en órdenes de gran formato', () => {
+    const base = {
+      clienteId: '00000000-0000-4000-8000-000000000001', producto: 'Pendón', categoriaTrabajo: 'GRAN_FORMATO',
+      cantidad: 2, sustrato: 'Lona', tintas: [], acabados: [], montoTotal: 10, fechaEntrega: '2026-11-25T16:00:00.000Z',
+      materialId: '00000000-0000-4000-8000-000000000009',
+      especificaciones: { tipoGranFormato: 'PENDON', ancho: 1, alto: 2, unidadDimension: 'm' },
+    };
+    expect(NuevaOrdenSchema.safeParse(base).success).toBe(true);
+    expect(NuevaOrdenSchema.safeParse({ ...base, categoriaTrabajo: 'GENERAL' }).success).toBe(false);
+  });
+
+  it('la configuración de consumo valida rendimiento y merma', () => {
+    expect(ConfiguracionConsumoSchema.safeParse({ rendimiento: 61, mermaPorcentaje: 10 }).success).toBe(true);
+    expect(ConfiguracionConsumoSchema.safeParse({ rendimiento: null, mermaPorcentaje: 0 }).success).toBe(true);
+    expect(ConfiguracionConsumoSchema.safeParse({ rendimiento: 0, mermaPorcentaje: 0 }).success).toBe(false);
+    expect(ConfiguracionConsumoSchema.safeParse({ rendimiento: 61, mermaPorcentaje: 150 }).success).toBe(false);
+    const vinil = { sku: 'VIN-1', nombre: 'Vinil', categoria: 'VINIL', unidad: 'rollo', rendimiento: 61 };
+    expect(NuevoMaterialSchema.safeParse(vinil).success).toBe(true);
+    expect(NuevoMaterialSchema.safeParse({ ...vinil, categoria: 'SELLO' }).success).toBe(false);
   });
 });
 

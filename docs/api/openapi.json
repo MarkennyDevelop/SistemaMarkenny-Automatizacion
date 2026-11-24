@@ -1603,6 +1603,29 @@
                           "URGENTE"
                         ]
                       },
+                      "materialId": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "consumoSustrato": {
+                        "anyOf": [
+                          {
+                            "type": "number",
+                            "exclusiveMinimum": 0
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
                       "maquina": {
                         "type": [
                           "string",
@@ -2041,6 +2064,8 @@
                       "categoriaTrabajo",
                       "productoTerminado",
                       "prioridad",
+                      "materialId",
+                      "consumoSustrato",
                       "maquina",
                       "operador",
                       "cantidad",
@@ -2092,7 +2117,7 @@
       "post": {
         "operationId": "crearOrden",
         "summary": "Crea una orden de trabajo y la envía a planta (EN_PROCESO)",
-        "description": "Notifica a Producción y Admin. Publica el evento interno de orden aprobada (descuento de materiales).",
+        "description": "Con `materialId` (gran formato) calcula el consumo: m² × (1 + merma) ÷ rendimiento del material, y lo descuenta del almacén al crear la orden. Si no alcanza el stock responde 409 STOCK_INSUFICIENTE y no guarda nada. Si el material no tiene rendimiento configurado, crea la orden sin descontar y avisa a Producción. Notifica a Producción y Admin.",
         "tags": [
           "ordenes"
         ],
@@ -2166,6 +2191,11 @@
                       "ALTA",
                       "URGENTE"
                     ]
+                  },
+                  "materialId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                   },
                   "maquina": {
                     "type": "string",
@@ -2506,6 +2536,29 @@
                         "URGENTE"
                       ]
                     },
+                    "materialId": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "consumoSustrato": {
+                      "anyOf": [
+                        {
+                          "type": "number",
+                          "exclusiveMinimum": 0
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
                     "maquina": {
                       "type": [
                         "string",
@@ -2944,6 +2997,8 @@
                     "categoriaTrabajo",
                     "productoTerminado",
                     "prioridad",
+                    "materialId",
+                    "consumoSustrato",
                     "maquina",
                     "operador",
                     "cantidad",
@@ -3001,6 +3056,16 @@
           },
           "404": {
             "description": "NO_ENCONTRADO",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "STOCK_INSUFICIENTE",
             "content": {
               "application/json": {
                 "schema": {
@@ -3117,6 +3182,29 @@
                         "URGENTE"
                       ]
                     },
+                    "materialId": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "consumoSustrato": {
+                      "anyOf": [
+                        {
+                          "type": "number",
+                          "exclusiveMinimum": 0
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
                     "maquina": {
                       "type": [
                         "string",
@@ -3555,6 +3643,8 @@
                     "categoriaTrabajo",
                     "productoTerminado",
                     "prioridad",
+                    "materialId",
+                    "consumoSustrato",
                     "maquina",
                     "operador",
                     "cantidad",
@@ -3751,6 +3841,29 @@
                         "URGENTE"
                       ]
                     },
+                    "materialId": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "consumoSustrato": {
+                      "anyOf": [
+                        {
+                          "type": "number",
+                          "exclusiveMinimum": 0
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
                     "maquina": {
                       "type": [
                         "string",
@@ -4189,6 +4302,8 @@
                     "categoriaTrabajo",
                     "productoTerminado",
                     "prioridad",
+                    "materialId",
+                    "consumoSustrato",
                     "maquina",
                     "operador",
                     "cantidad",
@@ -4407,6 +4522,29 @@
                         "URGENTE"
                       ]
                     },
+                    "materialId": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "consumoSustrato": {
+                      "anyOf": [
+                        {
+                          "type": "number",
+                          "exclusiveMinimum": 0
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
                     "maquina": {
                       "type": [
                         "string",
@@ -4845,6 +4983,8 @@
                     "categoriaTrabajo",
                     "productoTerminado",
                     "prioridad",
+                    "materialId",
+                    "consumoSustrato",
                     "maquina",
                     "operador",
                     "cantidad",
@@ -4984,6 +5124,22 @@
                       },
                       "disponible": {
                         "type": "boolean"
+                      },
+                      "rendimiento": {
+                        "anyOf": [
+                          {
+                            "type": "number",
+                            "exclusiveMinimum": 0
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "mermaPorcentaje": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 100
                       }
                     },
                     "required": [
@@ -4993,7 +5149,9 @@
                       "subtipo",
                       "unidad",
                       "stock",
-                      "disponible"
+                      "disponible",
+                      "rendimiento",
+                      "mermaPorcentaje"
                     ],
                     "additionalProperties": false
                   }
@@ -5127,6 +5285,22 @@
                         "minimum": 0,
                         "maximum": 100000000
                       },
+                      "rendimiento": {
+                        "anyOf": [
+                          {
+                            "type": "number",
+                            "exclusiveMinimum": 0
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "mermaPorcentaje": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 100
+                      },
                       "ubicacion": {
                         "type": "string"
                       },
@@ -5152,6 +5326,8 @@
                       "stock",
                       "stockMinimo",
                       "costoUnitario",
+                      "rendimiento",
+                      "mermaPorcentaje",
                       "ubicacion",
                       "proveedor",
                       "lote",
@@ -5269,6 +5445,17 @@
                     "minimum": 0,
                     "maximum": 100000000
                   },
+                  "rendimiento": {
+                    "type": "number",
+                    "exclusiveMinimum": 0,
+                    "maximum": 100000
+                  },
+                  "mermaPorcentaje": {
+                    "default": 0,
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 100
+                  },
                   "ubicacion": {
                     "default": "",
                     "type": "string",
@@ -5366,6 +5553,22 @@
                       "minimum": 0,
                       "maximum": 100000000
                     },
+                    "rendimiento": {
+                      "anyOf": [
+                        {
+                          "type": "number",
+                          "exclusiveMinimum": 0
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "mermaPorcentaje": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 100
+                    },
                     "ubicacion": {
                       "type": "string"
                     },
@@ -5391,6 +5594,8 @@
                     "stock",
                     "stockMinimo",
                     "costoUnitario",
+                    "rendimiento",
+                    "mermaPorcentaje",
                     "ubicacion",
                     "proveedor",
                     "lote",
@@ -5433,6 +5638,244 @@
           },
           "409": {
             "description": "CODIGO_DUPLICADO",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/inventario/materiales/{id}/consumo": {
+      "patch": {
+        "operationId": "configurarConsumoMaterial",
+        "summary": "Define el rendimiento (m² por unidad) y la merma de un vinil o lona",
+        "tags": [
+          "inventario"
+        ],
+        "security": [
+          {
+            "cookieSesion": []
+          }
+        ],
+        "x-roles": [
+          "ADMIN",
+          "PRODUCCION"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "rendimiento": {
+                    "anyOf": [
+                      {
+                        "type": "number",
+                        "exclusiveMinimum": 0,
+                        "maximum": 100000
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "mermaPorcentaje": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 100
+                  }
+                },
+                "required": [
+                  "rendimiento",
+                  "mermaPorcentaje"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "sku": {
+                      "type": "string"
+                    },
+                    "nombre": {
+                      "type": "string"
+                    },
+                    "categoria": {
+                      "type": "string",
+                      "enum": [
+                        "PAPEL",
+                        "VINIL",
+                        "LONA",
+                        "SELLO"
+                      ]
+                    },
+                    "subtipo": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "QUIMICO",
+                            "BOND",
+                            "GLASSE",
+                            "BRISTOL",
+                            "OPALINA",
+                            "FOTOGRAFICO"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "unidad": {
+                      "type": "string",
+                      "enum": [
+                        "resma",
+                        "pliego",
+                        "unidad",
+                        "rollo",
+                        "metro",
+                        "caja"
+                      ]
+                    },
+                    "stock": {
+                      "type": "number",
+                      "minimum": 0
+                    },
+                    "stockMinimo": {
+                      "type": "number",
+                      "minimum": 0
+                    },
+                    "costoUnitario": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 100000000
+                    },
+                    "rendimiento": {
+                      "anyOf": [
+                        {
+                          "type": "number",
+                          "exclusiveMinimum": 0
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "mermaPorcentaje": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 100
+                    },
+                    "ubicacion": {
+                      "type": "string"
+                    },
+                    "proveedor": {
+                      "type": "string"
+                    },
+                    "lote": {
+                      "type": "string"
+                    },
+                    "actualizadoEn": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "sku",
+                    "nombre",
+                    "categoria",
+                    "subtipo",
+                    "unidad",
+                    "stock",
+                    "stockMinimo",
+                    "costoUnitario",
+                    "rendimiento",
+                    "mermaPorcentaje",
+                    "ubicacion",
+                    "proveedor",
+                    "lote",
+                    "actualizadoEn"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "CONTRATO_INVALIDO",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "NO_AUTENTICADO",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "SIN_PERMISO",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NO_ENCONTRADO",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "REGLA_NEGOCIO",
             "content": {
               "application/json": {
                 "schema": {
