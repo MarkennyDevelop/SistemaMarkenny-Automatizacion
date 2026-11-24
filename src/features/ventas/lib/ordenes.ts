@@ -7,7 +7,7 @@
  * enviaban los acabados como identificadores ("numerado") mientras la ficha
  * general enviaba nombres ("Numerado").
  */
-import { productoTerminadoDe } from "@markenny/contrato/dominio";
+import { areaImpresionM2, consumoDeSustrato, productoTerminadoDe } from "@markenny/contrato/dominio";
 import { fechaEntregaIso } from "@/lib/fechas";
 import { ACABADOS, SUSTRATOS } from "@/shared/catalogos";
 import {
@@ -175,6 +175,31 @@ export function sustratoCostoGranFormato(insumo?: Pick<InsumoDisponible, "catego
   return insumo?.categoria === "LONA" ? "lona-front" : "vinilo-blanco";
 }
 
+export interface ConsumoEstimado {
+  m2: number;
+  /** En la unidad del material (p. ej. rollos); null si no tiene rendimiento. */
+  cantidad: number | null;
+  alcanza: boolean;
+}
+
+/**
+ * Consumo estimado de un sustrato con las mismas reglas que aplica el
+ * servidor (m² × (1 + merma) ÷ rendimiento). El servidor recalcula y decide.
+ * @returns null si la ficha aún no tiene medidas completas.
+ */
+export function estimarConsumoSustrato(
+  insumo: Pick<InsumoDisponible, "rendimiento" | "mermaPorcentaje" | "stock">,
+  medidas: { ancho?: number; alto?: number; unidadDimension?: "cm" | "m"; cantidad?: number },
+): ConsumoEstimado | null {
+  const m2 = areaImpresionM2(
+    { ancho: medidas.ancho, alto: medidas.alto, unidadDimension: medidas.unidadDimension },
+    medidas.cantidad ?? 0,
+  );
+  if (m2 === null) return null;
+  const cantidad = consumoDeSustrato(insumo, m2);
+  return { m2, cantidad, alcanza: cantidad === null || cantidad <= insumo.stock };
+}
+
 export class SustratoNoDisponibleError extends Error {
   constructor() {
     super("El sustrato elegido ya no tiene existencia en almacén. Elige otro.");
@@ -217,6 +242,8 @@ export function ordenDesdeGranFormato(
     fechaEntrega: fechaEntregaIso(values.fechaEntrega),
     montoTotal: monto.total,
     sustrato: insumo.nombre,
+    // El servidor calcula el consumo con este material y lo descuenta del almacén.
+    materialId: insumo.id,
     tintas: ["CMYK alta cobertura"],
     // Ya son los nombres exactos que exige el contrato (3 acabados del servicio).
     acabados: values.acabados,

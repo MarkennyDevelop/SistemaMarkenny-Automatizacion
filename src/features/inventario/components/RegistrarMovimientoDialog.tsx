@@ -176,7 +176,7 @@ export function RegistrarMovimientoDialog({
               <Input
                 id="mov-cantidad"
                 type="number"
-                step="0.1"
+                step="0.001"
                 min={0.1}
                 {...register("cantidad", { valueAsNumber: true })}
               />

@@ -75,6 +75,8 @@ export type MovimientoInventario = RespuestaDe<"registrarMovimiento">;
 export type TipoMovimiento = MovimientoInventario["tipo"];
 /** Cuerpo de `POST /inventario/movimientos`: el responsable es el usuario de la sesión. */
 export type NuevoMovimiento = EntradaDeEndpoint<"registrarMovimiento">["body"];
+/** Rendimiento (m² por unidad) y merma % de un vinil o lona. */
+export type ConfiguracionConsumo = EntradaDeEndpoint<"configurarConsumoMaterial">["body"];
 /** Órdenes empaquetadas en almacén pendientes de entrega (producto terminado). */
 export type ProductoTerminado = RespuestaDe<"listarProductosTerminados">[number];
 /** Insumo disponible para las fichas de venta (sin costos). */

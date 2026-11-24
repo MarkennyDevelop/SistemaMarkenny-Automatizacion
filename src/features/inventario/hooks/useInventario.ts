@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { inventarioApi } from "../api/inventarioApi";
 import { queryKeys } from "@/shared/api/queryKeys";
-import type { CategoriaInventario, NuevoMovimiento } from "@/shared/domain";
+import type { CategoriaInventario, ConfiguracionConsumo, NuevoMovimiento } from "@/shared/domain";
 
 export function useInventario() {
   const query = useQuery({
@@ -87,6 +87,21 @@ export function useRegistrarEntrega() {
       void queryClient.invalidateQueries({ queryKey: queryKeys.productosTerminados });
       void queryClient.invalidateQueries({ queryKey: queryKeys.ordenes });
       void queryClient.invalidateQueries({ queryKey: queryKeys.clientes });
+    },
+  });
+}
+
+/** Guarda rendimiento y merma de un vinil o lona. */
+export function useConfigurarConsumo() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ materialId, ...input }: ConfiguracionConsumo & { materialId: string }) =>
+      inventarioApi.configurarConsumo(materialId, input),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.inventario });
+      // Las fichas de venta estiman el consumo con estos datos.
+      void queryClient.invalidateQueries({ queryKey: queryKeys.disponibilidad });
     },
   });
 }

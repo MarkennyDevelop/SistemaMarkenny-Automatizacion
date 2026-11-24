@@ -37,7 +37,13 @@ import {
 } from "@/shared/domain";
 import { useDisponibilidad } from "../../hooks/useDisponibilidad";
 import { estimarMontoOrden } from "../../lib/cotizador";
-import { aMilimetros, idsAcabadosGranFormato, sustratoCostoGranFormato } from "../../lib/ordenes";
+import {
+  aMilimetros,
+  estimarConsumoSustrato,
+  idsAcabadosGranFormato,
+  sustratoCostoGranFormato,
+  type ConsumoEstimado,
+} from "../../lib/ordenes";
 import type { GranFormatoFormValues } from "../../types/schemas";
 import { useGranFormatoForm } from "./context";
 
@@ -67,6 +73,29 @@ function useSustratosDisponibles() {
   const { deCategoria, isLoading, isError } = useDisponibilidad();
   const sustratos = deCategoria("VINIL", "LONA").filter((insumo) => insumo.disponible && insumo.stock > 0);
   return { sustratos, isLoading, isError };
+}
+
+/** "0,049 rollo" con hasta 3 decimales. */
+const cantidadStock = (n: number, unidad: string) =>
+  `${n.toLocaleString("es-VE", { maximumFractionDigits: 3 })} ${unidad}`;
+
+/** Metros cuadrados con coma decimal: "2,70 m²". */
+const metrosCuadrados = (m2: number) =>
+  `${m2.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} m²`;
+
+/** Medidas y cantidad actuales de la ficha (para estimar el consumo). */
+function useMedidas() {
+  const { form } = useGranFormatoForm();
+  const [ancho, alto, unidadDimension, cantidad] = useWatch({
+    control: form.control,
+    name: ["ancho", "alto", "unidadDimension", "cantidad"],
+  });
+  return { ancho: Number(ancho), alto: Number(alto), unidadDimension, cantidad: Number(cantidad) };
+}
+
+function textoConsumo(consumo: ConsumoEstimado, unidad: string) {
+  if (consumo.cantidad === null) return `${metrosCuadrados(consumo.m2)} · sin rendimiento: no se descuenta`;
+  return `usa ${cantidadStock(consumo.cantidad, unidad)} para ${metrosCuadrados(consumo.m2)}`;
 }
 
 /* ------------------------------------------------------------------ */
@@ -236,7 +265,7 @@ export function DimensionesSection() {
               <span className="font-medium text-foreground">
                 {ancho} × {alto} {unidad}
               </span>{" "}
-              · <span className="font-medium tabular-nums text-foreground">{m2.toFixed(2)} m²</span> totales de
+              · <span className="font-medium tabular-nums text-foreground">{metrosCuadrados(m2)}</span> totales de
               impresión.
             </p>
           </div>
@@ -283,14 +312,28 @@ export function SustratoSection() {
   const { form } = useGranFormatoForm();
   const asignar = useAsignar();
   const { sustratos, isLoading, isError } = useSustratosDisponibles();
+  const medidas = useMedidas();
   const sustratoId = useWatch({ control: form.control, name: "sustratoId" });
   const error = form.formState.errors.sustratoId?.message;
 
-  const opciones: Opcion<string>[] = sustratos.map((insumo) => ({
-    value: insumo.id,
-    label: insumo.nombre,
-    hint: `${CATEGORIA_INVENTARIO_LABEL[insumo.categoria]} · ${formatNumber(insumo.stock)} ${insumo.unidad} en existencia`,
-  }));
+  // Con las medidas cargadas, cada sustrato muestra cuánto consumiría y se
+  // deshabilita si no alcanza (el servidor vuelve a verificarlo al crear).
+  const opciones: Opcion<string>[] = sustratos.map((insumo) => {
+    const consumo = estimarConsumoSustrato(insumo, medidas);
+    const existencia = `${CATEGORIA_INVENTARIO_LABEL[insumo.categoria]} · ${cantidadStock(insumo.stock, insumo.unidad)} en existencia`;
+    return {
+      value: insumo.id,
+      label: insumo.nombre,
+      hint: !consumo
+        ? existencia
+        : consumo.alcanza
+          ? `${existencia} · ${textoConsumo(consumo, insumo.unidad)}`
+          : `${existencia} · no alcanza: necesita ${cantidadStock(consumo.cantidad ?? 0, insumo.unidad)}`,
+      disabled: consumo ? !consumo.alcanza && insumo.id !== sustratoId : false,
+    };
+  });
+  const elegido = sustratos.find((insumo) => insumo.id === sustratoId);
+  const consumoElegido = elegido ? estimarConsumoSustrato(elegido, medidas) : null;
 
   return (
     <FormSection
@@ -318,6 +361,13 @@ export function SustratoSection() {
           error={error}
           columnas="grid-cols-1 sm:grid-cols-2 xl:grid-cols-3"
         />
+      )}
+      {elegido && consumoElegido && !consumoElegido.alcanza && (
+        <p className="mt-2 text-[11px] text-destructive" role="alert">
+          Con estas medidas «{elegido.nombre}» no alcanza: la orden necesita{" "}
+          {cantidadStock(consumoElegido.cantidad ?? 0, elegido.unidad)} y hay{" "}
+          {cantidadStock(elegido.stock, elegido.unidad)}. Reduce la cantidad o elige otro sustrato.
+        </p>
       )}
       {!isLoading && opciones.length === 0 && error && (
         <p className="mt-2 text-[11px] text-destructive" role="alert">
@@ -391,6 +441,9 @@ export function ResumenSection() {
   const unidad = valores.unidadDimension;
   const acabados = valores.acabados ?? [];
   const sustrato = sustratos.find((item) => item.id === valores.sustratoId);
+  const consumo = sustrato
+    ? estimarConsumoSustrato(sustrato, { ancho, alto, unidadDimension: unidad, cantidad })
+    : null;
 
   const anchoMm = unidad ? aMilimetros(ancho, unidad) : 0;
   const altoMm = unidad ? aMilimetros(alto, unidad) : 0;
@@ -423,9 +476,17 @@ export function ResumenSection() {
   const filas: [string, string][] = [
     ["Pieza", valores.tipoGranFormato ? TIPO_GRAN_FORMATO_LABEL[valores.tipoGranFormato] : "—"],
     ["Medidas", unidad && ancho && alto ? `${ancho} × ${alto} ${unidad}` : "—"],
-    ["Superficie", m2 > 0 ? `${m2.toFixed(2)} m²` : "—"],
+    ["Superficie", m2 > 0 ? metrosCuadrados(m2) : "—"],
     ["Cantidad", cantidad ? `${formatNumber(cantidad)} pieza(s)` : "—"],
     ["Sustrato", sustrato?.nombre ?? "—"],
+    [
+      "Consumo",
+      sustrato && consumo
+        ? consumo.cantidad === null
+          ? "Sin rendimiento (no se descuenta)"
+          : `${cantidadStock(consumo.cantidad, sustrato.unidad)} del almacén`
+        : "—",
+    ],
     ["Resolución", `${Number(valores.resolucionDpi) || 0} dpi`],
     ["Acabado", acabados.length > 0 ? acabados.join(", ") : "Sin acabado"],
     ["Entrega", valores.fechaEntrega ? formatDate(valores.fechaEntrega) : "—"],

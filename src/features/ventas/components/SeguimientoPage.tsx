@@ -184,6 +184,16 @@ function DatosOrden({ orden }: { orden: OrdenTrabajo }) {
                 {orden.sustrato}
               </dd>
             </div>
+            {orden.materialId && (
+              <div className="flex justify-between gap-3">
+                <dt className="text-muted-foreground">Descontado del almacén</dt>
+                <dd className="text-right font-medium tabular-nums">
+                  {orden.consumoSustrato === null
+                    ? "No (material sin rendimiento)"
+                    : orden.consumoSustrato.toLocaleString("es-VE", { maximumFractionDigits: 3 })}
+                </dd>
+              </div>
+            )}
             <div className="flex justify-between gap-3">
               <dt className="text-muted-foreground">Prioridad</dt>
               <dd className="font-medium">{PRIORIDAD_LABEL[orden.prioridad]}</dd>

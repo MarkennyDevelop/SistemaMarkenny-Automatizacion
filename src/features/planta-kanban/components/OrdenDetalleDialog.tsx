@@ -205,6 +205,16 @@ export function OrdenDetalleDialog({
                   {orden.sustrato}
                 </dd>
               </div>
+              {orden.materialId && (
+                <div className="flex justify-between gap-3">
+                  <dt className="text-muted-foreground">Descontado del almacén</dt>
+                  <dd className="text-right font-medium tabular-nums">
+                    {orden.consumoSustrato === null
+                      ? "No (material sin rendimiento)"
+                      : orden.consumoSustrato.toLocaleString("es-VE", { maximumFractionDigits: 3 })}
+                  </dd>
+                </div>
+              )}
               <div className="flex justify-between gap-3">
                 <dt className="text-muted-foreground">Máquina</dt>
                 <dd className="max-w-[60%] truncate text-right font-medium">

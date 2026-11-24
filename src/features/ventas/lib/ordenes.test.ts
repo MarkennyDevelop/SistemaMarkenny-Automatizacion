@@ -18,6 +18,7 @@ import {
   ordenDesdeGranFormato,
   ordenDesdePapeleria,
   SustratoNoDisponibleError,
+  estimarConsumoSustrato,
 } from "./ordenes";
 
 const CLIENTE = "cli-001";
@@ -49,8 +50,8 @@ const papeleria = papeleriaSchema.parse({
 });
 
 const INSUMOS: InsumoDisponible[] = [
-  { id: "mat-lona", nombre: "Lona front 13 oz", categoria: "LONA", subtipo: null, unidad: "metro", stock: 40, disponible: true },
-  { id: "mat-vinil", nombre: "Vinil blanco", categoria: "VINIL", subtipo: null, unidad: "rollo", stock: 0, disponible: false },
+  { id: "00000000-0000-4000-8000-0000000000a1", nombre: "Lona front 13 oz", categoria: "LONA", subtipo: null, unidad: "rollo", stock: 6, disponible: true, rendimiento: 80, mermaPorcentaje: 3 },
+  { id: "00000000-0000-4000-8000-0000000000a2", nombre: "Vinil blanco", categoria: "VINIL", subtipo: null, unidad: "rollo", stock: 0, disponible: false, rendimiento: 61, mermaPorcentaje: 5 },
 ];
 
 /** La orden que arma el frontend debe pasar el esquema real del contrato. */
@@ -142,7 +143,7 @@ describe("ordenDesdeGranFormato", () => {
     ancho: 1,
     alto: 2,
     unidadDimension: "m",
-    sustratoId: "mat-lona",
+    sustratoId: "00000000-0000-4000-8000-0000000000a1",
     acabados: ["Corte con plotter"],
     fechaEntrega: entrega,
   });
@@ -153,12 +154,30 @@ describe("ordenDesdeGranFormato", () => {
       sustrato: "Lona front 13 oz",
       acabados: ["Corte con plotter"],
       categoriaTrabajo: "GRAN_FORMATO",
+      materialId: "00000000-0000-4000-8000-0000000000a1",
     });
     expect(orden).not.toHaveProperty("maquina");
     expect(orden.especificaciones).toMatchObject({ ancho: 1, alto: 2, unidadDimension: "m", resolucionDpi: 720 });
     expect(validarContrato(orden).success).toBe(true);
     expect(aMilimetros(1.5, "m")).toBe(1500);
     expect(aMilimetros(80, "cm")).toBe(800);
+  });
+
+  it("estima el consumo con las reglas del servidor y avisa si no alcanza", () => {
+    const [lona] = INSUMOS;
+    // 1 × 2 m = 2 m²; +3 % = 2,06 m² ÷ 80 = 0,02575 → 0,026 rollo
+    expect(estimarConsumoSustrato(lona, { ancho: 1, alto: 2, unidadDimension: "m", cantidad: 1 })).toEqual({
+      m2: 2,
+      cantidad: 0.026,
+      alcanza: true,
+    });
+    expect(estimarConsumoSustrato(lona, { ancho: 10, alto: 10, unidadDimension: "m", cantidad: 50 })?.alcanza).toBe(false);
+    expect(estimarConsumoSustrato({ ...lona, rendimiento: null }, { ancho: 1, alto: 2, unidadDimension: "m", cantidad: 1 })).toEqual({
+      m2: 2,
+      cantidad: null,
+      alcanza: true,
+    });
+    expect(estimarConsumoSustrato(lona, { ancho: 1, cantidad: 1 })).toBeNull();
   });
 
   it("el laminado mate o brillante ya no es un acabado: viene en el sustrato", () => {
@@ -168,7 +187,7 @@ describe("ordenDesdeGranFormato", () => {
   });
 
   it("no arma la orden con un sustrato agotado o que no existe en almacén", () => {
-    expect(() => ordenDesdeGranFormato({ ...valores, sustratoId: "mat-vinil" }, INSUMOS)).toThrow(
+    expect(() => ordenDesdeGranFormato({ ...valores, sustratoId: "00000000-0000-4000-8000-0000000000a2" }, INSUMOS)).toThrow(
       SustratoNoDisponibleError,
     );
     expect(() => ordenDesdeGranFormato({ ...valores, sustratoId: "no-existe" }, INSUMOS)).toThrow(

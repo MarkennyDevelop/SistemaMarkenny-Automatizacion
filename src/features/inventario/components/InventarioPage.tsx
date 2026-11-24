@@ -20,7 +20,13 @@ import { CATEGORIAS_INVENTARIO, type CategoriaInventario, type MaterialInventari
 import { CATEGORIA_LABEL, InventarioTable } from "./InventarioTable";
 import { MovimientosPanel } from "./MovimientosPanel";
 import { RegistrarMovimientoDialog } from "./RegistrarMovimientoDialog";
-import { useInventario, useMovimientos, useRegistrarMovimiento } from "../hooks/useInventario";
+import { ConfigurarConsumoDialog } from "./ConfigurarConsumoDialog";
+import {
+  useConfigurarConsumo,
+  useInventario,
+  useMovimientos,
+  useRegistrarMovimiento,
+} from "../hooks/useInventario";
 import type { MovimientoFormValues } from "../types/schema";
 
 type FiltroCategoria = CategoriaInventario | "TODAS";
@@ -33,6 +39,8 @@ export function InventarioPage() {
     useInventario();
   const { movimientos, isLoading: cargandoMovimientos } = useMovimientos(12);
   const registrar = useRegistrarMovimiento();
+  const configurar = useConfigurarConsumo();
+  const [consumoDe, setConsumoDe] = useState<MaterialInventario | null>(null);
 
   const [tab, setTab] = useState("existencias");
   const [categoria, setCategoria] = useState<FiltroCategoria>("TODAS");
@@ -227,6 +235,7 @@ export function InventarioPage() {
               materiales={filtrados}
               isLoading={isLoading}
               onRegistrar={abrirMovimiento}
+              onConfigurarConsumo={setConsumoDe}
             />
           )}
 
@@ -264,6 +273,28 @@ export function InventarioPage() {
           <MovimientosPanel movimientos={movimientos} isLoading={cargandoMovimientos} />
         </TabsContent>
       </Tabs>
+
+      <ConfigurarConsumoDialog
+        material={consumoDe}
+        isSubmitting={configurar.isPending}
+        onOpenChange={(abierto) => !abierto && setConsumoDe(null)}
+        onSubmit={async (datos) => {
+          if (!consumoDe) return;
+          try {
+            const material = await configurar.mutateAsync({ materialId: consumoDe.id, ...datos });
+            toast.success("Consumo actualizado", {
+              description: material.rendimiento
+                ? `${material.nombre}: ${formatNumber(material.rendimiento)} m² por ${material.unidad}, merma ${formatNumber(material.mermaPorcentaje)} %`
+                : `${material.nombre}: sin rendimiento, sus órdenes no descontarán stock`,
+            });
+          } catch (error) {
+            toast.error("No se pudo guardar el consumo", {
+              description: error instanceof Error ? error.message : "Intenta nuevamente.",
+            });
+            throw error;
+          }
+        }}
+      />
 
       <RegistrarMovimientoDialog
         open={dialogoAbierto}

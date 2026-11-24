@@ -1,4 +1,4 @@
-import { ArrowDownUp, Boxes } from "lucide-react";
+import { ArrowDownUp, Boxes, Ruler } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -11,12 +11,17 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { CATEGORIAS_POR_SUPERFICIE } from "@markenny/contrato/dominio";
 import { cn, formatCurrency, formatNumber } from "@/lib/utils";
 import {
   type MaterialInventario,
   CATEGORIA_INVENTARIO_LABEL,
   TIPO_PAPEL_LABEL,
 } from "@/shared/domain";
+
+/** Viniles y lonas se consumen por superficie (m²). */
+const porSuperficie = (material: MaterialInventario) =>
+  (CATEGORIAS_POR_SUPERFICIE as readonly string[]).includes(material.categoria);
 
 /** Etiquetas de categoría (re-exportadas desde shared/domain). */
 export const CATEGORIA_LABEL = CATEGORIA_INVENTARIO_LABEL;
@@ -35,12 +40,15 @@ interface InventarioTableProps {
   materiales: MaterialInventario[];
   isLoading?: boolean;
   onRegistrar: (material: MaterialInventario) => void;
+  /** Viniles y lonas: rendimiento y merma del descuento automático. */
+  onConfigurarConsumo: (material: MaterialInventario) => void;
 }
 
 export function InventarioTable({
   materiales,
   isLoading,
   onRegistrar,
+  onConfigurarConsumo,
 }: InventarioTableProps) {
   if (isLoading) {
     return (
@@ -126,6 +134,20 @@ export function InventarioTable({
                       {material.unidad} · mín. {formatNumber(material.stockMinimo)}
                     </span>
                   </div>
+                  {porSuperficie(material) && (
+                    <button
+                      type="button"
+                      onClick={() => onConfigurarConsumo(material)}
+                      className={cn(
+                        "mt-1 text-left text-[9.5px] underline-offset-2 hover:underline",
+                        material.rendimiento ? "text-muted-foreground" : "font-medium text-primary",
+                      )}
+                    >
+                      {material.rendimiento
+                        ? `${formatNumber(material.rendimiento)} m²/${material.unidad} · merma ${formatNumber(material.mermaPorcentaje)} %`
+                        : "Sin rendimiento: no se descuenta · configurar"}
+                    </button>
+                  )}
                   <Progress
                     value={cobertura}
                     className="mt-1.5 h-1 w-28"
@@ -144,6 +166,18 @@ export function InventarioTable({
                   <Badge variant={info.variant}>{info.label}</Badge>
                 </TableCell>
                 <TableCell className="pr-5">
+                  <div className="flex items-center justify-end gap-0.5">
+                  {porSuperficie(material) && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 opacity-60 transition-opacity group-hover:opacity-100"
+                      onClick={() => onConfigurarConsumo(material)}
+                      aria-label={`Configurar consumo de ${material.nombre}`}
+                    >
+                      <Ruler className="h-3.5 w-3.5" />
+                    </Button>
+                  )}
                   <Button
                     variant="ghost"
                     size="icon"
@@ -153,6 +187,7 @@ export function InventarioTable({
                   >
                     <ArrowDownUp className="h-3.5 w-3.5" />
                   </Button>
+                  </div>
                 </TableCell>
               </TableRow>
             );
