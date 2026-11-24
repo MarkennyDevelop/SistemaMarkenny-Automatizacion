@@ -107,7 +107,15 @@ export async function construirApp({ config, overrides = {} }) {
     obtenerCliente: (id) => ventas.casosUso.obtenerCliente(id),
     logger,
   });
-  const inventario = crearModuloInventario({ materiales: repos.materiales, productos: repos.productos, eventBus, reloj, ids, logger });
+  const inventario = crearModuloInventario({
+    materiales: repos.materiales,
+    productos: repos.productos,
+    eventBus,
+    reloj,
+    ids,
+    fasesDeOrdenes: (ordenIds) => produccion.fasesDeOrdenes(ordenIds),
+    logger,
+  });
   const notificaciones = crearModuloNotificaciones({ notificaciones: repos.notificaciones, eventBus, reloj, ids });
 
   fastify.setErrorHandler(manejadorErrores);

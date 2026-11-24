@@ -83,5 +83,7 @@ export function crearModuloProduccion({ ordenes, eventBus, reloj, ids, obtenerCl
     desuscribir,
     /** Interfaz pública para Ventas. */
     resumenPorCliente: casosUso.resumenPorCliente,
+    /** Interfaz pública para Inventario (almacén de producto terminado). */
+    fasesDeOrdenes: casosUso.fasesDeOrdenes,
   };
 }

@@ -68,7 +68,7 @@ const aProductoDTO = ({ version: _v, ...p }) => ({
   entregas: p.entregas.map(({ id: _id, ...e }) => ({ ...e })),
 });
 
-export function crearCasosUsoInventario({ materiales, productos, eventBus, reloj, ids }) {
+export function crearCasosUsoInventario({ materiales, productos, eventBus, reloj, ids, fasesDeOrdenes }) {
   return {
     listarMateriales: casoDeUso({
       nombre: 'inventario.listarMateriales',
@@ -171,7 +171,15 @@ export function crearCasosUsoInventario({ materiales, productos, eventBus, reloj
       nombre: 'inventario.listarProductosTerminados',
       entrada: FiltroProductosTerminadosSchema,
       salida: z.array(ProductoTerminadoSchema),
-      ejecutar: async (filtro) => (await productos.listar(filtro)).map(aProductoDTO),
+      // Producto terminado = orden EMPAQUETADA en almacén y sin entregar.
+      // Se verifica la fase real de cada orden en Producción: nada en
+      // EN_PROCESO, EN_REVISION o FINALIZADO aparece aquí, ni registros
+      // sin orden de trabajo.
+      async ejecutar(filtro) {
+        const lista = await productos.listar(filtro);
+        const fases = await fasesDeOrdenes(lista.flatMap((p) => (p.ordenId ? [p.ordenId] : [])));
+        return lista.filter((p) => p.ordenId && fases.get(p.ordenId) === 'EMPAQUETADO').map(aProductoDTO);
+      },
     }),
 
     registrarEntrega: casoDeUso({

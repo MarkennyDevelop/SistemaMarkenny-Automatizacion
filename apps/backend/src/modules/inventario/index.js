@@ -18,8 +18,15 @@ export {
 
 const loggerNulo = { info() {}, warn() {}, error() {} };
 
-export function crearModuloInventario({ materiales, productos, eventBus, reloj, ids, logger = loggerNulo }) {
+/**
+ * @param {object} deps
+ * @param {(ids: string[]) => Promise<Map<string, string>>} deps.fasesDeOrdenes
+ *   Fase actual de las órdenes (interfaz pública de Producción).
+ */
+export function crearModuloInventario({ materiales, productos, eventBus, reloj, ids, fasesDeOrdenes, logger = loggerNulo }) {
+  if (typeof fasesDeOrdenes !== 'function') throw new TypeError('Inventario necesita fasesDeOrdenes de Producción');
   const casosUso = crearCasosUsoInventario({
+    fasesDeOrdenes,
     materiales: implementaPuerto('MaterialRepository', MATERIAL_REPOSITORY_PORT, materiales),
     productos: implementaPuerto('ProductoTerminadoRepository', PRODUCTO_REPOSITORY_PORT, productos),
     eventBus: implementaPuerto('EventBus', PUERTOS.EventBus, eventBus),

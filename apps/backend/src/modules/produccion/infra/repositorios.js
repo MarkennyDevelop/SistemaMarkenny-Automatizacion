@@ -53,6 +53,9 @@ export class OrdenRepositoryMemoria {
       .sort((a, b) => (a.fechaCreacion < b.fechaCreacion ? 1 : a.fechaCreacion > b.fechaCreacion ? -1 : b.codigo.localeCompare(a.codigo)))
       .slice(0, limite);
   }
+  async fasesDe(ids) {
+    return new Map(ids.flatMap((id) => (this.#ordenes.has(id) ? [[id, this.#ordenes.get(id).fase]] : [])));
+  }
   async resumenPorCliente() {
     const mapa = new Map();
     for (const o of this.#ordenes.values()) {
@@ -229,6 +232,15 @@ export class OrdenRepositoryPostgres {
     const ids = rows.map((f) => f.id);
     const [historiales, notas] = await Promise.all([this.#historiales(ids), this.#notas(ids)]);
     return rows.map((f) => aOrden(f, historiales.get(f.id) ?? [], notas.get(f.id) ?? []));
+  }
+
+  async fasesDe(ids) {
+    if (ids.length === 0) return new Map();
+    const { rows } = await this.pool.query(
+      'SELECT id, estado_produccion FROM ordenes_trabajo WHERE id = ANY($1::uuid[])',
+      [ids],
+    );
+    return new Map(rows.map((f) => [f.id, f.estado_produccion]));
   }
 
   async resumenPorCliente() {

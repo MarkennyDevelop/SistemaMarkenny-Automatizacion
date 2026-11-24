@@ -34,10 +34,11 @@ import {
  * @property {(id: string) => Promise<object|null>} obtenerPorId
  * @property {(filtro: object) => Promise<object[]>} listar  Más recientes primero.
  * @property {() => Promise<Map<string, { activas: number, saldo: number }>>} resumenPorCliente
+ * @property {(ids: string[]) => Promise<Map<string, string>>} fasesDe  Fase actual de cada orden
  */
 export const ORDEN_REPOSITORY_PORT = Object.freeze([
   'siguienteCodigo', 'crear', 'actualizar', 'actualizarEstadoEntrega', 'agregarNota', 'obtenerPorId', 'listar',
-  'resumenPorCliente',
+  'resumenPorCliente', 'fasesDe',
 ]);
 
 /** Proyección del agregado al DTO del contrato. */
@@ -234,5 +235,6 @@ export function crearCasosUsoProduccion({ ordenes, eventBus, reloj, ids, obtener
 
     /** Interfaz pública para Ventas: órdenes activas y monto pendiente por cliente. */
     resumenPorCliente: () => ordenes.resumenPorCliente(),
+    fasesDeOrdenes: (ids) => ordenes.fasesDe(ids),
   };
 }
