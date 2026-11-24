@@ -131,7 +131,7 @@ export function probarFlujoCompleto(nombre, entorno) {
         tintas: ['Pantone 032 C'], acabados: ['Numerado', 'Engrapado'],
         especificaciones: {
           nombreDocumento: 'Factura', tipoDocumento: 'F', formato: 'TALONARIO', partes: 2, numeracionDesde: 1,
-          numeracionHasta: 1000, numeracionPrefijo: '00-', perforacion: true, perforacionOrientacion: 'HORIZONTAL',
+          numeracionHasta: 1000, numeroControlPrefijo: '00-', numeroControlDesde: 1, numeroControlHasta: 1000, perforacion: true, orientacion: 'HORIZONTAL',
           tipoPapel: 'QUIMICO', tamano: 'MEDIA_CARTA', coloresTinta: ['NEGRO'], observaciones: 'Prueba de color',
         },
         montoTotal: 120.5, fechaEntrega: '2026-11-27T16:00:00.000Z',

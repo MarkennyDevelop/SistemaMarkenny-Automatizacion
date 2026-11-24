@@ -51,7 +51,7 @@ export function datosOrden(extra = {}) {
     acabados: ['Numerado', 'Engrapado'],
     especificaciones: {
       nombreDocumento: 'Factura', tipoDocumento: 'F', formato: 'TALONARIO', partes: 2, numeracionDesde: 1,
-      numeracionHasta: 1000, numeracionPrefijo: '00-', tipoPapel: 'QUIMICO', tamano: 'MEDIA_CARTA',
+      numeracionHasta: 1000, numeroControlPrefijo: '00-', tipoPapel: 'QUIMICO', tamano: 'MEDIA_CARTA',
       coloresTinta: ['PANTONE'], pantone: 'Pantone 032 C', observaciones: 'Prueba de color',
     },
     montoTotal: 120.5,
